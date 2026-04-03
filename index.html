@@ -39,11 +39,13 @@
   
   .student-list { margin-top: 10px; border: 1px solid var(--gray-100); border-radius: 8px; overflow: hidden; }
   
+  /* FILAS CLICKEABLES */
   .student-row { display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--gray-100); align-items: center; cursor: pointer; transition: background 0.2s; }
   .student-row:hover { background-color: var(--blue-50); }
   .student-header { background-color: var(--blue-800); color: white; font-weight: bold; font-size: 12px; cursor: default; }
   .student-header:hover { background-color: var(--blue-800); }
   
+  /* CHECKBOX MÁS GRANDE */
   .checkbox-wrapper { display: flex; justify-content: center; }
   input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--green-600); }
   
@@ -143,7 +145,6 @@
       </div>
     </div>
 
- 
 
       <label>Nombre del Docente Responsable:</label>
       <input type="text" id="docente-nombre" placeholder="Ej. Lic. " style="margin-bottom: 15px;">
@@ -159,44 +160,35 @@
     </div>
   </div>
 
-   <div class="panel">
+    <div class="panel">
       <div class="web-logo-container">
         <img src="logo2.svg" alt="Logo Institucional" class="web-logo" onerror="this.src='logo2.jpg'; this.onerror=null;">
       </div>
 
+
   <div id="view-subdireccion" class="view-section">
     <div class="panel">
-      <h2 style="color: var(--blue-800); margin-bottom: 10px;"><button
-  onclick="window.open(
-    'https://docs.google.com/spreadsheets/d/1kjzjLTs4YViqJMPVPvYZjwj9pf-q0h_PNNfCTlA7aWE/edit?usp=sharing',
-    '_blank'
-  )"
-  class="btn-resumen">
-  Resumen (Sub-Dirección)
-</button>
+      <h2 style="color: var(--blue-800); margin-bottom: 10px;">
+        <button onclick="window.open('https://docs.google.com/spreadsheets/d/1kjzjLTs4YViqJMPVPvYZjwj9pf-q0h_PNNfCTlA7aWE/edit?usp=sharing', '_blank')" class="btn-resumen">
+          Resumen (Sub-Dirección)
+        </button>
 
-<style>
-  .btn-resumen {
-    font-size: 20px;          /* tamaño del texto */
-    padding: 14px 28px;       /* alto y ancho del botón */
-    cursor: pointer;
-    background-color: #1a73e8;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-  }
-
-  .btn-resumen:hover {
-    background-color: #1558b0;
-  }
-
-  .btn-resumen:active {
-    transform: scale(0.97);
-  }
-</style>
-``</h2>
+        <style>
+          .btn-resumen {
+            font-size: 20px;
+            padding: 14px 28px;
+            cursor: pointer;
+            background-color: #1a73e8;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+          }
+          .btn-resumen:hover { background-color: #1558b0; }
+          .btn-resumen:active { transform: scale(0.97); }
+        </style>
+      </h2>
       
       <div id="sub-lista-reportes">
         <div style="padding: 20px; text-align: center;">Cargando reportes...</div>
@@ -207,69 +199,32 @@
       <button onclick="cargarReportesSub()" style="width:100%; margin-top:15px; padding:12px; border-radius:8px; border:1px solid var(--blue-600); color:var(--blue-600); background:white; font-weight:bold; cursor:pointer;">🔄 Actualizar Lista y Totales</button>
       
       <div style="margin-top: 25px; border-top: 2px dashed var(--gray-100); padding-top: 15px;">
-  <!-- BOTÓN DE ACCESO A ZONA DE PELIGRO -->
-<button
-  onclick="accederLimpieza()"
-  style="
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 2px solid var(--red-600);
-    background: white;
-    color: var(--red-600);
-    font-weight: bold;
-    cursor: pointer;
-  "
->
-⚠️ Acceder a la limpieza de registros
-</button>
+        
+        <button onclick="accederLimpieza()" style="width: 100%; margin-top: 20px; padding: 12px; border-radius: 8px; border: 2px solid var(--red-600); background: white; color: var(--red-600); font-weight: bold; cursor: pointer;">
+          ⚠️ Acceder a la limpieza de registros
+        </button>
 
-<!-- ZONA DE PELIGRO (OCULTA) -->
-<div id="zona-peligro" style="display:none; margin-top:15px;">
+        <div id="zona-peligro" style="display:none; margin-top:15px; background: var(--red-50); padding: 15px; border-radius: 8px; border: 1px solid var(--red-600);">
+          
+          <label style="color: var(--red-600); font-size: 14px; font-weight: bold; margin-bottom: 10px; display: block;">
+            ⚠️ ZONA DE PELIGRO: LIMPIAR REGISTROS DE LA NUBE
+          </label>
 
-  <label style="color: var(--red-600); font-size: 14px;">
-    ⚠️ ZONA DE PELIGRO: LIMPIAR REGISTROS DE LA NUBE
-  </label>
+          <select id="delete-rango" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1.5px solid var(--red-600); color: var(--red-600); border-radius: 8px; font-weight: bold; outline: none; background: white;">
+            <option value="hoy">Borrar reportes de HOY</option>
+            <option value="all">Borrar TODO el historial</option>
+          </select>
 
- <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="display:flex; gap:10px;">
+            <button id="btn-delete-reportes" onclick="borrarReportes()" style="width:35%; background:var(--red-600); color:white; border:none; border-radius:8px; font-weight:bold; padding:12px; cursor:pointer;">
+              🗑️ Ejecutar Borrado
+            </button>
 
-  <!-- BOTÓN ROJO 35% -->
-  <button
-    id="btn-delete-reportes"
-    onclick="borrarReportes()"
-    style="
-      width:35%;
-      background:var(--red-600);
-      color:white;
-      border:none;
-      border-radius:8px;
-      font-weight:bold;
-      padding:12px;
-      cursor:pointer;
-    "
-  >
-    🗑️ Ejecutar Borrado
-  </button>
-
-  <!-- BOTÓN VERDE 65% -->
-  <button
-    onclick="regresarLugarSeguro()"
-    style="
-      width:65%;
-      background:var(--green-600);
-      color:white;
-      border:none;
-      border-radius:8px;
-      font-weight:bold;
-      padding:12px;
-      cursor:pointer;
-    "
-  >
-    ✅ Plegar el borrado / Regresar a lugar seguro
-  </button>
-
-</div>
+            <button onclick="regresarLugarSeguro()" style="width:65%; background:var(--green-600); color:white; border:none; border-radius:8px; font-weight:bold; padding:12px; cursor:pointer;">
+              ✅ Regresar a lugar seguro
+            </button>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -424,13 +379,12 @@ function generarHTMLResumen(tGeneral, tM, tF, sPres, sAus, sM, sF) {
             <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid var(--green-600);">
                 <p style="font-size: 12px; color: gray; font-weight: bold; margin-bottom: 5px;">REPORTE DE ASISTENCIA (TABLA)</p>
                 <p style="font-size: 20px; font-weight: bold; color: var(--green-600);">Presentes: ${sPres} <span style="font-size: 16px; color: var(--red-600); margin-left: 10px;">Ausentes: ${sAus}</span></p>
-                <p style="font-size: 14px; color: #555; margin-top: 5px;">Asistencia. M: <strong>${sM}</strong> | Asistencia F: <strong>${sF}</strong></p>
+                <p style="font-size: 14px; color: #555; margin-top: 5px;">Asist. M: <strong>${sM}</strong> | Asist. F: <strong>${sF}</strong></p>
             </div>
         </div>
     </div>`;
 }
 
-// --- LÓGICA DE TABLA DE ALUMNOS ---
 function cargarAlumnos() {
   const grado = document.getElementById('grado-select').value;
   const seccion = document.getElementById('seccion-select').value;
@@ -457,6 +411,20 @@ function cargarAlumnos() {
 function toggleFila(event, index) { if(event.target.tagName.toLowerCase() === 'input') return; document.getElementById(`chk-${index}`).checked = !document.getElementById(`chk-${index}`).checked; }
 function toggleTodos() { estadoSeleccion = !estadoSeleccion; alumnosFiltrados.forEach((a, i) => document.getElementById(`chk-${i}`).checked = estadoSeleccion); }
 
+function accederLimpieza() {
+  const password = prompt("Ingrese la contraseña de administrador:");
+  if (password === "1234") {
+    document.getElementById("zona-peligro").style.display = "block";
+    alert("⚠️ Acceso concedido. Use con extrema precaución.");
+  } else {
+    alert("❌ Contraseña incorrecta.");
+  }
+}
+
+function regresarLugarSeguro() {
+  document.getElementById("zona-peligro").style.display = "none";
+}
+
 async function borrarReportes() {
   const rango = document.getElementById('delete-rango').value;
   let mensaje = rango === "hoy" ? "¿Estás seguro que deseas borrar todos los reportes generados HOY?" : "⚠️ PELIGRO EXTREMO: ¿Estás seguro que deseas borrar TODO EL HISTORIAL de reportes?";
@@ -466,11 +434,10 @@ async function borrarReportes() {
   const fechaHoy = new Date().toLocaleDateString('es-ES');
   try {
     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "delete_reportes", rango: rango, fecha: fechaHoy }) });
-    setTimeout(() => { alert("✅ Orden de borrado enviada a la nube."); cargarReportesSub(); btn.disabled = false; btn.innerText = "🗑️ Ejecutar Borrado"; }, 1500);
+    setTimeout(() => { alert("✅ Orden de borrado enviada a la nube."); cargarReportesSub(); btn.disabled = false; btn.innerText = "🗑️ Ejecutar Borrado"; document.getElementById("zona-peligro").style.display = "none"; }, 1500);
   } catch(e) { alert("❌ Error de red al intentar borrar."); btn.disabled = false; btn.innerText = "🗑️ Ejecutar Borrado"; }
 }
 
-// --- GENERADOR DE PDF ---
 async function generarPDF() {
   const docente = document.getElementById('docente-nombre').value.trim();
   const grado = document.getElementById('grado-select').value;
@@ -495,10 +462,8 @@ async function generarPDF() {
   const fechaArchivo = ahora.toLocaleDateString('es-ES').replace(/\//g, '-');
   const secLimpia = seccion.replace(/"/g, ''); 
 
-  // Notificar a la nube
   fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "asistencia", fecha: ahora, grado: grado, seccion: seccion, docente: docente, presentes: presentes.length, ausentes: ausentes.length, m: masc, f: fem }) }).catch(e => console.log("Enviado"));
 
-  // ESTRUCTURA CORREGIDA DEL PDF (Igual a la original sin cortes)
   const pdfHtml = `
     <div style="width: 100%; height: 1000px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
       <h1 style="color: #0C447C; font-size: 26px; margin-bottom: 10px; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
@@ -579,7 +544,6 @@ async function generarPDF() {
   finally { btn.disabled = false; btn.innerText = "📥 Generar PDF y Guardar Reporte"; }
 }
 
-// --- GUARDAR NUEVO ALUMNO ---
 function cerrarModal() { document.getElementById('modal-alumno').classList.remove('open'); }
 
 async function guardarAlumno() {
@@ -594,25 +558,6 @@ async function guardarAlumno() {
   b.disabled = true; b.innerText = "Subiendo...";
   try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(n) }); alert("Guardado exitoso en la nube."); cerrarModal(); setTimeout(inicializarBaseDatos, 1000); } catch(e) { alert("Error al guardar"); }
   b.disabled = false; b.innerText = "Guardar";
-}
-
-function regresarLugarSeguro() {
-  document.getElementById("zona-peligro").style.display = "none";
-}
-
-</script>
-
-
-<script>
-function accederLimpieza() {
-  const password = prompt("Ingrese la contraseña de administrador:");
-
-  if (password === "1234") {  // 🔑 cambia esta clave
-    document.getElementById("zona-peligro").style.display = "block";
-    alert("⚠️ Acceso concedido. Use con extrema precaución.");
-  } else {
-    alert("❌ Contraseña incorrecta.");
-  }
 }
 </script>
 </body>
