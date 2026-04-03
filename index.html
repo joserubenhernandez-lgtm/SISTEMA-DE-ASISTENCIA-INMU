@@ -35,13 +35,14 @@
   /* FORMULARIOS Y TABLAS */
   .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
   label { font-weight: bold; font-size: 12px; color: var(--gray-600); display: block; margin-bottom: 5px; text-transform: uppercase; }
-  select, input[type="text"], input[type="date"] { width: 100%; padding: 10px; border: 1.5px solid var(--gray-100); border-radius: 8px; font-size: 14px; outline: none; }
+  select, input[type="text"] { width: 100%; padding: 10px; border: 1.5px solid var(--gray-100); border-radius: 8px; font-size: 14px; outline: none; }
   
   .student-list { margin-top: 10px; border: 1px solid var(--gray-100); border-radius: 8px; overflow: hidden; }
   
   .student-row { display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--gray-100); align-items: center; cursor: pointer; transition: background 0.2s; }
   .student-row:hover { background-color: var(--blue-50); }
   .student-header { background-color: var(--blue-800); color: white; font-weight: bold; font-size: 12px; cursor: default; }
+  .student-header:hover { background-color: var(--blue-800); }
   
   .checkbox-wrapper { display: flex; justify-content: center; }
   input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--green-600); }
@@ -61,6 +62,9 @@
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
   .modal { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; }
+
+  .web-logo-container { text-align: center; margin: 20px 0; }
+  .web-logo { width: 250px; height: auto; display: inline-block; }
 
   #pdf-container { display: none; }
 
@@ -139,7 +143,8 @@
       </div>
     </div>
 
-    <div class="panel">
+ 
+
       <label>Nombre del Docente Responsable:</label>
       <input type="text" id="docente-nombre" placeholder="Ej. Lic. Emerson Castro" style="margin-bottom: 15px;">
       
@@ -153,31 +158,23 @@
       </div>
     </div>
   </div>
-   <div class="panel" style="text-align:center;">
-      <div class="web-logo-container">
-        <img src="logo2.svg" alt="Logo Institucional" class="web-logo" onerror="this.src='logo2.jpg'; this.onerror=null;" style="width:300px; height:auto; display:block; margin:0 auto;">
-      </div>
-    </div>
 
-  
+   <div class="panel">
+      <div class="web-logo-container">
+        <img src="logo2.svg" alt="Logo Institucional" class="web-logo" onerror="this.src='logo2.jpg'; this.onerror=null;">
+      </div>
+
   <div id="view-subdireccion" class="view-section">
     <div class="panel">
       <h2 style="color: var(--blue-800); margin-bottom: 10px;">Resumen (Sub-Dirección)</h2>
       
-      <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: var(--gray-50); padding: 10px; border-radius: 8px;">
-        <label style="margin: 0; min-width: 120px;">Filtrar por fecha:</label>
-        <input type="date" id="filtro-fecha-sub" style="flex: 1; padding: 8px; border-radius: 6px;">
-        <button onclick="cargarReportesSub()" style="background: var(--blue-600); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">🔍 Buscar</button>
-        <button onclick="document.getElementById('filtro-fecha-sub').value=''; cargarReportesSub()" style="background: var(--gray-600); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">✖ Limpiar</button>
-      </div>
-
       <div id="sub-lista-reportes">
         <div style="padding: 20px; text-align: center;">Cargando reportes...</div>
       </div>
       
       <div id="resumen-estadisticas"></div>
 
-      <button onclick="cargarReportesSub()" style="width:100%; margin-top:15px; padding:12px; border-radius:8px; border:1px solid var(--blue-600); color:var(--blue-600); background:white; font-weight:bold; cursor:pointer;">🔄 Actualizar Lista</button>
+      <button onclick="cargarReportesSub()" style="width:100%; margin-top:15px; padding:12px; border-radius:8px; border:1px solid var(--blue-600); color:var(--blue-600); background:white; font-weight:bold; cursor:pointer;">🔄 Actualizar Lista y Totales</button>
       
       <div style="margin-top: 25px; border-top: 2px dashed var(--gray-100); padding-top: 15px;">
         <label style="color: var(--red-600); font-size: 14px;">⚠️ Zona de Peligro: Limpiar Registros de la Nube</label>
@@ -208,12 +205,11 @@
 </div>
 
 <div id="pdf-container">
-  <div id="pdf-content" style="padding: 40px; font-family: Arial, sans-serif; color: black; background: white; width: 100%; box-sizing: border-box; position: relative; min-height: 1000px;">
+  <div id="pdf-content" style="width: 800px; padding: 40px; font-family: Arial, sans-serif; color: black; background: white;">
   </div>
 </div>
 
 <script>
-// --- URL INMU ---
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL2huKwIXPI2xVLo1M_Z7rEaXa3Wdgx6boUFj0CiaSVyVwtOV8HxyShrnxMtzmp0qy/exec";
 
 let baseDatosAlumnos = [];
@@ -247,6 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// --- SEGURIDAD Y VISTAS ---
 function pedirPasswordSub() { if (prompt("Ingrese contraseña de Sub-Dirección:") === "1234") { cambiarVista('subdireccion'); } else { alert("Contraseña incorrecta."); } }
 function pedirPasswordNuevo() { if (prompt("Ingrese contraseña de Administrador:") === "1234") { document.getElementById('modal-alumno').classList.add('open'); } else { alert("Contraseña incorrecta."); } }
 
@@ -262,6 +259,7 @@ function cambiarVista(vista) {
     }
 }
 
+// --- CONEXIÓN A LA NUBE ---
 async function inicializarBaseDatos() {
   const cont = document.getElementById('tabla-alumnos');
   cont.innerHTML = '<div style="padding: 20px; text-align: center; color: #185FA5; font-weight:bold;">Sincronizando con la nube...</div>';
@@ -271,11 +269,11 @@ async function inicializarBaseDatos() {
     baseDatosAlumnos = await response.json();
     baseDatosAlumnos.sort((a, b) => a.nombre.localeCompare(b.nombre));
     cargarAlumnos();
-  } catch (error) { cont.innerHTML = '<div style="padding: 20px; text-align: center; color: red;">Error de conexión. Verifica la URL.</div>'; }
+  } catch (error) { cont.innerHTML = '<div style="padding: 20px; text-align: center; color: red;">Error de conexión. Verifica la URL de Google Script.</div>'; }
 }
 window.onload = inicializarBaseDatos;
 
-// --- CARGAR REPORTES Y FILTRAR ---
+// --- VISTA SUB-DIRECCIÓN Y TOTALES ---
 async function cargarReportesSub() {
     const container = document.getElementById('sub-lista-reportes');
     const stats = document.getElementById('resumen-estadisticas');
@@ -286,19 +284,12 @@ async function cargarReportesSub() {
         const response = await fetch(SCRIPT_URL + "?tipo=reportes");
         let reportes = await response.json();
         
-        // Filtro de fecha
-        const fechaFiltro = document.getElementById('filtro-fecha-sub').value;
-        if(fechaFiltro) {
-            reportes = reportes.filter(r => r.fecha && r.fecha.startsWith(fechaFiltro));
-        }
-        
-        // Totales globales INMU
         let totalGeneral = baseDatosAlumnos.length;
         let totalM = baseDatosAlumnos.filter(a => a.sexo === 'M').length;
         let totalF = baseDatosAlumnos.filter(a => a.sexo === 'F').length;
 
         if(!reportes || reportes.length === 0) { 
-            container.innerHTML = "<div style='color:red; text-align:center;'>No hay registros para esta fecha.</div>"; 
+            container.innerHTML = "<div style='color:red; text-align:center;'>No hay registros.</div>"; 
             stats.innerHTML = generarHTMLResumen(totalGeneral, totalM, totalF, 0, 0, 0, 0);
             return; 
         }
@@ -339,20 +330,21 @@ function generarHTMLResumen(tGeneral, tM, tF, sPres, sAus, sM, sF) {
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid var(--blue-600);">
-                <p style="font-size: 12px; color: gray; font-weight: bold; margin-bottom: 5px;">ESTUDIANTES MATRICULADOS EN BD</p>
+                <p style="font-size: 12px; color: gray; font-weight: bold; margin-bottom: 5px;">TOTAL DE MATRÍCULA 2026</p>
                 <p style="font-size: 20px; font-weight: bold; color: var(--blue-800);">Total: ${tGeneral}</p>
-                <p style="font-size: 14px; color: #555; margin-top: 5px;">Masculinos: <strong>${tM}</strong> | Femeninos: <strong>${tF}</strong></p>
+                <p style="font-size: 14px; color: #555; margin-top: 5px;">M: <strong>${tM}</strong> | F: <strong>${tF}</strong></p>
             </div>
             
             <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid var(--green-600);">
-                <p style="font-size: 12px; color: gray; font-weight: bold; margin-bottom: 5px;">REPORTE DE ASISTENCIA (FILTRADO)</p>
+                <p style="font-size: 12px; color: gray; font-weight: bold; margin-bottom: 5px;">REPORTE DE ASISTENCIA (TABLA)</p>
                 <p style="font-size: 20px; font-weight: bold; color: var(--green-600);">Presentes: ${sPres} <span style="font-size: 16px; color: var(--red-600); margin-left: 10px;">Ausentes: ${sAus}</span></p>
-                <p style="font-size: 14px; color: #555; margin-top: 5px;">Asist. Masc: <strong>${sM}</strong> | Asist. Fem: <strong>${sF}</strong></p>
+                <p style="font-size: 14px; color: #555; margin-top: 5px;">Asistencia. M: <strong>${sM}</strong> | Asistencia F: <strong>${sF}</strong></p>
             </div>
         </div>
     </div>`;
 }
 
+// --- LÓGICA DE TABLA DE ALUMNOS ---
 function cargarAlumnos() {
   const grado = document.getElementById('grado-select').value;
   const seccion = document.getElementById('seccion-select').value;
@@ -392,6 +384,7 @@ async function borrarReportes() {
   } catch(e) { alert("❌ Error de red al intentar borrar."); btn.disabled = false; btn.innerText = "🗑️ Ejecutar Borrado"; }
 }
 
+// --- GENERADOR DE PDF ---
 async function generarPDF() {
   const docente = document.getElementById('docente-nombre').value.trim();
   const grado = document.getElementById('grado-select').value;
@@ -405,7 +398,7 @@ async function generarPDF() {
 
   btn.disabled = true; btn.innerText = "⏳ Generando PDF...";
 
-  const presentes = []; const ausentes = []; let masc = 0, fem = 0;
+  const presentes = [], ausentes = []; let masc = 0, fem = 0;
   alumnosFiltrados.forEach((alumno, index) => {
     if (document.getElementById(`chk-${index}`).checked) { presentes.push(alumno); alumno.sexo === 'M' ? masc++ : fem++; } 
     else { ausentes.push(alumno); }
@@ -416,92 +409,91 @@ async function generarPDF() {
   const fechaArchivo = ahora.toLocaleDateString('es-ES').replace(/\//g, '-');
   const secLimpia = seccion.replace(/"/g, ''); 
 
+  // Notificar a la nube
   fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "asistencia", fecha: ahora, grado: grado, seccion: seccion, docente: docente, presentes: presentes.length, ausentes: ausentes.length, m: masc, f: fem }) }).catch(e => console.log("Enviado"));
 
+  // ESTRUCTURA CORREGIDA DEL PDF (Igual a la original sin cortes)
   const pdfHtml = `
-    <div style="position: relative; background: white; padding: 0;">
-      <div style="position: relative; z-index: 10; padding: 40px;">
-        <div style="text-align: center; padding-top: 100px; padding-bottom: 200px;">
-          <h1 style="color: #0C447C; font-size: 26px; margin-bottom: 10px; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
-          <h2 style="color: #2C2C2A; font-size: 22px; margin-bottom: 50px; text-transform: uppercase;">Instituto Nacional de Mercedes Umaña</h2>
-          <div style="border: 2px solid #0C447C; padding: 40px; border-radius: 15px; background-color: transparent; width: 80%; margin: 0 auto;">
-            <h3 style="font-size: 24px; color: #185FA5; margin-bottom: 30px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 10px;">Registro de Asistencia Diario</h3>
-            <div style="text-align: left; padding-left: 20px;">
-              <p style="font-size: 18px; margin: 15px 0;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Sección:</strong> ${seccion}</p>
-              <p style="font-size: 18px; margin: 15px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
-              <p style="font-size: 18px; margin: 15px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
-            </div>
-          </div>
+    <div style="width: 100%; height: 1000px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+      <h1 style="color: #0C447C; font-size: 26px; margin-bottom: 10px; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
+      <h2 style="color: #2C2C2A; font-size: 22px; margin-bottom: 50px; text-transform: uppercase;">Instituto Nacional de Mercedes Umaña</h2>
+      
+      <div style="border: 2px solid #0C447C; padding: 40px; border-radius: 15px; width: 80%; background-color: white;">
+        <h3 style="font-size: 24px; color: #185FA5; margin-bottom: 30px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 10px;">Registro de Asistencia Diario</h3>
+        <div style="text-align: left; padding-left: 20px;">
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Sección:</strong> ${seccion}</p>
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
         </div>
-
-        <div class="html2pdf__page-break"></div>
-
-        <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px;">
-          <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
-          <h3 style="font-size: 16px; color: #2C2C2A; margin-bottom: 5px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
-        </div>
-        
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; font-size: 14px;">
-          <p><strong>Grado:</strong> ${grado} <strong>Seccion:</strong> ${seccion}</p>
-          <p><strong>Docente:</strong> ${docente} <strong>Fecha:</strong> ${fechaStr}</p>
-        </div>
-        
-        <div style="background-color: transparent; border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
-          <p><strong>Asistencias: ${presentes.length}</strong> | M: <strong>${masc}</strong> | F: <strong>${fem}</strong> | Ausencias: ${ausentes.length}</p>
-        </div>
-
-        <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES PRESENTES</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; page-break-before: auto;">
-          <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
-          ${presentes.length > 0 ? presentes.map(a => `
-            <tr style="page-break-inside: avoid;">
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #1D9E75; font-weight: bold;">✓</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td>
-            </tr>
-          `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
-        </table>
-
-        <h4 style="color: #E24B4A; border-bottom: 2px solid #E24B4A; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES AUSENTES</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px; page-break-before: auto;">
-          <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
-          ${ausentes.length > 0 ? ausentes.map(a => `
-            <tr style="page-break-inside: avoid;">
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #E24B4A; font-weight: bold;">✗</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td>
-            </tr>
-          `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
-        </table>
       </div>
+    </div>
+
+    <div class="html2pdf__page-break"></div>
+
+    <div style="width: 100%; padding-top: 30px;">
+      <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
+        <h3 style="font-size: 16px; color: #2C2C2A; margin-bottom: 5px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
+      </div>
+      
+      <div style="margin-bottom: 20px; display: flex; justify-content: space-between; font-size: 14px;">
+        <p><strong>Grado:</strong> ${grado} <strong>Seccion:</strong> ${seccion}</p>
+        <p><strong>Docente:</strong> ${docente} <strong>Fecha:</strong> ${fechaStr}</p>
+      </div>
+      
+      <div style="background-color: #F0F2F5; border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <p><strong>Asistencias: ${presentes.length}</strong> | M: <strong>${masc}</strong> | F: <strong>${fem}</strong> | Ausencias: ${ausentes.length}</p>
+      </div>
+
+      <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES PRESENTES</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; page-break-inside: auto;">
+        <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
+        ${presentes.length > 0 ? presentes.map(a => `
+          <tr style="page-break-inside: avoid; page-break-after: auto;">
+            <td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #1D9E75; font-weight: bold;">✓</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td>
+            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td>
+          </tr>
+        `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
+      </table>
+
+      <h4 style="color: #E24B4A; border-bottom: 2px solid #E24B4A; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES AUSENTES</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px; page-break-inside: auto;">
+        <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
+        ${ausentes.length > 0 ? ausentes.map(a => `
+          <tr style="page-break-inside: avoid; page-break-after: auto;">
+            <td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #E24B4A; font-weight: bold;">✗</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td>
+            <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td>
+            <td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td>
+          </tr>
+        `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
+      </table>
     </div>
   `;
 
-  const container = document.getElementById('pdf-content');
-  container.innerHTML = pdfHtml;
-
-  const nombreArchivo = `Asistencia ${grado} ${secLimpia} - ${fechaArchivo} - ${docente}.pdf`;
+  document.getElementById('pdf-content').innerHTML = pdfHtml;
 
   const opt = {
-    margin: 15,
-    filename: nombreArchivo,
+    margin: [10, 10, 10, 10], 
+    filename: `Asistencia_${grado}_${fechaArchivo}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
     jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
     pagebreak: { mode: ['css', 'legacy'] } 
   };
 
   try {
     window.scrollTo(0, 0);
-    await html2pdf().set(opt).from(container).save();
+    await html2pdf().set(opt).from(document.getElementById('pdf-content')).save();
   } catch (error) { alert("❌ Error al generar PDF."); } 
   finally { btn.disabled = false; btn.innerText = "📥 Generar PDF y Guardar Reporte"; }
 }
 
+// --- GUARDAR NUEVO ALUMNO ---
 function cerrarModal() { document.getElementById('modal-alumno').classList.remove('open'); }
 
 async function guardarAlumno() {
@@ -513,14 +505,8 @@ async function guardarAlumno() {
     telefono: document.getElementById('new-telefono').value
   };
   if(!n.nombre || !n.grado) return alert("Faltan datos");
-  
   b.disabled = true; b.innerText = "Subiendo...";
-  try {
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(n) });
-    alert("Guardado exitoso en la nube.");
-    cerrarModal(); 
-    setTimeout(inicializarBaseDatos, 1000);
-  } catch(e) { alert("Error al guardar"); }
+  try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(n) }); alert("Guardado exitoso en la nube."); cerrarModal(); setTimeout(inicializarBaseDatos, 1000); } catch(e) { alert("Error al guardar"); }
   b.disabled = false; b.innerText = "Guardar";
 }
 </script>
