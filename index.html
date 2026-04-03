@@ -166,7 +166,37 @@
 
   <div id="view-subdireccion" class="view-section">
     <div class="panel">
-      <h2 style="color: var(--blue-800); margin-bottom: 10px;">Resumen (Sub-Dirección)</h2>
+      <h2 style="color: var(--blue-800); margin-bottom: 10px;"><button
+  onclick="window.open(
+    'https://docs.google.com/spreadsheets/d/1kjzjLTs4YViqJMPVPvYZjwj9pf-q0h_PNNfCTlA7aWE/edit?usp=sharing',
+    '_blank'
+  )"
+  class="btn-resumen">
+  Resumen (Sub-Dirección)
+</button>
+
+<style>
+  .btn-resumen {
+    font-size: 20px;          /* tamaño del texto */
+    padding: 14px 28px;       /* alto y ancho del botón */
+    cursor: pointer;
+    background-color: #1a73e8;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+
+  .btn-resumen:hover {
+    background-color: #1558b0;
+  }
+
+  .btn-resumen:active {
+    transform: scale(0.97);
+  }
+</style>
+``</h2>
       
       <div id="sub-lista-reportes">
         <div style="padding: 20px; text-align: center;">Cargando reportes...</div>
