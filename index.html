@@ -99,12 +99,12 @@
            style="width:60px; height:auto;">
     </div>
     <label style="text-align: left;">Usuario</label>
-    <input type="text" id="login-username" placeholder="Ingrese su Nombre, invitado Ó 12" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
+    <input type="text" id="login-username" placeholder="Ingrese su Nombre" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
     
     <label style="text-align: left;">Contraseña</label>
     <input type="password" id="login-password" placeholder="***" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid var(--gray-100); border-radius:8px;">
     
-    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">--------- PRESIONE 2 VECES ---------</p>
+    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">---------------------------------------------------------------------------------</p>
     
     <button onclick="handleLoginClick(event)" style="width: 100%; padding: 12px; background: var(--blue-600); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Ingresar</button>
   </div>
@@ -357,7 +357,6 @@ async function chequearMantenimientoNube() {
 }
 
 window.onload = chequearMantenimientoNube;
-
 // --- LÓGICA DE LOGIN Y MULTI-CLIC ---
 let loginClicks = 0;
 let loginTimer;
@@ -367,6 +366,7 @@ function handleLoginClick(e) {
   loginClicks++;
   clearTimeout(loginTimer);
   
+  // Si presiona 4 veces seguidas (Administrador)
   if (loginClicks >= 4) {
     loginClicks = 0;
     let pass = prompt("🔐 Acceso Administrador Sub-Dirección:");
@@ -381,14 +381,22 @@ function handleLoginClick(e) {
     return;
   }
   
+  // El temporizador espera 300 milisegundos para ver si das más clics
   loginTimer = setTimeout(() => {
-    if (loginClicks > 0 && loginClicks < 4) {
-      loginClicks = 0;
+    let clicsRegistrados = loginClicks;
+    loginClicks = 0; // Reiniciamos el contador
+    
+    if (clicsRegistrados === 2) {
+      // Si hizo exactamente 2 clics (Equivalente a escribir "12")
+      document.getElementById("modal-inicio-login").classList.remove('open');
+      document.getElementById("modal-inicio-dropdown").classList.add('open');
+    } 
+    else if (clicsRegistrados === 1 || clicsRegistrados === 3) {
+      // Si hizo 1 clic (o 3 por error), hace el login normal
       ejecutarLogin();
     }
   }, 300); 
 }
-
 function ejecutarLogin() {
   const userStr = document.getElementById("login-username").value.trim().toLowerCase();
   
