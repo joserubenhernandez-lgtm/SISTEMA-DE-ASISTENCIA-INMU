@@ -86,23 +86,26 @@
 <div class="modal-overlay" id="modal-inicio-login">
   <div class="modal">
     <h2 style="color: var(--blue-800); text-align: center; margin-bottom: 5px;">Iniciar Sesión</h2>
-      <div class="panel">
-      <div class="web-logo-container">
-        <img src="logo2.svg" alt="Logo Institucional" class="web-logo" onerror="this.src='logo2.jpg'; this.onerror=null;">
-      </div>
-    <p style="text-align: center; font-size: 14px; color: var(--gray-600); margin-bottom: 20px;">Instituto Nacional de Mercedes Umaña</p>
-<div style="text-align:center;">
-  <img src="logo3.jpg" alt="Logo subInstitucional"
-       onerror="this.src='logo3.jpg'; this.onerror=null;"
-       style="width:60px; height:auto;">
-</div>
-
+    
+    <div class="web-logo-container">
+      <img src="logo2.svg" alt="Logo Institucional" class="web-logo" onerror="this.src='logo2.jpg'; this.onerror=null;">
+    </div>
+    <p style="text-align: center; font-size: 14px; color: var(--gray-600); margin-bottom: 10px;">Instituto Nacional de Mercedes Umaña</p>
+    
+    <div style="text-align:center; margin-bottom: 20px;">
+      <img src="logo3.jpg" alt="Logo subInstitucional"
+           ondblclick="toggleMantenimiento()"
+           onerror="this.src='logo3.jpg'; this.onerror=null;"
+           style="width:60px; height:auto;">
+    </div>
     <label style="text-align: left;">Usuario</label>
     <input type="text" id="login-username" placeholder="Ingrese su Nombre, invitado Ó 12" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
     
     <label style="text-align: left;">Contraseña</label>
-    <input type="password" id="login-password" placeholder="***" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid var(--gray-100); border-radius:8px;">
-        -------------PRESIONE 2 VECES-------------  
+    <input type="password" id="login-password" placeholder="***" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid var(--gray-100); border-radius:8px;">
+    
+    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">--------- PRESIONE 2 VECES ---------</p>
+    
     <button onclick="handleLoginClick(event)" style="width: 100%; padding: 12px; background: var(--blue-600); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Ingresar</button>
   </div>
 </div>
