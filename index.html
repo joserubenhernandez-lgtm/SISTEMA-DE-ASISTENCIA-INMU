@@ -7,6 +7,23 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
+.btn-logout {
+  background-color: var(--red-600);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.3s;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.btn-logout:hover {
+  background-color: #b53a3a;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
   :root {
     --blue-800: #0C447C; --blue-600: #185FA5; --blue-50: #E6F1FB;
     --green-600: #1D9E75; --green-50: #EAF3DE;
@@ -99,12 +116,12 @@
            style="width:60px; height:auto;">
     </div>
     <label style="text-align: left;">Usuario</label>
-    <input type="text" id="login-username" placeholder="Ingrese su Nombre" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
+    <input type="text" id="login-username" placeholder="Ingrese su Nombre, invitado Ó 12" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
     
     <label style="text-align: left;">Contraseña</label>
-    <input type="password" id="login-password" placeholder="***" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid var(--gray-100); border-radius:8px;">
+    <input type="password" id="login-password" placeholder="" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid var(--gray-100); border-radius:8px;">
     
-    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">----------------------------------------------------------------------</p>
+    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">---------------------------------------------------------------</p>
     
     <button onclick="handleLoginClick(event)" style="width: 100%; padding: 12px; background: var(--blue-600); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Ingresar</button>
   </div>
@@ -139,6 +156,11 @@
     <button class="btn-nav" style="background:#BA7517" onclick="pedirPasswordNuevo()">➕ Nuevo Alumno</button>
     <button class="btn-nav" style="background:var(--green-600)" onclick="pedirPasswordSub()">📊 Sub-Dirección</button>
     <button class="btn-nav" style="background:var(--blue-600); display:none;" id="btn-volver-asist" onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
+    <div class="panel" style="margin-top: 20px; background: transparent; box-shadow: none;">
+  <button onclick="cerrarSesion()" class="btn-logout">
+    🚪 Cerrar Sesión
+  </button>
+</div>
   </div>
 </div>
 
@@ -319,6 +341,8 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL2huKwIXPI2xVLo1M_Z7rEaXa3Wdgx6boUFj0CiaSVyVwtOV8HxyShrnxMtzmp0qy/exec";
+const PASS_LOGIN = "89";
+const PASS_ADMIN = "747-8";
 
 let baseDatosAlumnos = [];
 let baseDatosDocentes = [];
@@ -357,6 +381,18 @@ async function chequearMantenimientoNube() {
 }
 
 window.onload = chequearMantenimientoNube;
+
+// Detectar tecla Enter en el formulario de Login
+document.addEventListener('keydown', function(event) {
+  // Verificamos si la tecla presionada es Enter (código 13)
+  if (event.key === 'Enter') {
+    // Si el modal de login está abierto, ejecutamos la función de ingresar
+    if (document.getElementById('modal-inicio-login').classList.contains('open')) {
+      ejecutarLogin();
+    }
+  }
+});
+
 // --- LÓGICA DE LOGIN Y MULTI-CLIC ---
 let loginClicks = 0;
 let loginTimer;
@@ -366,11 +402,10 @@ function handleLoginClick(e) {
   loginClicks++;
   clearTimeout(loginTimer);
   
-  // Si presiona 4 veces seguidas (Administrador)
   if (loginClicks >= 4) {
     loginClicks = 0;
     let pass = prompt("🔐 Acceso Administrador Sub-Dirección:");
-    if (pass === "1234") {
+    if (pass === PASS_ADMIN) {
       document.getElementById("modal-inicio-login").classList.remove('open');
       document.getElementById('header-principal').style.display = 'flex';
       document.getElementById('container-principal').style.display = 'block';
@@ -381,27 +416,38 @@ function handleLoginClick(e) {
     return;
   }
   
-  // El temporizador espera 300 milisegundos para ver si das más clics
   loginTimer = setTimeout(() => {
     let clicsRegistrados = loginClicks;
-    loginClicks = 0; // Reiniciamos el contador
+    loginClicks = 0; 
     
     if (clicsRegistrados === 2) {
-      // Si hizo exactamente 2 clics (Equivalente a escribir "12")
+      // Requerimos contraseña incluso para el atajo
+      const passStr = document.getElementById("login-password").value;
+      if (passStr !== PASS_LOGIN) {
+        alert("❌ Contraseña de acceso incorrecta.");
+        return;
+      }
       document.getElementById("modal-inicio-login").classList.remove('open');
       document.getElementById("modal-inicio-dropdown").classList.add('open');
     } 
     else if (clicsRegistrados === 1 || clicsRegistrados === 3) {
-      // Si hizo 1 clic (o 3 por error), hace el login normal
       ejecutarLogin();
     }
   }, 300); 
 }
+
 function ejecutarLogin() {
   const userStr = document.getElementById("login-username").value.trim().toLowerCase();
+  const passStr = document.getElementById("login-password").value;
   
   if (userStr === "") {
     alert("⚠️ Por favor ingrese un usuario.");
+    return;
+  }
+  
+  // Validar contraseña 89 para todo
+  if (passStr !== PASS_LOGIN) {
+    alert("❌ Contraseña de acceso incorrecta.");
     return;
   }
   
@@ -465,7 +511,7 @@ function desbloquearInterfazMain() {
 
 function pedirPasswordDocente() {
   if(sistemaEnMantenimiento) return;
-  if (prompt("Ingrese contraseña de Administrador:") === "1234") { 
+  if (prompt("Ingrese contraseña de Administrador:") === PASS_ADMIN) { 
     document.getElementById('modal-docente').classList.add('open'); 
   } else { alert("Contraseña incorrecta."); } 
 }
@@ -494,7 +540,7 @@ async function guardarNuevoDocente() {
 // BOTÓN SECRETO (Doble clic en el logo)
 async function toggleMantenimiento() {
   const password = prompt("ADVERTENCIA: ¿Deseas activar/desactivar el Apagón Global en la nube?\nIngresa clave maestra:");
-  if (password !== "747-8") {
+  if (password !== PASS_ADMIN) {
     alert("❌ Clave incorrecta. Acceso Denegado.");
     return;
   }
@@ -517,11 +563,11 @@ async function toggleMantenimiento() {
 // --- SEGURIDAD Y VISTAS ---
 function pedirPasswordSub() { 
   if(sistemaEnMantenimiento) return;
-  if (prompt("Ingrese contraseña de Sub-Dirección:") === "1234") { cambiarVista('subdireccion'); } else { alert("Contraseña incorrecta."); } 
+  if (prompt("Ingrese contraseña de Sub-Dirección:") === PASS_ADMIN) { cambiarVista('subdireccion'); } else { alert("Contraseña incorrecta."); } 
 }
 function pedirPasswordNuevo() { 
   if(sistemaEnMantenimiento) return;
-  if (prompt("Ingrese contraseña de Administrador:") === "1234") { document.getElementById('modal-alumno').classList.add('open'); } else { alert("Contraseña incorrecta."); } 
+  if (prompt("Ingrese contraseña de Administrador:") === PASS_ADMIN) { document.getElementById('modal-alumno').classList.add('open'); } else { alert("Contraseña incorrecta."); } 
 }
 
 function cambiarVista(vista) {
@@ -549,7 +595,6 @@ async function inicializarBaseDatos() {
   selDoc.innerHTML = '<option value="">Descargando lista...</option>';
   
   try {
-    // Pedir alumnos y docentes AL MISMO TIEMPO (Reduce el delay a la mitad)
     const [responseAlu, responseDoc] = await Promise.all([
       fetch(SCRIPT_URL),
       fetch(SCRIPT_URL + "?tipo=lista_docentes")
@@ -687,7 +732,7 @@ function toggleTodos() {
 function accederLimpieza() {
   if(sistemaEnMantenimiento) return;
   const password = prompt("Ingrese la contraseña de administrador:");
-  if (password === "1234") {
+  if (password === PASS_ADMIN) {
     document.getElementById("zona-peligro").style.display = "block";
     alert("⚠️ Acceso concedido. Use con extrema precaución.");
   } else {
@@ -747,6 +792,7 @@ async function generarPDF() {
 
   fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "asistencia", fecha: ahora, grado: grado, seccion: seccion, docente: docente, presentes: presentes.length, ausentes: ausentes.length, m: masc, f: fem }) }).catch(e => console.log("Enviado"));
 
+  // ESTRUCTURA ORIGINAL SIN ERRORES DE CORTE EN ENCABEZADO
   const pdfHtml = `
     <div style="position: relative; background: white; padding: 0;">
       
@@ -858,6 +904,49 @@ async function guardarAlumno() {
   } catch(e) { alert("Error al guardar"); }
   b.disabled = false; b.innerText = "Guardar";
 }
+function cerrarSesion() {
+  if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
+    // 1. Limpiar los campos de texto
+    document.getElementById("login-username").value = "";
+    document.getElementById("login-password").value = "";
+    document.getElementById("docente-nombre").value = "";
+    
+    // 2. Resetear los selectores de grado y sección
+    document.getElementById("grado-select").value = "";
+    document.getElementById("seccion-select").value = "";
+    
+    // 3. Limpiar la lista de alumnos en pantalla
+    document.getElementById("tabla-alumnos").innerHTML = '<div style="padding: 20px; text-align: center; color: #5F5E5A;">Seleccione un grado y una sección.</div>';
+    
+    // 4. Ocultar la interfaz principal y mostrar el login
+    document.getElementById("header-principal").style.display = "none";
+    document.getElementById("container-principal").style.display = "none";
+    document.getElementById("modal-inicio-login").classList.add("open");
+    
+    // 5. Volver a la vista de docente por defecto
+    cambiarVista('docente');
+    
+    window.scrollTo(0, 0);
+  }
+}
+
+// Hacer que Enter funcione en toda la página para el botón principal visible
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const modalLogin = document.getElementById('modal-inicio-login');
+    const modalAlumno = document.getElementById('modal-alumno');
+    const modalDocente = document.getElementById('modal-docente');
+
+    if (modalLogin.classList.contains('open')) {
+      ejecutarLogin();
+    } else if (modalAlumno.classList.contains('open')) {
+      guardarAlumno();
+    } else if (modalDocente.classList.contains('open')) {
+      guardarNuevoDocente();
+    }
+  }
+});
+
 </script>
 </body>
 </html>
