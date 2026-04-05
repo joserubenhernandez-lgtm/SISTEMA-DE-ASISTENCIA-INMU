@@ -114,7 +114,7 @@
     <input type="text" id="login-username" placeholder="Ingrese su Nombre, invitado Ó 12" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
     
     <label style="text-align: left;">Contraseña</label>
-    <input type="password" id="login-password" placeholder="Ingrese 89" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
+    <input type="password" id="login-password" placeholder="" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--gray-100); border-radius:8px;">
     
     <div class="captcha-box">
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -124,7 +124,7 @@
       <div style="font-size: 22px;">🤖</div>
     </div>
     
-    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">--------- PRESIONE 2 VECES PARA MENÚ ---------</p>
+    <p style="text-align: center; font-size: 11px; color: var(--gray-600); margin-bottom: 10px;">-----------------------------------</p>
     
     <button id="btn-ingresar-login" onclick="handleLoginClick(event)" style="width: 100%; padding: 12px; background: var(--blue-600); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Ingresar</button>
   </div>
@@ -424,7 +424,7 @@ function handleLoginClick(e) {
     loginClicks = 0; 
     
     if (clicsRegistrados === 2) {
-      const passStr = document.getElementById("login-password").value;
+      // SOLO VALIDA EL CAPTCHA (Checkbox)
       const isRobotChecked = document.getElementById("login-robot-check").checked;
       
       if (!isRobotChecked) {
@@ -432,18 +432,17 @@ function handleLoginClick(e) {
         return;
       }
       
-      if (passStr !== PASS_LOGIN) {
-        alert("❌ Contraseña de acceso incorrecta.");
-        return;
-      }
+      // AL DAR 2 CLICS Y TENER EL CAPTCHA MARCADO: Pasa directo sin pedir contraseña
       document.getElementById("modal-inicio-login").classList.remove('open');
       document.getElementById("modal-inicio-dropdown").classList.add('open');
     } 
     else if (clicsRegistrados === 1 || clicsRegistrados === 3) {
+      // Al dar 1 clic normal, SÍ evalúa todo (usuario, captcha y contraseña 89)
       ejecutarLogin();
     }
   }, 300); 
 }
+
 
 function ejecutarLogin() {
   const userStr = document.getElementById("login-username").value.trim().toLowerCase();
@@ -806,6 +805,7 @@ async function generarPDF() {
 
   fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "asistencia", fecha: ahora, grado: grado, seccion: seccion, docente: docente, presentes: presentes.length, ausentes: ausentes.length, m: masc, f: fem }) }).catch(e => console.log("Enviado"));
 
+  // ESTRUCTURA DEL PDF
   const pdfHtml = `
     <div style="position: relative; background: white; padding: 0;">
       
@@ -829,12 +829,16 @@ async function generarPDF() {
 
         <div class="html2pdf__page-break"></div>
 
-        <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px;">
+        <div style="position: fixed; top: 20px; left: 20px; z-index: -1; opacity: 0.15;">
+           <img src="logo4.jpg" style="width: 150px; height: auto;" onerror="this.style.display='none';">
+        </div>
+
+        <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 5;">
           <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
           <h3 style="font-size: 16px; color: #2C2C2A; margin-bottom: 5px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
         </div>
         
-        <table style="width: 100%; font-size: 14px; margin-bottom: 20px; border: none;">
+        <table style="width: 100%; font-size: 14px; margin-bottom: 20px; border: none; position: relative; z-index: 5;">
           <tr>
             <td style="text-align: left; width: 33%; vertical-align: top;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Secc:</strong> ${seccion}</td>
             <td style="text-align: center; width: 34%; vertical-align: top;"><strong>Docente:</strong> ${docente}</td>
@@ -842,12 +846,12 @@ async function generarPDF() {
           </tr>
         </table>
         
-        <div style="background-color: transparent; border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <div style="background-color: transparent; border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; position: relative; z-index: 5;">
           <p><strong>Asistencias: ${presentes.length}</strong> | M: <strong>${masc}</strong> | F: <strong>${fem}</strong> | Ausencias: ${ausentes.length}</p>
         </div>
 
-        <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES PRESENTES</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; page-break-before: auto;">
+        <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid; position: relative; z-index: 5;">ESTUDIANTES PRESENTES</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; page-break-before: auto; position: relative; z-index: 5; background-color: rgba(255,255,255,0.8);">
           <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
           ${presentes.length > 0 ? presentes.map(a => `
             <tr style="page-break-inside: avoid;">
@@ -860,8 +864,8 @@ async function generarPDF() {
           `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
         </table>
 
-        <h4 style="color: #E24B4A; border-bottom: 2px solid #E24B4A; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid;">ESTUDIANTES AUSENTES</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px; page-break-before: auto;">
+        <h4 style="color: #E24B4A; border-bottom: 2px solid #E24B4A; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; page-break-after: avoid; position: relative; z-index: 5;">ESTUDIANTES AUSENTES</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px; page-break-before: auto; position: relative; z-index: 5; background-color: rgba(255,255,255,0.8);">
           <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
           ${ausentes.length > 0 ? ausentes.map(a => `
             <tr style="page-break-inside: avoid;">
@@ -874,8 +878,8 @@ async function generarPDF() {
           `).join('') : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
         </table>
         
-        <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; page-break-inside: avoid;">
-          <img src="logo2.svg" style="width: 150px; height: auto;" onerror="this.src='logo2.jpg'; this.onerror=null;">
+        <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; page-break-inside: avoid; position: relative; z-index: 10;">
+          <img src="logo5.jpg" style="width: 150px; height: auto;" onerror="this.style.display='none';">
         </div>
 
       </div>
