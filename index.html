@@ -804,10 +804,11 @@ async function generarPDF() {
 
   fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "asistencia", fecha: ahora, grado: grado, seccion: seccion, docente: docente, presentes: presentes.length, ausentes: ausentes.length, m: masc, f: fem }) }).catch(e => console.log("Enviado"));
 
+  // SE QUITARON LAS REGLAS OVERFLOW Y TRANSFORM QUE CAUSABAN EL ERROR
   const pdfHtml = `
-    <div style="position: relative; background: white; padding: 0; overflow: hidden;">
+    <div style="position: relative; background: white; padding: 0;">
       
-      <div style="position: absolute; top: 350px; left: 50%; transform: translateX(-50%); z-index: 1; opacity: 0.15;">
+      <div style="position: absolute; top: 150px; left: 0; width: 100%; text-align: center; z-index: 1; opacity: 0.15;">
         <img src="logo3.jpg" style="width: 400px; height: auto;" onerror="this.style.display='none';">
       </div>
 
@@ -875,7 +876,7 @@ async function generarPDF() {
           </table>
           
           <div style="text-align: center; margin-top: 50px; padding-top: 40px; border-top: 2px dashed #ddd; page-break-inside: avoid; position: relative; z-index: 10;">
-            <img src="logo5.jpg" style="width: 400px; height: auto; max-width: 100%;" onerror="this.style.display='none';">
+            <img src="logo5.jpg" style="width: 400px; height: auto;" onerror="this.style.display='none';">
           </div>
 
         </div> </div>
@@ -885,8 +886,8 @@ async function generarPDF() {
   const containerHTML = document.getElementById('pdf-content');
   containerHTML.innerHTML = pdfHtml;
 
-  // Pausa para que carguen las imágenes
-  await new Promise(resolve => setTimeout(resolve, 800));
+  // Pausa un poco más larga para asegurar la carga
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
   const opt = {
     margin: 15,
@@ -906,7 +907,6 @@ async function generarPDF() {
     btn.disabled = false; btn.innerText = "📥 Generar PDF y Guardar Reporte"; 
   }
 }
-
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
 
 async function guardarAlumno() {
