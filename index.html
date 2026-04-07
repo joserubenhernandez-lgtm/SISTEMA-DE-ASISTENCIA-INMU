@@ -4,6 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Control de Asistencia INMU - PWA instalable.">
+  <meta name="theme-color" content="#0C447C">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.jpg">
   <title>Registro de Asistencia — INMU</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -58,9 +64,23 @@
         cursor: pointer;
     }
 
+    .web-view .header-logo {
+        width: 100px;
+        height: 100px;
+        padding: 10px;
+    }
+
     .header-titles {
         flex: 1;
         text-align: center;
+    }
+
+    .web-view .header-titles h1 {
+        font-size: 26px;
+    }
+
+    .web-view .header-titles p {
+        font-size: 16px;
     }
 
     .header h1 {
@@ -72,17 +92,43 @@
         display: flex;
         gap: 8px;
         flex-direction: column;
+        align-items: center;
+        padding: 0 10px;
     }
 
     .btn-nav {
         color: white;
         border: none;
-        padding: 8px 12px;
+        padding: 10px 14px;
         border-radius: 6px;
         font-weight: bold;
         cursor: pointer;
-        font-size: 11px;
+        font-size: 12px;
         text-transform: uppercase;
+        text-align: center;
+        min-height: 44px;
+        white-space: normal;
+        width: 100%;
+        max-width: 260px;
+    }
+
+    .header {
+        background-color: var(--blue-800);
+        color: white;
+        padding: 15px 20px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .header-titles {
+        flex: 1 1 220px;
+        text-align: center;
+        min-width: 180px;
     }
 
     .container {
@@ -672,21 +718,17 @@
 <div class="header" id="header-principal" style="display: none;">
   <div style="display: flex; align-items: center;">
     <img src="logo.jpg" alt="Logo INMU" class="header-logo" ondblclick="toggleMantenimiento()"
-         title="Doble clic para administrar sistema" onerror="this.style.display='none'">
+         title="Doble clic para administrar sistema" onerror="this.onerror=null; this.src='logo2.svg';">
   </div>
   <div class="header-titles">
     <h1>Sistema de Control de Asistencia</h1>
     <p>Instituto Nacional de Mercedes Umaña</p>
   </div>
   <div class="btn-group-nav">
-    <button class="btn-nav" style="background:#5F5E5A" onclick="pedirPasswordDocente()">👨‍🏫 Añadir
-      Docente</button>
-    <button class="btn-nav" style="background:#BA7517" onclick="pedirPasswordNuevo()">➕ Nuevo Alumno</button>
-    <button class="btn-nav" style="background:var(--green-600)" onclick="pedirPasswordSub()">📊
-      Sub-Dirección</button>
-    <button class="btn-nav" style="background:black; color:white;" onclick="mostrarResumenDelDia()">Ver resumen del día</button>
-    <button class="btn-nav" style="background:var(--blue-600); display:none;" id="btn-volver-asist"
-            onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
+    <button class="btn-nav" style="background:#4B77FF; color:white;" onclick="mostrarNotificaciones()">🔔 Notificaciones</button>
+    <button id="btn-install-pwa" class="btn-nav" style="background:#0C447C; display:none;" onclick="mostrarInstallPrompt()">📥 Instalar app</button>
+    <button class="btn-nav" style="background:var(--blue-600);" onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
+    <button class="btn-nav" style="background:#0E6EB8;" onclick="mostrarResumenDelDia()">📊 Ver resumen del día</button>
   </div>
 </div>
 
@@ -760,16 +802,21 @@
         <button class="btn-generate" id="btn-pdf-generate" onclick="generarPDF()">📥 Generar PDF y Guardar
           Reporte</button>
 
-          
+
         <!-- ══ NUEVO BOTÓN VER REPORTES PDF ══ -->
         <button id="btn-ver-reportes" class="btn-ver-reportes" onclick="abrirVisorReportes()">📂 Ver Reportes PDF</button>
       </div>
     </div>
 
-        <button onclick="cerrarSesion()" class="btn-logout">
-          🚪 Cerrar Sesión Segura
-        </button>
+    <button onclick="cerrarSesion()" class="btn-logout">
+      🚪 Cerrar Sesión Segura
+    </button>
 
+    <div style="margin-top: 20px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <button class="btn-nav" style="background:#5F5E5A; max-width: 260px; width:100%;" onclick="pedirPasswordDocente()">👨‍🏫 Añadir Docente</button>
+      <button class="btn-nav" style="background:#BA7517; max-width: 260px; width:100%;" onclick="pedirPasswordNuevo()">➕ Nuevo Alumno</button>
+      <button class="btn-nav" style="background:var(--green-600); max-width: 260px; width:100%;" onclick="pedirPasswordSub()">📊 Sub-Dirección</button>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════
@@ -1075,22 +1122,28 @@
   const PASS_LOGIN = "89";
   const PASS_ADMIN = "747-8";
 
-  const ES_ANDROID_APP = typeof AndroidPDF !== 'undefined' && AndroidPDF && typeof AndroidPDF.leerPDFBase64 === 'function' && typeof AndroidStorage !== 'undefined' && AndroidStorage;
+  const ES_ANDROID_APP = typeof AndroidStorage !== 'undefined' && AndroidStorage && typeof AndroidStorage.get === 'function';
 
   function esAppAndroid() {
       return ES_ANDROID_APP;
   }
 
   function actualizarUISegunPlataforma() {
+      const installButton = document.getElementById('btn-install-pwa');
       if (!esAppAndroid()) {
+          document.body.classList.add('web-view');
           const btnExaminar = document.getElementById('btn-seleccionar-carpeta-pdf');
           if (btnExaminar) btnExaminar.style.display = 'none';
           const btnVerReportes = document.getElementById('btn-ver-reportes');
           if (btnVerReportes) btnVerReportes.style.display = 'none';
+          if (installButton) installButton.style.display = 'none';
+      } else {
+          document.body.classList.remove('web-view');
+          if (installButton) installButton.style.display = 'none';
       }
   }
 
-  let baseDatosAlumnos = []; 
+  let baseDatosAlumnos = [];
   let docentesStatus = {}; // Estados de docentes: online/offline
   let carpetaPDFUri = null;
   let baseDatosDocentes = [];
@@ -2337,6 +2390,158 @@
       mostrarModalListado(html);
   }
 
+  function puedeUsarNotificacionesWeb() {
+      return 'Notification' in window;
+  }
+
+  async function pedirPermisoNotificacionesWeb() {
+      if (!puedeUsarNotificacionesWeb()) return false;
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') return false;
+      const permiso = await Notification.requestPermission();
+      return permiso === 'granted';
+  }
+
+  function mostrarNotificaciones() {
+      if (esAppAndroid() && typeof AndroidNotification !== 'undefined') {
+          const now = new Date();
+          const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+          let html = '<h3 style="color: var(--blue-800); text-align: center; margin-bottom: 20px;">Notificaciones</h3>';
+          html += '<p style="text-align:center; color:var(--gray-700); margin-bottom:15px;">Seleccione la hora a la que quiere recibir el recordatorio diario.</p>';
+          html += `<div style="display:flex; justify-content:center; margin-bottom: 15px;"><input id="notificacion-hora" type="time" value="${defaultTime}" style="padding:12px; font-size:16px; border-radius:10px; border:1px solid #D1D5DB; width:180px;" /></div>`;
+          html += '<div style="display:grid; gap:10px; grid-template-columns:1fr 1fr; margin-top:10px;">';
+          html += '<button onclick="programarNotificacion()" style="padding:12px; background:#16A34A; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Programar</button>';
+          html += '<button onclick="cancelarNotificacion()" style="padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Cancelar</button>';
+          html += '</div>';
+          html += '<p style="text-align:center; color:var(--gray-600); margin-top:15px;">Solo se enviarán notificaciones de lunes a viernes. Sábado y domingo no recibirá recordatorios.</p>';
+          mostrarModalListado(html);
+          return;
+      }
+
+      if (!puedeUsarNotificacionesWeb()) {
+          mostrarModalListado(
+              '<h3 style="color: var(--blue-800); text-align: center; margin-bottom: 20px;">Notificaciones</h3>' +
+              '<p style="text-align:center; color:var(--gray-700); margin-bottom:20px;">Su navegador no soporta notificaciones web. Use la app Android para recibir recordatorios mientras el navegador está cerrado.</p>'
+          );
+          return;
+      }
+
+      const horaGuardada = obtenerHoraProgramada();
+      const now = new Date();
+      const defaultTime = horaGuardada || `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      let html = '<h3 style="color: var(--blue-800); text-align: center; margin-bottom: 20px;">Notificaciones</h3>';
+      html += `<p style="text-align:center; color:var(--gray-700); margin-bottom:15px;">${horaGuardada ? 'Hora programada: ' + horaGuardada : 'Seleccione la hora a la que quiere recibir el recordatorio diario.'}</p>`;
+      html += `<div style="display:flex; justify-content:center; margin-bottom: 15px;"><input id="notificacion-hora" type="time" value="${defaultTime}" style="padding:12px; font-size:16px; border-radius:10px; border:1px solid #D1D5DB; width:180px;" /></div>`;
+      html += '<div style="display:grid; gap:10px; grid-template-columns:1fr 1fr; margin-top:10px;">';
+      html += '<button onclick="programarNotificacion()" style="padding:12px; background:#16A34A; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Programar</button>';
+      html += '<button onclick="cancelarNotificacion()" style="padding:12px; background:#DC2626; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Cancelar</button>';
+      html += '</div>';
+      html += '<p style="text-align:center; color:var(--gray-600); margin-top:15px;">Solo se enviarán notificaciones de lunes a viernes. Sábado y domingo no recibirá recordatorios.</p>';
+      mostrarModalListado(html);
+  }
+
+  async function programarNotificacion() {
+      const hora = document.getElementById('notificacion-hora').value;
+      if (!hora) return alert('Seleccione una hora para la notificación.');
+
+      if (esAppAndroid() && typeof AndroidNotification !== 'undefined') {
+          const [h, m] = hora.split(':').map(Number);
+          const now = new Date();
+          const schedule = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+          if (schedule <= now) schedule.setDate(schedule.getDate() + 1);
+          const payload = {
+              title: 'Recordatorio de Asistencia INMU',
+              message: 'Toca para posponer 1 hora o finalizar hasta el siguiente día hábil.',
+              originalHour: h,
+              originalMinute: m
+          };
+          AndroidNotification.initNotificationChannel();
+          AndroidNotification.requestNotificationPermission();
+          AndroidNotification.scheduleNotification(schedule.getTime().toString(), JSON.stringify(payload), 1001);
+          mostrarModalListado(`<h3 style="color: var(--blue-800); text-align:center;">Notificación programada</h3><p style="text-align:center; color:var(--gray-700);">Se enviará un recordatorio diario a las ${hora} durante los días hábiles (lunes a viernes).</p>`);
+          return;
+      }
+
+      if (!puedeUsarNotificacionesWeb()) return alert('Su navegador no soporta notificaciones web.');
+      const permiso = await pedirPermisoNotificacionesWeb();
+      if (!permiso) return alert('Permita las notificaciones en el navegador para recibir recordatorios.');
+
+      guardarHoraProgramada(hora);
+      programarNotificacionWeb(hora);
+      mostrarModalListado(`<h3 style="color: var(--blue-800); text-align:center;">Notificación web programada</h3><p style="text-align:center; color:var(--gray-700);">Se enviará un recordatorio diario a las ${hora} mientras la página esté abierta.</p>`);
+  }
+
+  function cancelarNotificacion() {
+      if (esAppAndroid() && typeof AndroidNotification !== 'undefined') {
+          AndroidNotification.cancelNotification(1001);
+          mostrarModalListado('<h3 style="color: var(--red-600); text-align:center;">Notificaciones detenidas</h3><p style="text-align:center; color:var(--gray-700);">No recibirá más recordatorios hasta que programe otra hora.</p>');
+          return;
+      }
+
+      cancelarNotificacionWeb();
+      mostrarModalListado('<h3 style="color: var(--red-600); text-align:center;">Notificaciones detenidas</h3><p style="text-align:center; color:var(--gray-700);">No recibirá más recordatorios hasta que programe otra hora.</p>');
+  }
+
+  function cancelarNotificacionWeb() {
+      localStorage.removeItem('notificacion-programada-hora');
+      if (window.notificacionTimeoutWeb) {
+          clearTimeout(window.notificacionTimeoutWeb);
+          window.notificacionTimeoutWeb = null;
+      }
+  }
+
+  function guardarHoraProgramada(hora) {
+      localStorage.setItem('notificacion-programada-hora', hora);
+  }
+
+  function obtenerHoraProgramada() {
+      return localStorage.getItem('notificacion-programada-hora');
+  }
+
+  function programarNotificacionWeb(hora) {
+      if (!puedeUsarNotificacionesWeb()) return;
+      if (Notification.permission !== 'granted') return;
+      if (window.notificacionTimeoutWeb) {
+          clearTimeout(window.notificacionTimeoutWeb);
+      }
+      const [h, m] = hora.split(':').map(Number);
+      const now = new Date();
+      const siguiente = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+      if (siguiente <= now) siguiente.setDate(siguiente.getDate() + 1);
+      const delay = siguiente.getTime() - now.getTime();
+      window.notificacionTimeoutWeb = setTimeout(() => {
+          mostrarNotificacionWeb(hora);
+          programarNotificacionWeb(hora);
+      }, delay);
+  }
+
+  function mostrarNotificacionWeb(hora) {
+      try {
+          new Notification('Recordatorio de Asistencia INMU', {
+              body: `Este es un recordatorio de asistencia para las ${hora}.`,
+              icon: 'logo.jpg',
+              tag: 'asistencia-inmu',
+              renotify: true
+          });
+      } catch (e) {
+          console.log('Error al mostrar notificación web:', e);
+      }
+  }
+
+  async function iniciarNotificacionesWeb() {
+      const hora = obtenerHoraProgramada();
+      if (!hora) return;
+      if (!puedeUsarNotificacionesWeb()) return;
+      if (Notification.permission === 'granted') {
+          programarNotificacionWeb(hora);
+      } else if (Notification.permission === 'default') {
+          const permiso = await pedirPermisoNotificacionesWeb();
+          if (permiso) {
+              programarNotificacionWeb(hora);
+          }
+      }
+  }
+
   function mostrarAsistentesHoy() {
       console.log('Ejecutando mostrarAsistentesHoy');
       const hoy = new Date();
@@ -2435,7 +2640,13 @@
 
   async function actualizarStatusDocente(docente, status) {
       try {
-          await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: "update_docente_status", docente: docente, status: status }) });
+          const data = {
+              tipo_post: "update_docente_status",
+              docente: docente,
+              status: status,
+              timestamp: Date.now()  // Timestamp actual en milisegundos
+          };
+          await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
       } catch (e) {
           console.log('Error actualizando status:', e);
       }
@@ -2470,10 +2681,77 @@
   // Iniciar radar de status
   setInterval(obtenerStatusDocentes, 10000); // Cada 10 segundos
 
+  // Sistema de detección de inactividad
+  let ultimaActividad = Date.now();
+  const TIEMPO_INACTIVIDAD = 5 * 60 * 1000; // 5 minutos en milisegundos
+
+  function actualizarUltimaActividad() {
+      ultimaActividad = Date.now();
+      // Si hay usuario logueado, actualizar status a online
+      if (usuarioActual && usuarioActual.trim()) {
+          actualizarStatusDocente(usuarioActual, "online");
+      }
+  }
+
+  function verificarInactividad() {
+      const ahora = Date.now();
+      if (ahora - ultimaActividad > TIEMPO_INACTIVIDAD) {
+          if (usuarioActual && usuarioActual.trim()) {
+              actualizarStatusDocente(usuarioActual, "offline");
+          }
+      }
+  }
+
+  // Eventos de actividad del usuario
+  document.addEventListener('click', actualizarUltimaActividad);
+  document.addEventListener('keydown', actualizarUltimaActividad);
+  document.addEventListener('mousemove', actualizarUltimaActividad);
+  document.addEventListener('scroll', actualizarUltimaActividad);
+  document.addEventListener('touchstart', actualizarUltimaActividad);
+
+  // Verificar inactividad cada minuto
+  setInterval(verificarInactividad, 60000);
+
   // Al cargar, obtener status inicial
   window.addEventListener('load', () => {
       obtenerStatusDocentes();
+      actualizarUltimaActividad(); // Inicializar actividad
+      actualizarUISegunPlataforma();
+      iniciarNotificacionesWeb();
   });
+
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.log('Error registrando Service Worker:', err));
+  }
+
+  let deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      const installButton = document.getElementById('btn-install-pwa');
+      if (installButton) {
+          installButton.style.display = 'block';
+      }
+  });
+
+  async function mostrarInstallPrompt() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const choiceResult = await deferredInstallPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+          console.log('Usuario aceptó instalar la PWA.');
+      } else {
+          console.log('Usuario rechazó instalar la PWA.');
+      }
+      deferredInstallPrompt = null;
+      const installButton = document.getElementById('btn-install-pwa');
+      if (installButton) {
+          installButton.style.display = 'none';
+      }
+  }
 
   function mostrarModalListado(html) {
       // Eliminar overlay previo si existe
