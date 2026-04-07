@@ -727,6 +727,7 @@
   <div class="btn-group-nav">
     <button class="btn-nav" style="background:#4B77FF; color:white;" onclick="mostrarNotificaciones()">🔔 Notificaciones</button>
     <button id="btn-install-pwa" class="btn-nav" style="background:#0C447C; display:none;" onclick="mostrarInstallPrompt()">📥 Instalar app</button>
+    <span id="install-pwa-helper" style="display:none; align-self:center; font-size:12px; color:#F8F9FA; margin-left:10px; max-width:400px;"></span>
     <button class="btn-nav" style="background:var(--blue-600);" onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
     <button class="btn-nav" style="background:#0E6EB8;" onclick="mostrarResumenDelDia()">📊 Ver resumen del día</button>
   </div>
@@ -1130,6 +1131,7 @@
 
   function actualizarUISegunPlataforma() {
       const installButton = document.getElementById('btn-install-pwa');
+      const installHelper = document.getElementById('install-pwa-helper');
       if (!esAppAndroid()) {
           document.body.classList.add('web-view');
           const btnExaminar = document.getElementById('btn-seleccionar-carpeta-pdf');
@@ -1137,9 +1139,20 @@
           const btnVerReportes = document.getElementById('btn-ver-reportes');
           if (btnVerReportes) btnVerReportes.style.display = 'none';
           if (installButton) installButton.style.display = 'none';
+          if (installHelper) {
+              if (window.location.protocol === 'file:') {
+                  installHelper.textContent = 'No se puede instalar la PWA desde un archivo local. Usa localhost o un servidor HTTPS.';
+              } else if (!('serviceWorker' in navigator)) {
+                  installHelper.textContent = 'Tu navegador no soporta Service Worker; la instalación PWA no está disponible.';
+              } else {
+                  installHelper.textContent = 'Si la página puede instalarse, aparecerá el botón de instalar aquí.';
+              }
+              installHelper.style.display = 'inline-block';
+          }
       } else {
           document.body.classList.remove('web-view');
           if (installButton) installButton.style.display = 'none';
+          if (installHelper) installHelper.style.display = 'none';
       }
   }
 
@@ -2732,8 +2745,13 @@
       event.preventDefault();
       deferredInstallPrompt = event;
       const installButton = document.getElementById('btn-install-pwa');
+      const installHelper = document.getElementById('install-pwa-helper');
       if (installButton) {
           installButton.style.display = 'block';
+      }
+      if (installHelper) {
+          installHelper.textContent = 'Pulsa el botón para instalar INMU como aplicación en tu dispositivo.';
+          installHelper.style.display = 'inline-block';
       }
   });
 
@@ -2741,13 +2759,16 @@
       if (!deferredInstallPrompt) return;
       deferredInstallPrompt.prompt();
       const choiceResult = await deferredInstallPrompt.userChoice;
+      const installButton = document.getElementById('btn-install-pwa');
+      const installHelper = document.getElementById('install-pwa-helper');
       if (choiceResult.outcome === 'accepted') {
           console.log('Usuario aceptó instalar la PWA.');
+          if (installHelper) installHelper.textContent = 'La app se instalará. Si no ves nada, revisa la bandeja del navegador.';
       } else {
           console.log('Usuario rechazó instalar la PWA.');
+          if (installHelper) installHelper.textContent = 'Instalación cancelada. Puedes intentar nuevamente más tarde.';
       }
       deferredInstallPrompt = null;
-      const installButton = document.getElementById('btn-install-pwa');
       if (installButton) {
           installButton.style.display = 'none';
       }
