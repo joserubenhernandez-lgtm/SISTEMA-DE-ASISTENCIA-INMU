@@ -9,6 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="logo.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="logo.jpg">
   <title>Registro de Asistencia — INMU</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -1826,15 +1827,16 @@
           stats.innerHTML = generarHTMLResumen(tGeneral, tM, tF, 0, 0, 0, 0, 0); return;
       }
 
-      let html = `<table class="sub-table"><tr style="background-color: var(--blue-800); color: white;"><th>Fecha</th><th>Grado/Secc</th><th>Docente</th><th style="text-align:center;">M</th><th style="text-align:center;">F</th><th style="text-align:center;">Ausentes</th><th style="text-align:center;">Total Asist.</th></tr>`;
-      let sumaPres = 0, sumAus = 0, sumM = 0, sumF = 0;
+      let html = `<table class="sub-table"><tr style="background-color: var(--blue-800); color: white;"><th>Fecha</th><th>Grado/Secc</th><th>Docente</th><th style="text-align:center;">M</th><th style="text-align:center;">F</th><th style="text-align:center;">Ausentes</th><th style="text-align:center;">Permisos</th><th style="text-align:center;">Total Asist.</th></tr>`;
+      let sumaPres = 0, sumAus = 0, sumM = 0, sumF = 0, sumPerm = 0;
 
       [...reportes].reverse().slice(0, 100).forEach(r => {
           const fechaFormateada = new Date(r.fecha).toLocaleDateString('es-ES');
           const mValue = `<button class="detalle-estudiantes-btn" data-tipo="M" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; color:var(--blue-600); text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Masculinos">${r.m || 0}</button>`;
           const fValue = `<button class="detalle-estudiantes-btn" data-tipo="F" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; color:#9D234C; text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Femeninos">${r.f || 0}</button>`;
-          const ausentesValue = `<button class="detalle-estudiantes-btn" data-tipo="AUSENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; font-weight:bold; color:#E24B4A; text-decoration:underline; cursor:pointer;" title="Ver Ausentes (Estimado)">${r.ausentes || 0}</button>`;
-          const presentesValue = `<button class="detalle-estudiantes-btn" data-tipo="PRESENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; font-weight:bold; color:#1D9E75; text-decoration:underline; cursor:pointer;" title="Ver Presentes (Estimado)">${r.presentes || 0}</button>`;
+          const ausentesValue = `<button class="detalle-estudiantes-btn" data-tipo="AUSENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; font-weight:bold; color:#E24B4A; text-decoration:underline; cursor:pointer;" title="Ver Ausentes">${r.ausentes || 0}</button>`;
+          const permisosValue = `<button class="detalle-estudiantes-btn" data-tipo="PERMISOS" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; font-weight:bold; color:#F39C12; text-decoration:underline; cursor:pointer;" title="Ver Permisos">${r.permisos || 0}</button>`;
+          const presentesValue = `<button class="detalle-estudiantes-btn" data-tipo="PRESENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" style="background:none; border:none; font-weight:bold; color:#1D9E75; text-decoration:underline; cursor:pointer;" title="Ver Presentes">${r.presentes || 0}</button>`;
           html += `<tr>
               <td>${fechaFormateada}</td>
               <td>${r.grado} ${r.seccion}</td>
@@ -1842,12 +1844,13 @@
               <td style="text-align:center;">${mValue}</td>
               <td style="text-align:center;">${fValue}</td>
               <td style="text-align:center;">${ausentesValue}</td>
+              <td style="text-align:center;">${permisosValue}</td>
               <td style="text-align:center;">${presentesValue}</td>
           </tr>`;
-          sumaPres += parseInt(r.presentes) || 0; sumAus += parseInt(r.ausentes) || 0; sumM += parseInt(r.m) || 0; sumF += parseInt(r.f) || 0;
+          sumaPres += parseInt(r.presentes) || 0; sumAus += parseInt(r.ausentes) || 0; sumM += parseInt(r.m) || 0; sumF += parseInt(r.f) || 0; sumPerm += parseInt(r.permisos) || 0;
       });
       container.innerHTML = html + `</table>`;
-      stats.innerHTML = generarHTMLResumen(tGeneral, tM, tF, sumaPres, sumAus, 0, sumM, sumF);
+      stats.innerHTML = generarHTMLResumen(tGeneral, tM, tF, sumaPres, sumAus, sumPerm, sumM, sumF);
   }
 
   function generarHTMLResumen(tGeneral, tM, tF, sPres, sAus, sPerm, sM, sF) {
@@ -3002,6 +3005,9 @@
           } else if (tipo === 'AUSENTES') {
               lista = registro.ausentes_lista || [];
               titulo = `Ausentes: ${lista.length}`;
+          } else if (tipo === 'PERMISOS') {
+              lista = registro.permisos_lista || [];
+              titulo = `Permisos: ${lista.length}`;
           }
 
           if (lista.length === 0) {
