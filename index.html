@@ -2197,8 +2197,7 @@
   }
 
   function construirNombreArchivo(nombreBase, version) {
-      const versionLabel = `V1.${String(version - 1).padStart(2, '0')}`;
-      return { nombreArchivo: `${nombreBase} - ${versionLabel}.pdf`, nombreBase, sufijoVersion: versionLabel };
+      return { nombreArchivo: `${nombreBase} - V1.00.pdf`, nombreBase, sufijoVersion: 'V1.00' };
   }
 
   function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral }) {
