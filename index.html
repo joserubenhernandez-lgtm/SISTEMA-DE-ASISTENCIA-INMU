@@ -1832,11 +1832,11 @@
 
       [...reportes].reverse().slice(0, 100).forEach(r => {
           const fechaFormateada = new Date(r.fecha).toLocaleDateString('es-ES');
-          const mValue = `<button class="detalle-estudiantes-btn" data-tipo="M" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${encodeURIComponent(r.fecha)}" style="background:none; border:none; color:var(--blue-600); text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Masculinos">${r.m || 0}</button>`;
-          const fValue = `<button class="detalle-estudiantes-btn" data-tipo="F" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${encodeURIComponent(r.fecha)}" style="background:none; border:none; color:#9D234C; text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Femeninos">${r.f || 0}</button>`;
-          const ausentesValue = `<button class="detalle-estudiantes-btn" data-tipo="AUSENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${encodeURIComponent(r.fecha)}" style="background:none; border:none; font-weight:bold; color:#E24B4A; text-decoration:underline; cursor:pointer;" title="Ver Ausentes">${r.ausentes || 0}</button>`;
-          const permisosValue = `<button class="detalle-estudiantes-btn" data-tipo="PERMISOS" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${encodeURIComponent(r.fecha)}" style="background:none; border:none; font-weight:bold; color:#F39C12; text-decoration:underline; cursor:pointer;" title="Ver Permisos">${r.permisos || 0}</button>`;
-          const presentesValue = `<button class="detalle-estudiantes-btn" data-tipo="PRESENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${encodeURIComponent(r.fecha)}" style="background:none; border:none; font-weight:bold; color:#1D9E75; text-decoration:underline; cursor:pointer;" title="Ver Presentes">${r.presentes || 0}</button>`;
+          const mValue = `<button class="detalle-estudiantes-btn" data-tipo="M" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${r.fecha}" style="background:none; border:none; color:var(--blue-600); text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Masculinos">${r.m || 0}</button>`;
+          const fValue = `<button class="detalle-estudiantes-btn" data-tipo="F" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${r.fecha}" style="background:none; border:none; color:#9D234C; text-decoration:underline; font-weight:bold; cursor:pointer;" title="Ver Femeninos">${r.f || 0}</button>`;
+          const ausentesValue = `<button class="detalle-estudiantes-btn" data-tipo="AUSENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${r.fecha}" style="background:none; border:none; font-weight:bold; color:#E24B4A; text-decoration:underline; cursor:pointer;" title="Ver Ausentes">${r.ausentes || 0}</button>`;
+          const permisosValue = `<button class="detalle-estudiantes-btn" data-tipo="PERMISOS" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${r.fecha}" style="background:none; border:none; font-weight:bold; color:#F39C12; text-decoration:underline; cursor:pointer;" title="Ver Permisos">${r.permisos || 0}</button>`;
+          const presentesValue = `<button class="detalle-estudiantes-btn" data-tipo="PRESENTES" data-grado="${r.grado}" data-seccion="${r.seccion}" data-docente="${r.docente}" data-fecha="${r.fecha}" style="background:none; border:none; font-weight:bold; color:#1D9E75; text-decoration:underline; cursor:pointer;" title="Ver Presentes">${r.presentes || 0}</button>`;
           html += `<tr>
               <td>${fechaFormateada}</td>
               <td>${r.grado} ${r.seccion}</td>
@@ -3096,7 +3096,10 @@
           const grado = btn.dataset.grado;
           const seccion = btn.dataset.seccion;
           const docente = btn.dataset.docente || '';
-          const fecha = btn.dataset.fecha || '';
+          let fecha = btn.dataset.fecha || '';
+          if (fecha && fecha.indexOf('%') !== -1) {
+              try { fecha = decodeURIComponent(fecha); } catch (e) { /* ignore */ }
+          }
           if (tipo && grado && seccion) {
               mostrarDetalleEstudiantes(tipo, grado, seccion, docente, fecha);
           }
