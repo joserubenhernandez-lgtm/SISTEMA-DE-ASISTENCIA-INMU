@@ -1873,6 +1873,8 @@
     <button onclick="mostrarListadoPermisos()" style="padding:8px 14px;background:#F39C12;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">
       ⚠ Con permiso (${sPerm})
     </button>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">
     <button onclick="abrirPanelActualizarAsistencia()" style="padding:8px 14px;background:#185FA5;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">
       🔄 Actualizar asistencia
     </button>
@@ -1924,7 +1926,7 @@
               onclick="toggleFila(event, ${index})"
               ondblclick="iniciarPermisoPorDobleClick(${index}); event.stopPropagation();">
               <div class="checkbox-wrapper"><input type="checkbox" id="chk-${index}" value="${index}" checked></div>
-              <div id="nombre-alumno-${index}" style="font-weight: 500; font-size:13px; cursor:pointer;" title="Triple clic para ver detalle" onclick="handleNombreAlumnoClick(event, ${index})">${alumno.nombre}</div>
+              <div id="nombre-alumno-${index}" style="font-weight: 500; font-size:13px; cursor:pointer;" title="Triple clic para ver detalle; ${alumno.nie}; ${alumno.sexo}; ${alumno.telefono || 'N/A'}" onclick="handleNombreAlumnoClick(event, ${index})">${alumno.nombre}</div>
               <div><span class="badge ${alumno.sexo.toLowerCase()}">${alumno.sexo}</span></div>
               <div style="font-size: 13px;">${alumno.nie}</div>
               <div style="font-size: 13px;">${alumno.telefono || 'N/A'}</div>
@@ -2182,23 +2184,21 @@
 
       // Obtener estudiantes en peligro
       let estudiantesPeligro = [];
+      let reprobados = [];
       try {
           const responsePeligro = await fetch(`${SCRIPT_URL}?tipo=estudiantes_peligro&grado=${grado}&seccion=${seccion}`);
           estudiantesPeligro = await responsePeligro.json();
+          // Separar en reprobados (>=30) y en peligro (28-29)
+          reprobados = estudiantesPeligro.filter(e => e.conteo >= 30);
+          const enPeligro = estudiantesPeligro.filter(e => e.conteo >= 28 && e.conteo < 30);
+          estudiantesPeligro = [...reprobados, ...enPeligro];
       } catch (e) {
           console.log('Error obteniendo estudiantes en peligro:', e);
       }
 
-      // Agregar mensajes de peligro a la observación general
-      let obsConPeligro = obsGeneral;
-      if (estudiantesPeligro.length > 0) {
-          const mensajes = estudiantesPeligro.map(e => `El estudiante ${e.nombre} está en peligro por inasistencia (30+ ausencias sin justificar).`).join(' ');
-          obsConPeligro = (obsGeneral ? obsGeneral + ' ' : '') + mensajes;
-      }
-
       const pdfHtml = generarHTMLParaPDF({
           grado, seccion, docente, fechaStr, secLimpia,
-          presentes, ausentes, permisos, masc, fem, obsGeneral: obsConPeligro
+          presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados, estudiantesPeligro
       });
 
       const containerHTML = document.getElementById('pdf-content');
@@ -2252,7 +2252,7 @@
       return { nombreArchivo: `${nombreBase} - V1.00.pdf`, nombreBase, sufijoVersion: 'V1.00' };
   }
 
-  function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral }) {
+  function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [] }) {
       return `
 <div style="position: relative; background: white; padding: 0;">
   <div style="position: absolute; top: 150px; left: 0; width: 100%; text-align: center; z-index: 1; opacity: 0.15;">
@@ -2309,9 +2309,21 @@
         ${permisos.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #F39C12; font-weight: bold;">⚠</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px; font-size:11px;">${a.justificante || 'Sin justificante'}</td></tr>`).join('')}
       </table>
       ` : ''}
+      ${reprobados.length > 0 ? `
+      <h4 style="color: var(--red-600); border-bottom: 3px solid var(--red-600); padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; text-transform: uppercase;">🔴 ESTUDIANTES REPROBADOS (>= 30 AUSENCIAS)</h4>
+      <div style="background-color: rgba(183,28,28,0.08); border-left: 5px solid var(--red-600); padding: 12px; border-radius: 6px; margin-bottom: 25px;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${reprobados.map(r => `<li style="margin-bottom: 8px; padding: 8px; background: white; border-left: 3px solid var(--red-600); padding-left: 10px;"><strong style="color: var(--red-600);">${r.nombre}</strong><br><small style="color: #666;">NIE: ${r.nie || 'N/A'} | Ausencias: <strong style="color: var(--red-600);">${r.conteo}</strong></small></li>`).join('')}
+        </ul>
+      </div>
+      ` : ''}
       <div style="background-color: rgba(255,255,255,0.9); border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
-        <strong>Observación General:</strong><br>
-        <div style="margin-top: 8px; min-height: 40px; border: 1px solid #ddd; padding: 8px; background-color: white;">${obsGeneral || 'Sin observaciones'}</div>
+        <strong>📝 Observación General:</strong><br>
+        <div style="margin-top: 8px; min-height: 40px; border: 1px solid #ddd; padding: 8px; background-color: white; line-height: 1.6;">
+          <ul style="list-style:none; padding:0; margin:0;">
+            ${obsGeneral ? `<li style="margin-bottom:6px; padding:4px 0; border-bottom:1px solid #eee;">• ${obsGeneral.split(';').map(s => s.trim()).filter(s => s).join('</li><li style="margin-bottom:6px; padding:4px 0; border-bottom:1px solid #eee;">• ')}</li>` : '<li style="color:#999;">Sin observaciones</li>'}
+          </ul>
+        </div>
       </div>
       <div style="text-align: center; margin-top: 50px; padding-top: 40px; border-top: 2px dashed #ddd; page-break-inside: avoid;">
         <img src="logo5.jpg" crossorigin="anonymous" style="width: 400px; height: auto;" onerror="this.style.display='none';">
@@ -2592,12 +2604,17 @@
           const cont = document.getElementById('obs-grado-contenido');
           if (cont) {
               let htmlObs = data.observacion
-                  ? `<em>${data.observacion}</em><br><small style="color:var(--gray-600);">— ${data.docente || ''} (${data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES') : ''})</small>`
-                  : '<span style="color:var(--gray-600);">Sin observación registrada para hoy.</span>';
+                  ? `<div style="margin-bottom:10px;"><strong>Observación General:</strong><br><em style="color:#333;">${data.observacion}</em><br><small style="color:var(--gray-600);">— ${data.docente || ''} (${data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES') : ''})</small></div>`
+                  : '<div style="margin-bottom:10px;"><span style="color:var(--gray-600);">Sin observación registrada para hoy.</span></div>';
               
               if (estudiantesPeligro.length > 0) {
-                  const mensajes = estudiantesPeligro.map(e => `<br><strong style="color:var(--red-600);">⚠ El estudiante ${e.nombre} está en peligro por inasistencia (30+ ausencias sin justificar).</strong>`).join('');
-                  htmlObs += mensajes;
+                  htmlObs += '<div style="margin-top:10px;"><strong style="color:var(--red-600);">⚠️ Estudiantes en Riesgo:</strong><ul style="margin:5px 0 0 20px;padding:0;">';
+                  estudiantesPeligro.forEach(e => {
+                      const estado = e.conteo >= 30 ? 'REPROBADO' : 'EN PELIGRO';
+                      const colorRiesgo = e.conteo >= 30 ? 'var(--red-600)' : 'var(--amber-600)';
+                      htmlObs += `<li style="margin:4px 0; color:${colorRiesgo}; font-weight:bold;">⚠️ ${e.nombre} — ${estado} (${e.conteo} ausencias)</li>`;
+                  });
+                  htmlObs += '</ul></div>';
               }
               
               cont.innerHTML = htmlObs;
@@ -3374,6 +3391,17 @@
           const data = await response.json();
           const justificantes = Array.isArray(data.justificantes) ? data.justificantes : [];
           const faltas = Number(data.faltas_totales) || 0;
+          
+          // Determinar estado del estudiante
+          let estadoHtml = '';
+          let colorEstado = '#333';
+          if (faltas >= 30) {
+              estadoHtml = '<span style="color:var(--red-600); font-weight:bold; font-size:16px;">⛔ REPROBADO (>= 30 ausencias)</span>';
+              colorEstado = 'var(--red-600)';
+          } else if (faltas >= 28) {
+              estadoHtml = '<span style="color:var(--amber-600); font-weight:bold; font-size:16px;">⚠️ EN PELIGRO (>= 28 ausencias)</span>';
+              colorEstado = 'var(--amber-600)';
+          }
 
           let html = `<h3 style="color: var(--blue-800); text-align:center; margin-bottom: 12px;">Detalle del Estudiante</h3>`;
           html += `<p style="margin: 8px 0;"><strong>Fecha:</strong> ${fecha}</p>`;
@@ -3382,7 +3410,8 @@
           html += `<p style="margin: 8px 0;"><strong>Sexo:</strong> ${alumno.sexo || 'N/A'}</p>`;
           html += `<p style="margin: 8px 0;"><strong>NIE:</strong> ${alumno.nie || 'N/A'}</p>`;
           html += `<p style="margin: 8px 0;"><strong>Teléfono:</strong> ${alumno.telefono || 'N/A'}</p>`;
-          html += `<p style="margin: 12px 0 8px;"><strong>Faltas totales:</strong> ${faltas}</p>`;
+          if (estadoHtml) html += `<p style="margin: 12px 0 8px; padding: 8px; background: ${colorEstado === 'var(--red-600)' ? 'rgba(183,28,28,0.1)' : 'rgba(186,117,23,0.1)'}; border-radius: 6px;">${estadoHtml}</p>`;
+          html += `<p style="margin: 12px 0 8px;"><strong>Faltas totales:</strong> <span style="color: ${colorEstado}; font-weight:bold; font-size:16px;">${faltas}</span></p>`;
 
           if (justificantes.length === 0) {
               html += '<p style="margin: 8px 0; color: var(--gray-600);">No hay justificantes registrados para este estudiante.</p>';
