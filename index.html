@@ -817,9 +817,9 @@
                   style="background:none; border:none; color:var(--green-600); cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px;">📂 Local</button>
         </div>
       </div>
-      <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 25px;">
           <button onclick="abrirPanelActualizarAsistencia()"
-                  style="background:none; border:none; color:#F39C12; cursor:pointer; font-size:12px; font-weight:bold;">🔄 Actualizar asistencia</button>
+                  style="background:none; border:none; color:#ff00e1; cursor:pointer; font-size:25px; font-weight:bold;">🔄 Actualizar asistencia</button>
       </div>
       <div class="student-list" id="tabla-alumnos">
         <div style="padding: 20px; text-align: center; color: var(--gray-600);">⏳ Conectando a la base de
@@ -1984,6 +1984,7 @@
               if (chk) {
                   estados[alumno.nie] = {
                       estado: chk.dataset.estado || (chk.checked ? 'presente' : 'ausente'),
+                      observacion_personal: chk.dataset.observacionPersonal || '',
                       justificante: chk.dataset.justificante || ''
                   };
               }
@@ -2005,9 +2006,10 @@
                   const estados = JSON.parse(saved);
                   alumnosFiltrados.forEach((alumno, index) => {
                       const chk = document.getElementById(`chk-${index}`);
-                                      if (chk && estados[alumno.nie]) {
+                      if (chk && estados[alumno.nie]) {
                           const estadoData = estados[alumno.nie];
                           chk.dataset.estado = estadoData.estado;
+                          chk.dataset.observacionPersonal = estadoData.observacion_personal || '';
                           chk.dataset.justificante = estadoData.justificante || '';
 
                           const row = document.getElementById(`row-${index}`);
@@ -2030,6 +2032,11 @@
                               chk.checked = false;
                           } else {
                               chk.checked = true;
+                          }
+
+                          const obsInput = document.getElementById(`obs-${index}`);
+                          if (obsInput) {
+                              obsInput.value = estadoData.observacion_personal || '';
                           }
                       }
                   });
@@ -2109,17 +2116,28 @@
       if (!grado || !seccion || !docente) return alert("Faltan datos: grado, sección o nombre del docente.");
       btn.disabled = true; btn.innerText = "⏳ Generando PDF...";
 
-      const presentes = [], ausentes = [], permisos = []; let masc = 0, fem = 0;
+      const presentes = [], ausentes = [], permisos = [], personalObservaciones = []; let masc = 0, fem = 0;
       alumnosFiltrados.forEach((alumno, index) => {
           const chk = document.getElementById(`chk-${index}`);
           const estado = chk ? (chk.dataset.estado || (chk.checked ? 'presente' : 'ausente')) : 'presente';
+          const observacionPersonal = chk ? (chk.dataset.observacionPersonal || '') : '';
+          const justificante = chk ? (chk.dataset.justificante || '') : '';
           if (estado === 'permiso') {
-              permisos.push({ ...alumno, justificante: chk ? (chk.dataset.justificante || '') : '' });
+              permisos.push({ ...alumno, justificante });
           } else if (chk && chk.checked) {
               presentes.push(alumno);
               alumno.sexo === 'M' ? masc++ : fem++;
           } else {
               ausentes.push(alumno);
+          }
+          if (observacionPersonal) {
+              personalObservaciones.push({
+                  nombre: alumno.nombre,
+                  nie: alumno.nie,
+                  sexo: alumno.sexo,
+                  asistio: estado !== 'ausente',
+                  observacion_personal: observacionPersonal
+              });
           }
       });
 
@@ -2198,7 +2216,7 @@
 
       const pdfHtml = generarHTMLParaPDF({
           grado, seccion, docente, fechaStr, secLimpia,
-          presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados, estudiantesPeligro
+          presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados, estudiantesPeligro, personalObservaciones
       });
 
       const containerHTML = document.getElementById('pdf-content');
@@ -2252,7 +2270,7 @@
       return { nombreArchivo: `${nombreBase} - V1.00.pdf`, nombreBase, sufijoVersion: 'V1.00' };
   }
 
-  function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [] }) {
+  function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [], personalObservaciones = [] }) {
       return `
 <div style="position: relative; background: white; padding: 0;">
   <div style="position: absolute; top: 150px; left: 0; width: 100%; text-align: center; z-index: 1; opacity: 0.15;">
@@ -2325,6 +2343,16 @@
           </ul>
         </div>
       </div>
+      ${personalObservaciones.length > 0 ? `
+      <div style="background-color: rgba(237, 242, 255, 0.9); border: 1px solid #BCCEF7; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <strong>🗒️ Observaciones Personales:</strong>
+        <div style="margin-top: 10px;">
+          <ul style="padding-left: 16px; margin: 0;">
+            ${personalObservaciones.map(o => `<li style="margin-bottom: 8px; line-height: 1.5;"><strong>${o.nombre}</strong> (${o.nie || 'NIE no registrado'}): ${o.observacion_personal || 'Sin observación'}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+      ` : ''}
       <div style="text-align: center; margin-top: 50px; padding-top: 40px; border-top: 2px dashed #ddd; page-break-inside: avoid;">
         <img src="logo5.jpg" crossorigin="anonymous" style="width: 400px; height: auto;" onerror="this.style.display='none';">
       </div>
@@ -2333,39 +2361,7 @@
 </div>`;
   }
   function iniciarPermisoPorDobleClick(index) {
-      const alumno = alumnosFiltrados[index];
-      const nombreEl = document.getElementById(`nombre-alumno-${index}`);
-
-      if (nombreEl) {
-          nombreEl.style.color = '#185FA5';
-          nombreEl.style.fontWeight = 'bold';
-          nombreEl.title = 'Permiso pendiente de confirmación';
-      }
-
-      const modal = document.createElement('div');
-      modal.id = 'modal-permiso-dblclick';
-      modal.innerHTML = `
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;">
-            <div style="background:white;padding:25px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-                <h3 style="margin:0 0 10px 0;color:#185FA5;">🔵 Permiso — ${alumno.nombre}</h3>
-                <p style="font-size:14px;color:#555;margin-bottom:18px;">¿El estudiante tiene justificante?</p>
-                <div style="display:flex;gap:12px;justify-content:center;margin-bottom:15px;">
-                    <button onclick="confirmarPermisoConJustificante(${index})"
-                        style="padding:10px 22px;background:#1D9E75;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">
-                        ✅ Sí, tiene justificante
-                    </button>
-                    <button onclick="confirmarPermisoSinJustificante(${index})"
-                        style="padding:10px 22px;background:var(--red-600);color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">
-                        ❌ No, sin justificante
-                    </button>
-                </div>
-                <button onclick="cancelarPermisoDobleClick(${index})"
-                    style="width:100%;padding:8px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;">
-                    Cancelar
-                </button>
-            </div>
-        </div>`;
-      document.body.appendChild(modal);
+      mostrarPermisoPersonal(index);
   }
 
   function confirmarPermisoConJustificante(index) {
@@ -2455,7 +2451,8 @@
 
       let html = `<h3 style="color:var(--blue-800);text-align:center;margin-bottom:5px;">🔄 Actualizar Asistencia</h3>`;
       html += `<p style="text-align:center;font-size:12px;color:var(--gray-600);margin-bottom:15px;">${grado} ${seccion}</p>`;
-      html += `<div style="max-height:55vh;overflow-y:auto;">`;
+      html += `<div style="margin-bottom:12px;"><input type="text" id="update-asistencia-search" placeholder="Buscar por nombre o NIE..." oninput="filtrarPanelActualizarAsistencia()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;"></div>`;
+      html += `<div id="update-panel-lista" style="max-height:55vh;overflow-y:auto;">`;
 
       alumnosFiltrados.forEach((alumno, idx) => {
           const chk = document.getElementById(`chk-${idx}`);
@@ -2463,7 +2460,7 @@
           const obs = chk ? (chk.dataset.justificante || '') : '';
 
           html += `
-        <div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:8px;background:#fff;">
+        <div class="update-student-item" data-nombre="${alumno.nombre.toLowerCase()}" data-nie="${alumno.nie}" style="border:1px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:8px;background:#fff;">
             <div style="font-weight:bold;font-size:13px;color:var(--blue-800);margin-bottom:8px;">${alumno.nombre}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
                 <button onclick="setEstadoFila(${idx},'presente')" id="btn-pres-${idx}"
@@ -2489,10 +2486,14 @@
 
       html += `</div>`;
       html += `
-    <div style="margin-top:12px;display:flex;gap:8px;">
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="guardarActualizacionAsistencia()"
             style="flex:1;padding:12px;background:var(--blue-600);color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">
             💾 Guardar cambios
+        </button>
+        <button onclick="document.getElementById('update-asistencia-search').value='';filtrarPanelActualizarAsistencia();"
+            style="flex:1;padding:12px;background:#6c757d;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">
+            🔎 Limpiar búsqueda
         </button>
     </div>`;
 
@@ -2539,8 +2540,10 @@
           const chk = document.getElementById(`chk-${idx}`);
           const obs = (document.getElementById(`obs-${idx}`) || {}).value || '';
           const estado = chk ? (chk.dataset.estado || 'presente') : 'presente';
-          if (chk) chk.dataset.justificante = obs;
-          return { nie: alumno.nie, nombre: alumno.nombre, estado, observacion: obs };
+          const justificante = chk ? (chk.dataset.justificante || '') : '';
+          const asistio = estado !== 'ausente';
+          if (chk) chk.dataset.observacionPersonal = obs;
+          return { nie: alumno.nie, nombre: alumno.nombre, estado, observacion: obs, justificante: justificante, asistio: asistio };
       });
 
       guardarEstadoAsistencia();
@@ -2566,6 +2569,148 @@
           document.body.appendChild(aviso);
           setTimeout(() => aviso.remove(), 5000);
       }, 300);
+  }
+
+  function filtrarPanelActualizarAsistencia() {
+      const filtro = (document.getElementById('update-asistencia-search') || {}).value.toLowerCase().trim();
+      document.querySelectorAll('.update-student-item').forEach(item => {
+          const nombre = (item.dataset.nombre || '').toLowerCase();
+          const nie = (item.dataset.nie || '').toLowerCase();
+          item.style.display = (!filtro || nombre.includes(filtro) || nie.includes(filtro)) ? 'block' : 'none';
+      });
+  }
+
+  function mostrarPermisoPersonal(index) {
+      const alumno = alumnosFiltrados[index];
+      if (!alumno) return;
+      const chk = document.getElementById(`chk-${index}`);
+      const observacionActual = chk ? (chk.dataset.observacionPersonal || '') : '';
+      const estadoActual = chk ? (chk.dataset.estado || 'presente') : 'presente';
+      const asistioActual = estadoActual !== 'ausente';
+      const tieneJustificante = estadoActual === 'permiso';
+
+      const modal = document.createElement('div');
+      modal.id = 'modal-permiso-personal';
+      modal.innerHTML = `
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;">
+            <div style="background:white;padding:22px;border-radius:12px;max-width:520px;width:94%;box-shadow:0 4px 18px rgba(0,0,0,0.25);">
+                <h3 style="margin:0 0 14px 0;color:#185FA5;">✍️ Observación Personal — ${alumno.nombre}</h3>
+                <label style="display:block;font-weight:bold;margin-bottom:6px;">Observación personal</label>
+                <textarea id="personal-obs-${index}" placeholder="Ej. Llegó tarde, trajo justificante, ..." style="width:100%;min-height:96px;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:14px;resize:vertical;">${observacionActual}</textarea>
+                <div style="margin-top:14px;">
+                    <p style="margin:0 0 8px 0;font-weight:bold;">¿Asistió?</p>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="asistio-yes-${index}" type="button" onclick="setAsistioPersonal(${index}, true)" style="flex:1;padding:10px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">✅ Sí asistió</button>
+                        <button id="asistio-no-${index}" type="button" onclick="setAsistioPersonal(${index}, false)" style="flex:1;padding:10px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">❌ No asistió</button>
+                    </div>
+                </div>
+                <div id="justificante-block-${index}" style="margin-top:14px;display:${tieneJustificante ? 'block' : 'none'};">
+                    <p style="margin:0 0 8px 0;font-weight:bold;">¿El estudiante tiene justificante?</p>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="just-yes-${index}" type="button" onclick="setJustificantePersonal(${index}, true)" style="flex:1;padding:10px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">✅ Sí</button>
+                        <button id="just-no-${index}" type="button" onclick="setJustificantePersonal(${index}, false)" style="flex:1;padding:10px 12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">❌ No</button>
+                    </div>
+                    <textarea id="input-justificante-${index}" placeholder="Describa el justificante..." style="width:100%;margin-top:10px;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:14px;resize:vertical;display:${tieneJustificante ? 'block' : 'none'};">${chk ? (chk.dataset.justificante || '') : ''}</textarea>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;">
+                    <button type="button" onclick="document.getElementById('modal-permiso-personal')?.remove()" style="padding:10px 16px;background:#6c757d;color:white;border:none;border-radius:10px;cursor:pointer;">Cancelar</button>
+                    <button type="button" onclick="guardarPermisoPersonal(${index})" style="padding:10px 16px;background:#1D9E75;color:white;border:none;border-radius:10px;cursor:pointer;">Guardar</button>
+                </div>
+            </div>
+        </div>`;
+      document.body.appendChild(modal);
+      setAsistioPersonal(index, asistioActual);
+      setJustificantePersonal(index, tieneJustificante);
+  }
+
+  function setAsistioPersonal(index, asistio) {
+      const yes = document.getElementById(`asistio-yes-${index}`);
+      const no = document.getElementById(`asistio-no-${index}`);
+      const justificanteBlock = document.getElementById(`justificante-block-${index}`);
+      if (yes && no) {
+          yes.style.background = asistio ? '#1D9E75' : '#e0e0e0';
+          yes.style.color = asistio ? 'white' : '#333';
+          no.style.background = asistio ? '#e0e0e0' : 'var(--red-600)';
+          no.style.color = asistio ? '#333' : 'white';
+          yes.dataset.selected = asistio ? 'true' : 'false';
+          no.dataset.selected = asistio ? 'false' : 'true';
+      }
+      if (justificanteBlock) {
+          justificanteBlock.style.display = asistio ? 'none' : 'block';
+      }
+  }
+
+  function setJustificantePersonal(index, tiene) {
+      const yes = document.getElementById(`just-yes-${index}`);
+      const no = document.getElementById(`just-no-${index}`);
+      const input = document.getElementById(`input-justificante-${index}`);
+      if (yes && no) {
+          yes.style.background = tiene ? '#F39C12' : '#e0e0e0';
+          yes.style.color = tiene ? 'white' : '#333';
+          no.style.background = tiene ? '#e0e0e0' : 'var(--red-600)';
+          no.style.color = tiene ? '#333' : 'white';
+          yes.dataset.selected = tiene ? 'true' : 'false';
+          no.dataset.selected = tiene ? 'false' : 'true';
+      }
+      if (input) {
+          input.style.display = tiene ? 'block' : 'none';
+          if (!tiene) input.value = '';
+      }
+  }
+
+  function guardarPermisoPersonal(index) {
+      const chk = document.getElementById(`chk-${index}`);
+      const personalObs = (document.getElementById(`personal-obs-${index}`) || {}).value.trim();
+      const asistioYes = document.getElementById(`asistio-yes-${index}`);
+      const tieneJust = document.getElementById(`just-yes-${index}`);
+      const asistio = asistioYes ? asistioYes.dataset.selected === 'true' : true;
+      const justificante = tieneJust ? ((document.getElementById(`input-justificante-${index}`) || {}).value.trim() || '') : '';
+      const estado = asistio ? 'presente' : (tieneJust && tieneJust.dataset.selected === 'true' ? 'permiso' : 'ausente');
+
+      if (chk) {
+          chk.dataset.estado = estado;
+          chk.dataset.observacionPersonal = personalObs;
+          chk.dataset.justificante = justificante;
+          chk.checked = asistio;
+          const row = document.getElementById(`row-${index}`);
+          if (row) {
+              row.classList.toggle('permiso', estado === 'permiso');
+              row.classList.toggle('ausente', estado === 'ausente');
+              if (estado === 'presente') {
+                  row.classList.remove('permiso');
+                  row.classList.remove('ausente');
+              }
+          }
+      }
+
+      guardarEstadoAsistencia();
+      actualizarContadoresAsistencia();
+
+      const grado = document.getElementById('grado-select').value;
+      const seccion = document.getElementById('seccion-select').value;
+      const docente = document.getElementById('docente-nombre').value.trim();
+      const alumno = alumnosFiltrados[index];
+      if (alumno) {
+          fetch(SCRIPT_URL, {
+              method: 'POST', mode: 'no-cors',
+              body: JSON.stringify({
+                  tipo_post: 'actualizar_asistencia',
+                  grado, seccion, docente,
+                  fecha: new Date().toISOString(),
+                  actualizaciones: [{
+                      nie: alumno.nie,
+                      nombre: alumno.nombre,
+                      estado: estado,
+                      asistio: asistio,
+                      justificante: justificante,
+                      observacion: personalObs
+                  }]
+              })
+          }).catch(e => console.log('Error guardando observación personal:', e));
+      }
+
+      document.getElementById('modal-permiso-personal')?.remove();
+      mostrarNotificacion('Observación personal guardada.', 'success');
   }
 
   async function verObservacionGrado() {
