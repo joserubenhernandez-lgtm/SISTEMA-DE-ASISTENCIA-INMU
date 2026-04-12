@@ -2355,7 +2355,7 @@ let estadoSeleccion = true;
               margin: 10,
               filename: nombreArchivo,
               image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+              html2canvas: { scale: 1, useCORS: true, allowTaint: true },
               jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
               pagebreak: { mode: ['css', 'legacy'] }
           };
@@ -4566,7 +4566,7 @@ function generarPDFExpediente() {
                     margin: 10,
                     filename: `Expediente_${alumnoSeleccionado.nombre.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaStr.replace(/\//g, '-')}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, foreignObjectRendering: false },
+                    html2canvas: { scale: 1, useCORS: true, allowTaint: true, foreignObjectRendering: false },
                     jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
                     pagebreak: { mode: ['css', 'legacy'] }
                 };
@@ -4714,7 +4714,7 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Informe_${grado.replace(/\s+/g, '_')}_${seccion}_${fechaStr.replace(/\//g, '-')}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+          html2canvas: { scale: 1, useCORS: true, allowTaint: true },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
       };
@@ -4786,7 +4786,7 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Asistencia_Mensual_${grado.replace(/\s+/g, '_')}_${seccion}_${mesNombre.replace(/\s+/g, '_')}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+          html2canvas: { scale: 1, useCORS: true, allowTaint: true },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
       };
@@ -4879,7 +4879,7 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Informe_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().toISOString().split('T')[0]}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
+          html2canvas: { scale: 1 },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
       };
       
@@ -4965,7 +4965,7 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Asistencia_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().getMonth() + 1}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
+          html2canvas: { scale: 1 },
           jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
       };
       
