@@ -1425,16 +1425,16 @@
           if (installHelper) installHelper.style.display = 'none';
       }
   }
-let baseDatosAlumnos = [];
-let docentesStatus = {}; // Estados de docentes: online/offline
-let carpetaPDFUri = null;
-let baseDatosDocentes = [];
-let alumnosFiltrados = [];
-let alumnosExpediente = [];              // ← AGREGAR ESTA LÍNEA
-let alumnosFiltradosExpediente = [];     // ← AGREGAR ESTA LÍNEA
-let alumnoSeleccionado = null;           // ← AGREGAR ESTA LÍNEA
-let estadoSeleccionExpediente = false;   // ← AGREGAR ESTA LÍNEA
-let estadoSeleccion = true;
+
+  let baseDatosAlumnos = [];
+  let docentesStatus = {}; // Estados de docentes: online/offline
+  let carpetaPDFUri = null;
+  let baseDatosDocentes = [];
+  let alumnosFiltrados = [];
+  let estadoSeleccion = true;
+  let sistemaEnMantenimiento = true;
+  let todosLosReportes = [];
+  let loginRequerido = true;
   window.usuarioActual = '';
 
   // ── Variables del visor PDF ──────────────────────────────────────
@@ -2355,8 +2355,8 @@ let estadoSeleccion = true;
               margin: 10,
               filename: nombreArchivo,
               image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-              jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion, compress: true },
+              html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+              jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
               pagebreak: { mode: ['css', 'legacy'] }
           };
 
@@ -2386,94 +2386,90 @@ let estadoSeleccion = true;
 
   function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [], personalObservaciones = [] }) {
       return `
-<div style="width: 100%; background: white; padding: 40px; margin: 0; font-family: Arial, sans-serif; position: relative; z-index: 10;">
-  <div style="text-align: center; padding: 20px 0; border-bottom: 3px solid #0C447C; margin-bottom: 20px;">
+<div style="position: relative; background: white; padding: 0;">
+  <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #0C447C;">
     <img src="logo3.jpg" style="height: 80px; width: auto; margin-bottom: 10px;">
-    <h1 style="color: #0C447C; font-size: 18px; margin: 10px 0 5px 0; text-transform: uppercase; font-weight: bold;">Ministerio de Educación, Ciencia y Tecnología</h1>
+    <h1 style="color: #0C447C; font-size: 18px; margin: 10px 0 5px 0; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
     <h2 style="color: #2C2C2A; font-size: 16px; margin: 0;">Instituto Nacional de Mercedes Umaña</h2>
   </div>
-
-  <div style="text-align: center; padding: 30px 20px; border: 2px solid #0C447C; border-radius: 10px; margin-bottom: 20px; page-break-after: always; break-after: page;">
-    <h3 style="font-size: 24px; color: #185FA5; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 10px;">📋 Registro de Asistencia Diario</h3>
-    <div style="text-align: left; padding-left: 40px; font-size: 16px;">
-      <p style="margin: 15px 0;"><strong>Grado:</strong> ${grado} &nbsp;&nbsp; <strong>Sección:</strong> ${seccion}</p>
-      <p style="margin: 15px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
-      <p style="margin: 15px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
-    </div>
-  </div>
-
-  <div style="page-break-before: always; break-before: page; position: relative; z-index: 5;">
-    <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px;">
-      <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px; font-weight: bold;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
-      <h3 style="font-size: 16px; color: #2C2C2A; margin: 0;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
-    </div>
-
-    <table style="width: 100%; font-size: 14px; margin-bottom: 20px; border: none;">
-      <tr>
-        <td style="text-align: left; width: 33%; vertical-align: top;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Secc:</strong> ${seccion}</td>
-        <td style="text-align: center; width: 34%; vertical-align: top;"><strong>Docente:</strong> ${docente}</td>
-        <td style="text-align: right; width: 33%; vertical-align: top;"><strong>Fecha:</strong> ${fechaStr}</td>
-      </tr>
-    </table>
-
-    <div style="background-color: #E6F1FB; border: 1px solid #185FA5; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
-      <p style="margin: 0;"><strong>✓ Asistencias: ${presentes.length}</strong> (M: <strong>${masc}</strong> | F: <strong>${fem}</strong>) | ✗ Ausencias: <strong>${ausentes.length}</strong> | ⚠ Permisos: <strong>${permisos.length}</strong></p>
-    </div>
-
-    <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; font-weight: bold;">✓ ESTUDIANTES PRESENTES (${presentes.length})</h4>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 12px; background-color: white; page-break-inside: auto;">
-      <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
-      ${presentes.length > 0
-          ? presentes.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #1D9E75; font-weight: bold;">✓</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td></tr>`).join('')
-          : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #999;">Ninguno</td></tr>`}
-    </table>
-
-    <h4 style="color: #B71C1C; border-bottom: 2px solid #B71C1C; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; font-weight: bold;">✗ ESTUDIANTES AUSENTES (${ausentes.length})</h4>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 12px; background-color: white; page-break-inside: auto;">
-      <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
-      ${ausentes.length > 0
-          ? ausentes.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #B71C1C; font-weight: bold;">✗</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td></tr>`).join('')
-          : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #999;">Ninguno</td></tr>`}
-    </table>
-
-    ${permisos.length > 0 ? `
-    <h4 style="color: #BA7517; border-bottom: 2px solid #BA7517; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; font-weight: bold;">⚠ ESTUDIANTES CON PERMISO (${permisos.length})</h4>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 12px; background-color: white; page-break-inside: auto;">
-      <colgroup><col style="width: 8%;"><col style="width: 35%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 30%;"></colgroup>
-      <tr style="background:#FFF9E6;"><th style="border:1px solid #ddd;padding:6px; font-weight: bold;"></th><th style="border:1px solid #ddd;padding:6px;text-align:left; font-weight: bold;">Nombre</th><th style="border:1px solid #ddd;padding:6px;text-align:center; font-weight: bold;">Sexo</th><th style="border:1px solid #ddd;padding:6px; font-weight: bold;">NIE</th><th style="border:1px solid #ddd;padding:6px;text-align:left; font-weight: bold;">Justificante</th></tr>
-      ${permisos.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #BA7517; font-weight: bold;">⚠</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px; font-size:11px;">${a.justificante || 'Sin justificante'}</td></tr>`).join('')}
-    </table>
-    ` : ''}
-
-    ${reprobados.length > 0 ? `
-    <h4 style="color: #B71C1C; border-bottom: 3px solid #B71C1C; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; text-transform: uppercase; font-weight: bold;">🔴 ESTUDIANTES REPROBADOS (>= 30 AUSENCIAS)</h4>
-    <div style="background-color: #FCEBEB; border-left: 5px solid #B71C1C; padding: 12px; border-radius: 6px; margin-bottom: 25px; page-break-inside: avoid;">
-      <ul style="list-style: none; padding: 0; margin: 0;">
-        ${reprobados.map(r => `<li style="margin-bottom: 8px; padding: 8px; background: white; border-left: 3px solid #B71C1C; padding-left: 10px; page-break-inside: avoid;"><strong style="color: #B71C1C;">${r.nombre}</strong><br><small style="color: #666;">NIE: ${r.nie || 'N/A'} | Ausencias: <strong style="color: #B71C1C;">${r.conteo}</strong></small></li>`).join('')}
-      </ul>
-    </div>
-    ` : ''}
-
-    <div style="background-color: #EAECEE; border: 1px solid #185FA5; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">
-      <strong style="color: #0C447C;">📝 Observación General:</strong><br>
-      <div style="margin-top: 10px; min-height: 50px; border: 1px solid #ddd; padding: 10px; background-color: white; line-height: 1.6;">
-        ${obsGeneral ? `<p style="margin: 0;">${obsGeneral}</p>` : '<p style="color:#999; margin: 0;">Sin observaciones</p>'}
+  <div style="position: relative; z-index: 10; padding: 40px;">
+    <div style="text-align: center; padding-bottom: 20px;">
+      <div style="border: 2px solid #0C447C; padding: 30px; border-radius: 15px; width: 80%; margin: 0 auto;">
+        <h3 style="font-size: 24px; color: #185FA5; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 10px;">Registro de Asistencia Diario</h3>
+        <div style="text-align: left; padding-left: 20px;">
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Sección:</strong> ${seccion}</p>
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
+          <p style="font-size: 18px; margin: 15px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
+        </div>
       </div>
     </div>
-
-    ${personalObservaciones.length > 0 ? `
-    <div style="background-color: #EDF2FF; border: 1px solid #BCCEF7; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px;">
-      <strong style="color: #185FA5;">🗒️ Observaciones Personales:</strong>
-      <div style="margin-top: 10px;">
-        <ul style="padding-left: 16px; margin: 0;">
-          ${personalObservaciones.map(o => `<li style="margin-bottom: 8px; line-height: 1.5; page-break-inside: avoid;"><strong>${o.nombre}</strong> (${o.nie}): ${o.observacion_personal}</li>`).join('')}
+    <div class="html2pdf__page-break" style="page-break-after: always; break-after: page; display: block;"></div>
+    <div style="position: relative;">
+      <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 5;">
+        <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
+        <h3 style="font-size: 16px; color: #2C2C2A; margin-bottom: 5px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
+      </div>
+      <table style="width: 100%; font-size: 14px; margin-bottom: 20px; border: none;">
+        <tr>
+          <td style="text-align: left; width: 33%; vertical-align: top;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Secc:</strong> ${seccion}</td>
+          <td style="text-align: center; width: 34%; vertical-align: top;"><strong>Docente:</strong> ${docente}</td>
+          <td style="text-align: right; width: 33%; vertical-align: top;"><strong>Fecha:</strong> ${fechaStr}</td>
+        </tr>
+      </table>
+      <div style="background-color: rgba(255,255,255,0.8); border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <p><strong>Asistencias: ${presentes.length}</strong> | M: <strong>${masc}</strong> | F: <strong>${fem}</strong> | Ausencias: ${ausentes.length} | Permisos: ${permisos.length}</p>
+      </div>
+      <h4 style="color: #1D9E75; border-bottom: 2px solid #1D9E75; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px;">ESTUDIANTES PRESENTES</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; background-color: rgba(255,255,255,0.75); page-break-inside: auto; break-inside: auto;">
+        <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
+        ${presentes.length > 0
+            ? presentes.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #1D9E75; font-weight: bold;">✓</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td></tr>`).join('')
+            : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
+      </table>
+      <h4 style="color: var(--red-600); border-bottom: 2px solid var(--red-600); padding-bottom: 5px; margin-bottom: 10px; font-size: 15px;">ESTUDIANTES AUSENTES</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; background-color: rgba(255,255,255,0.75); page-break-inside: auto; break-inside: auto;">
+        <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
+        ${ausentes.length > 0
+            ? ausentes.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: var(--red-600); font-weight: bold;">✗</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td></tr>`).join('')
+            : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
+      </table>
+      ${permisos.length > 0 ? `
+      <h4 style="color: #F39C12; border-bottom: 2px solid #F39C12; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px;">ESTUDIANTES CON PERMISO</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; background-color: rgba(255,255,255,0.75); page-break-inside: auto; break-inside: auto;">
+        <colgroup><col style="width: 8%;"><col style="width: 35%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 30%;"></colgroup>
+        <tr style="background:#FFF9E6;"><th style="border:1px solid #ddd;padding:6px;"></th><th style="border:1px solid #ddd;padding:6px;text-align:left;">Nombre</th><th style="border:1px solid #ddd;padding:6px;text-align:center;">Sexo</th><th style="border:1px solid #ddd;padding:6px;">NIE</th><th style="border:1px solid #ddd;padding:6px;text-align:left;">Justificante</th></tr>
+        ${permisos.map(a => `<tr style="page-break-inside: avoid; break-inside: avoid-page;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: #F39C12; font-weight: bold;">⚠</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px; font-size:11px;">${a.justificante || 'Sin justificante'}</td></tr>`).join('')}
+      </table>
+      ` : ''}
+      ${reprobados.length > 0 ? `
+      <h4 style="color: var(--red-600); border-bottom: 3px solid var(--red-600); padding-bottom: 5px; margin-bottom: 10px; font-size: 15px; text-transform: uppercase;">🔴 ESTUDIANTES REPROBADOS (>= 30 AUSENCIAS)</h4>
+      <div style="background-color: rgba(183,28,28,0.08); border-left: 5px solid var(--red-600); padding: 12px; border-radius: 6px; margin-bottom: 25px; page-break-inside: avoid; break-inside: avoid-page;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${reprobados.map(r => `<li style="margin-bottom: 8px; padding: 8px; background: white; border-left: 3px solid var(--red-600); padding-left: 10px; page-break-inside: avoid; break-inside: avoid-page;"><strong style="color: var(--red-600);">${r.nombre}</strong><br><small style="color: #666;">NIE: ${r.nie || 'N/A'} | Ausencias: <strong style="color: var(--red-600);">${r.conteo}</strong></small></li>`).join('')}
         </ul>
       </div>
-    </div>
-    ` : ''}
-
-    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #ccc; page-break-inside: avoid;">
-      <img src="logo5.jpg" style="width: 400px; height: auto; max-width: 100%;">
+      ` : ''}
+      <div style="background-color: rgba(255,255,255,0.9); border: 1px solid #B5D4F4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <strong>📝 Observación General:</strong><br>
+        <div style="margin-top: 8px; min-height: 40px; border: 1px solid #ddd; padding: 8px; background-color: white; line-height: 1.6;">
+          <ul style="list-style:none; padding:0; margin:0;">
+            ${obsGeneral ? `<li style="margin-bottom:6px; padding:4px 0; border-bottom:1px solid #eee; page-break-inside: avoid; break-inside: avoid-page;">• ${obsGeneral.split(';').map(s => s.trim()).filter(s => s).join('</li><li style="margin-bottom:6px; padding:4px 0; border-bottom:1px solid #eee; page-break-inside: avoid; break-inside: avoid-page;">• ')}</li>` : '<li style="color:#999;">Sin observaciones</li>'}
+          </ul>
+        </div>
+      </div>
+      ${personalObservaciones.length > 0 ? `
+      <div style="background-color: rgba(237, 242, 255, 0.9); border: 1px solid #BCCEF7; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+        <strong>🗒️ Observaciones Personales:</strong>
+        <div style="margin-top: 10px;">
+          <ul style="padding-left: 16px; margin: 0;">
+            ${personalObservaciones.map(o => `<li style="margin-bottom: 8px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid-page;"><strong>${o.nombre}</strong> (${o.nie || 'NIE no registrado'}): ${o.observacion_personal || 'Sin observación'}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+      ` : ''}
+      <div style="text-align: center; margin-top: 50px; padding-top: 40px; border-top: 2px dashed #ddd; page-break-inside: avoid;">
+        <img src=\"logo5.jpg\" style=\"width: 400px; height: auto;\">
+      </div>
     </div>
   </div>
 </div>`;
@@ -4393,55 +4389,29 @@ let estadoSeleccion = true;
       abrirModal('modal-expediente');
   }
 
-function cargarHistorialObservaciones(nie) {
-    const contenedor = document.getElementById('historial-observaciones');
-    contenedor.innerHTML = '<div style="text-align: center; color: var(--gray-600);">⏳ Cargando historial...</div>';
+  function cargarHistorialObservaciones(nie) {
+      const contenedor = document.getElementById('historial-observaciones');
+      contenedor.innerHTML = '<div style="text-align: center; color: var(--gray-600);">Cargando historial...</div>';
 
-    // Construir URL correctamente
-    const url = SCRIPT_URL + '?tipo=obtener_observaciones&nie=' + encodeURIComponent(nie);
-    
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Verificar si data es un array
-            if (!Array.isArray(data)) {
-                data = [];
-            }
-
-            if (data.length === 0) {
-                contenedor.innerHTML = '<div style="text-align: center; color: var(--gray-600); padding: 20px;">📝 No hay observaciones registradas para este estudiante.</div>';
-            } else {
-                let html = '';
-                data.forEach(obs => {
-                    const fecha = obs.fecha || 'Fecha no disponible';
-                    const docente = obs.docente || 'Docente desconocido';
-                    const observacion = obs.observacion || 'Sin contenido';
-                    
-                    html += `<div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 8px; border-left: 4px solid var(--blue-600); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 6px;">
-                            <strong>📅 ${fecha}</strong> | 👨‍🏫 ${docente}
-                        </div>
-                        <div style="font-size: 14px; color: #333; line-height: 1.5;">
-                            ${observacion}
-                        </div>
-                    </div>`;
-                });
-                contenedor.innerHTML = html;
-            }
-        })
-        .catch(error => {
-            console.error('Error cargando observaciones:', error);
-            contenedor.innerHTML = `<div style="text-align: center; color: var(--red-600); padding: 20px;">
-                ❌ Error al cargar el historial<br>
-                <small style="color: var(--gray-600);">Verifique su conexión a internet</small>
-            </div>`;
-        });
-}
+      fetch(SCRIPT_URL + '?tipo=obtener_observaciones&nie=' + nie)
+          .then(response => response.json())
+          .then(data => {
+              if (data.length === 0) {
+                  contenedor.innerHTML = '<div style="text-align: center; color: var(--gray-600);">No hay observaciones registradas.</div>';
+              } else {
+                  contenedor.innerHTML = data.map(obs => `
+                      <div style="margin-bottom: 10px; padding: 8px; background: white; border-radius: 6px; border-left: 4px solid var(--blue-600);">
+                          <small style="color: var(--gray-600);">${obs.fecha} - ${obs.docente}</small><br>
+                          ${obs.observacion}
+                      </div>
+                  `).join('');
+              }
+          })
+          .catch(error => {
+              console.error('Error cargando observaciones:', error);
+              contenedor.innerHTML = '<div style="text-align: center; color: var(--red-600);">Error cargando historial.</div>';
+          });
+  }
 
   function agregarObservacion() {
       const observacion = document.getElementById('nueva-observacion').value.trim();
@@ -4492,113 +4462,73 @@ function cargarHistorialObservaciones(nie) {
       });
   }
 
-function generarPDFExpediente() {
-    if (!alumnoSeleccionado) return;
-    
-    const docente = document.getElementById('docente-nombre').value.trim() || 'No registrado';
-    const fechaStr = new Date().toLocaleDateString('es-ES');
-    
-    // 1. Crear contenedor temporal
-    const printElement = document.createElement('div');
-    printElement.id = 'pdf-expediente-temp';
-    printElement.style.display = 'none';
-    
-    // 2. Obtener observaciones primero
-    fetch(SCRIPT_URL + '?tipo=obtener_observaciones&nie=' + encodeURIComponent(alumnoSeleccionado.nie))
-        .then(response => response.json())
-        .then(data => {
-            const observacionesHTML = data && Array.isArray(data) && data.length > 0
-                ? data.map(obs => `
-                    <div style="margin-bottom: 12px; padding: 12px; border-left: 4px solid #0C447C; background: #F4F7FC; border-radius: 8px; page-break-inside: avoid;">
-                        <p style="margin:0 0 6px 0; font-size:13px; color:#555;"><strong>${obs.fecha || 'Fecha no disponible'}</strong> - ${obs.docente || 'Docente desconocido'}</p>
-                        <p style="margin:0; font-size:14px; color:#1D1D1D;">${obs.observacion || 'Sin contenido'}</p>
-                    </div>
-                  `).join('')
-                : '<p style="margin:0; color:#666;">No hay observaciones registradas.</p>';
+  function generarPDFExpediente() {
+      if (!alumnoSeleccionado) return;
+      const docente = document.getElementById('docente-nombre').value.trim() || 'No registrado';
+      const fechaStr = new Date().toLocaleDateString('es-ES');
+      const element = document.createElement('div');
+      element.innerHTML = `
+          <div style="padding: 25px; font-family: Arial, sans-serif; background: white;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+              <img src="logo2.jpg" style="height:70px; width:auto;" />
+              <div style="text-align:center; flex:1; min-width:220px;">
+                <h1 style="font-size:22px; color:#0C447C; margin:0;">EXPEDIENTE PERSONAL</h1>
+                <p style="margin:4px 0 0 0; font-size:14px; color:#444;">Instituto Nacional de Mercedes Umaña</p>
+                <p style="margin:4px 0 0 0; font-size:13px; color:#666;">Ministerio de Educación  Ciencia y Tecnología</p>
+              </div>
+              <img src="logo3.jpg" style="height:70px; width:auto;" />
+            </div>
+            <div style="border:1px solid #D1D5DB; padding:18px; border-radius:12px; margin-bottom:24px; background:#F8FAFC;">
+              <p style="margin:0; font-size:14px;"><strong>Alumno:</strong> ${alumnoSeleccionado.nombre}</p>
+              <p style="margin:6px 0 0 0; font-size:14px;"><strong>NIE:</strong> ${alumnoSeleccionado.nie}</p>
+              <p style="margin:6px 0 0 0; font-size:14px;"><strong>Grado / Sección:</strong> ${alumnoSeleccionado.grado} ${alumnoSeleccionado.seccion}</p>
+              <p style="margin:6px 0 0 0; font-size:14px;"><strong>Docente:</strong> ${docente}</p>
+              <p style="margin:6px 0 0 0; font-size:14px;"><strong>Fecha:</strong> ${fechaStr}</p>
+            </div>
+            <h3 style="font-size:18px; color:#185FA5; margin-bottom:12px;">Historial de Observaciones</h3>
+            <div id="pdf-observaciones" style="font-size:14px; line-height:1.6; color:#333; min-height:80px;">
+              Cargando historial de observaciones...
+            </div>
+          </div>
+      `;
 
-            // 3. Construir PDF completo
-            printElement.innerHTML = `
-                <div style="padding: 25px; font-family: Arial, sans-serif; background: white; color: #333;">
-                    <!-- ENCABEZADO -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                        <img src="logo2.jpg" style="height:70px; width:auto;" onerror="this.src='logo2.svg';" />
-                        <div style="text-align:center; flex:1; min-width:220px;">
-                            <h1 style="font-size:22px; color:#0C447C; margin:0;">EXPEDIENTE PERSONAL</h1>
-                            <p style="margin:4px 0 0 0; font-size:14px; color:#444;">Instituto Nacional de Mercedes Umaña</p>
-                            <p style="margin:4px 0 0 0; font-size:13px; color:#666;">Ministerio de Educación, Ciencia y Tecnología</p>
-                        </div>
-                        <img src="logo3.jpg" style="height:70px; width:auto;" onerror="this.style.display='none';" />
-                    </div>
+      fetch(SCRIPT_URL + '?tipo=obtener_observaciones&nie=' + encodeURIComponent(alumnoSeleccionado.nie))
+          .then(response => response.json())
+          .then(data => {
+              const obsDiv = element.querySelector('#pdf-observaciones');
+              if (data.length === 0) {
+                  obsDiv.innerHTML = '<p style="margin:0; color:#666;">No hay observaciones registradas.</p>';
+              } else {
+                  obsDiv.innerHTML = data.map(obs => `
+                      <div style="margin-bottom: 12px; padding: 12px; border-left: 4px solid #0C447C; background: #F4F7FC; border-radius: 8px;">
+                          <p style="margin:0 0 6px 0; font-size:13px; color:#555;"><strong>${obs.fecha}</strong> - ${obs.docente}</p>
+                          <p style="margin:0; font-size:14px; color:#1D1D1D;">${obs.observacion}</p>
+                      </div>
+                  `).join('');
+              }
 
-                    <!-- INFORMACIÓN PERSONAL -->
-                    <div style="border:2px solid #0C447C; padding:18px; border-radius:12px; margin-bottom:24px; background:#F8FAFC; page-break-inside: avoid;">
-                        <p style="margin:0; font-size:14px;"><strong>Alumno/a:</strong> ${alumnoSeleccionado.nombre}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>NIE:</strong> ${alumnoSeleccionado.nie}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Sexo:</strong> ${alumnoSeleccionado.sexo || 'No registrado'}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Grado:</strong> ${alumnoSeleccionado.grado}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Sección:</strong> ${alumnoSeleccionado.seccion}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Teléfono:</strong> ${alumnoSeleccionado.telefono || 'No registrado'}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Docente Responsable:</strong> ${docente}</p>
-                        <p style="margin:6px 0 0 0; font-size:14px;"><strong>Fecha de Generación:</strong> ${fechaStr}</p>
-                    </div>
+              document.body.appendChild(element);
+              setTimeout(() => {
+                  const opt = {
+                      margin: 10,
+                      filename: `Expediente_${alumnoSeleccionado.nombre.replace(/\s+/g, '_')}.pdf`,
+                      image: { type: 'jpeg', quality: 0.98 },
+                      html2canvas: { scale: 2, useCORS: false, allowTaint: true, foreignObjectRendering: false },
+                      jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+                      pagebreak: { mode: ['css', 'legacy'] }
+                  };
 
-                    <!-- HISTORIAL DE OBSERVACIONES -->
-                    <h3 style="font-size:18px; color:#185FA5; margin-bottom:12px; page-break-inside: avoid;">Historial de Observaciones</h3>
-                    <div style="margin-bottom: 20px;">
-                        ${observacionesHTML}
-                    </div>
+                  html2pdf().set(opt).from(element).save().finally(() => {
+                      if (document.body.contains(element)) document.body.removeChild(element);
+                  });
+              }, 500);
+          })
+          .catch(error => {
+              console.error('Error generando PDF:', error);
+              alert('Error generando PDF.');
+          });
+  }
 
-                    <!-- FIRMA -->
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #D1D5DB; display:flex; justify-content:space-around; page-break-inside: avoid;">
-                        <div style="text-align:center; width: 45%;">
-                            <p style="margin:0; height:50px;"></p>
-                            <p style="margin:0; font-size:12px; border-top: 1px solid #333;">Firma del Docente</p>
-                        </div>
-                        <div style="text-align:center; width: 45%;">
-                            <p style="margin:0; height:50px;"></p>
-                            <p style="margin:0; font-size:12px; border-top: 1px solid #333;">Sello de Control</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(printElement);
-
-            // 4. Generar PDF
-            setTimeout(() => {
-                const opt = {
-                    margin: 10,
-                    filename: `Expediente_${alumnoSeleccionado.nombre.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaStr.replace(/\//g, '-')}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-                    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
-                    pagebreak: { mode: ['css', 'legacy'] }
-                };
-
-                html2pdf()
-                    .set(opt)
-                    .from(printElement)
-                    .save()
-                    .then(() => {
-                        if (document.body.contains(printElement)) {
-                            document.body.removeChild(printElement);
-                        }
-                        mostrarNotificacion('PDF generado exitosamente', 'success');
-                    })
-                    .catch(error => {
-                        console.error('Error generando PDF:', error);
-                        mostrarNotificacion('Error al generar PDF', 'error');
-                        if (document.body.contains(printElement)) {
-                            document.body.removeChild(printElement);
-                        }
-                    });
-            }, 300);
-        })
-        .catch(error => {
-            console.error('Error cargando observaciones:', error);
-            mostrarNotificacion('Error al cargar observaciones', 'error');
-        });
-}
   function abrirModalEstadoAlumno() {
       const modal = document.getElementById('modal-estado-alumno');
       if (!modal) return;
@@ -4718,8 +4648,8 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Informe_${grado.replace(/\s+/g, '_')}_${seccion}_${fechaStr.replace(/\//g, '-')}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
       };
 
@@ -4790,8 +4720,8 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Asistencia_Mensual_${grado.replace(/\s+/g, '_')}_${seccion}_${mesNombre.replace(/\s+/g, '_')}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
       };
 
@@ -4883,9 +4813,8 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Informe_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().toISOString().split('T')[0]}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
-          pagebreak: { mode: ['css', 'legacy'] }
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
       };
       
       html2pdf().set(opt).from(content).save().finally(() => {
@@ -4970,9 +4899,8 @@ function generarPDFExpediente() {
           margin: 10,
           filename: `Asistencia_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().getMonth() + 1}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
-          pagebreak: { mode: ['css', 'legacy'] }
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
       };
       
       html2pdf().set(opt).from(content).save().finally(() => {
