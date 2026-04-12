@@ -2352,12 +2352,12 @@ let estadoSeleccion = true;
           }).catch(() => {});
 
           const opt = {
-              margin: 10,
+              margin: 8,
               filename: nombreArchivo,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 1, useCORS: true, allowTaint: true },
-              jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
-              pagebreak: { mode: ['css', 'legacy'] }
+              image: { type: 'png' },
+              html2canvas: { scale: 1, useCORS: true, allowTaint: true, letterRendering: true, backgroundColor: '#ffffff' },
+              jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion, compress: true },
+              pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
           };
 
           await html2pdf().set(opt).from(containerHTML).save();
@@ -2386,28 +2386,28 @@ let estadoSeleccion = true;
 
   function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [], personalObservaciones = [] }) {
       return `
-<div style="position: relative; background: white; padding: 0;">
+<div style="width: 100%; background: white; padding: 0; margin: 0; font-family: Arial, sans-serif;">
   <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #0C447C;">
-    <img src="logo3.jpg" style="height: 80px; width: auto; margin-bottom: 10px;">
-    <h1 style="color: #0C447C; font-size: 18px; margin: 10px 0 5px 0; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
-    <h2 style="color: #2C2C2A; font-size: 16px; margin: 0;">Instituto Nacional de Mercedes Umaña</h2>
+    <img src="logo3.jpg" style="height: 60px; width: auto; margin-bottom: 10px;">
+    <h1 style="color: #0C447C; font-size: 16px; margin: 5px 0 2px 0; text-transform: uppercase;">Ministerio de Educación, Ciencia y Tecnología</h1>
+    <h2 style="color: #2C2C2A; font-size: 14px; margin: 0;">Instituto Nacional de Mercedes Umaña</h2>
   </div>
-  <div style="position: relative; z-index: 10; padding: 40px;">
+  <div style="padding: 30px 20px;">
     <div style="text-align: center; padding-bottom: 20px;">
-      <div style="border: 2px solid #0C447C; padding: 30px; border-radius: 15px; width: 80%; margin: 0 auto;">
-        <h3 style="font-size: 24px; color: #185FA5; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 10px;">Registro de Asistencia Diario</h3>
-        <div style="text-align: left; padding-left: 20px;">
-          <p style="font-size: 18px; margin: 15px 0;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Sección:</strong> ${seccion}</p>
-          <p style="font-size: 18px; margin: 15px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
-          <p style="font-size: 18px; margin: 15px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
+      <div style="border: 2px solid #0C447C; padding: 20px; width: 100%; box-sizing: border-box;">
+        <h3 style="font-size: 18px; color: #185FA5; margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #185FA5; padding-bottom: 8px;">Registro de Asistencia Diario</h3>
+        <div style="text-align: left;">
+          <p style="font-size: 14px; margin: 10px 0;"><strong>Grado:</strong> ${grado} &nbsp; <strong>Sección:</strong> ${seccion}</p>
+          <p style="font-size: 14px; margin: 10px 0;"><strong>Docente Responsable:</strong> ${docente}</p>
+          <p style="font-size: 14px; margin: 10px 0;"><strong>Fecha:</strong> ${fechaStr}</p>
         </div>
       </div>
     </div>
-    <div class="html2pdf__page-break" style="page-break-after: always; break-after: page; display: block;"></div>
-    <div style="position: relative;">
-      <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 15px; margin-bottom: 20px; position: relative; z-index: 5;">
-        <h2 style="font-size: 18px; color: #0C447C; margin-bottom: 5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
-        <h3 style="font-size: 16px; color: #2C2C2A; margin-bottom: 5px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
+    <div style="page-break-after: always; break-after: page;"></div>
+    <div style="padding-top: 20px;">
+      <div style="text-align: center; border-bottom: 3px solid #0C447C; padding-bottom: 10px; margin-bottom: 15px;">
+        <h2 style="font-size: 16px; color: #0C447C; margin-bottom: 3px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</h2>
+        <h3 style="font-size: 13px; color: #2C2C2A; margin: 0;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</h3>
       </div>
       <table style="width: 100%; font-size: 14px; margin-bottom: 20px; border: none;">
         <tr>
@@ -2467,8 +2467,8 @@ let estadoSeleccion = true;
         </div>
       </div>
       ` : ''}
-      <div style="text-align: center; margin-top: 50px; padding-top: 40px; border-top: 2px dashed #ddd; page-break-inside: avoid;">
-        <img src=\"logo5.jpg\" style=\"width: 400px; height: auto;\">
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <img src=\"logo5.jpg\" style=\"width: 250px; height: auto; max-width: 100%;\">
       </div>
     </div>
   </div>
@@ -4563,12 +4563,12 @@ function generarPDFExpediente() {
             // 4. Generar PDF
             setTimeout(() => {
                 const opt = {
-                    margin: 10,
+                    margin: 8,
                     filename: `Expediente_${alumnoSeleccionado.nombre.replace(/[^a-zA-Z0-9]/g, '_')}_${fechaStr.replace(/\//g, '-')}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 1, useCORS: true, allowTaint: true, foreignObjectRendering: false },
-                    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-                    pagebreak: { mode: ['css', 'legacy'] }
+                    image: { type: 'png' },
+                    html2canvas: { scale: 1, useCORS: true, allowTaint: true, foreignObjectRendering: false, letterRendering: true, backgroundColor: '#ffffff' },
+                    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
                 };
 
                 html2pdf()
@@ -4711,12 +4711,12 @@ function generarPDFExpediente() {
       `;
 
       const opt = {
-          margin: 10,
+          margin: 8,
           filename: `Informe_${grado.replace(/\s+/g, '_')}_${seccion}_${fechaStr.replace(/\//g, '-')}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1, useCORS: true, allowTaint: true },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
+          image: { type: 'png' },
+          html2canvas: { scale: 1, useCORS: true, allowTaint: true, letterRendering: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       html2pdf().set(opt).from(content).save();
@@ -4783,12 +4783,12 @@ function generarPDFExpediente() {
       `;
 
       const opt = {
-          margin: 10,
+          margin: 8,
           filename: `Asistencia_Mensual_${grado.replace(/\s+/g, '_')}_${seccion}_${mesNombre.replace(/\s+/g, '_')}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1, useCORS: true, allowTaint: true },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
+          image: { type: 'png' },
+          html2canvas: { scale: 1, useCORS: true, allowTaint: true, letterRendering: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       html2pdf().set(opt).from(content).save();
@@ -4876,11 +4876,11 @@ function generarPDFExpediente() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const opt = {
-          margin: 10,
+          margin: 8,
           filename: `Informe_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1 },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+          image: { type: 'png' },
+          html2canvas: { scale: 1, letterRendering: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true }
       };
       
       html2pdf().set(opt).from(content).save().finally(() => {
@@ -4962,11 +4962,11 @@ function generarPDFExpediente() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const opt = {
-          margin: 10,
+          margin: 8,
           filename: `Asistencia_${finalGrado.replace(/\\s+/g, '_')}_${finalSeccion}_${new Date().getMonth() + 1}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1 },
-          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+          image: { type: 'png' },
+          html2canvas: { scale: 1, letterRendering: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait', compress: true }
       };
       
       html2pdf().set(opt).from(content).save().finally(() => {
