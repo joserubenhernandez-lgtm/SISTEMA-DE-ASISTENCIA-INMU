@@ -647,7 +647,47 @@
         min-width: 45px;
         text-align: center;
     }
-  </style>
+  
+  /* ═══════════════ ASISTENCIA AUTÓNOMA QR ═══════════════ */
+  .btn-qr-autonoma {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #0C447C, #1a6fb5);
+    color: white; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: bold; cursor: pointer;
+    margin-bottom: 10px; transition: all 0.3s;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(12,68,124,0.4);
+  }
+  .btn-qr-autonoma:hover { background: linear-gradient(135deg,#1a6fb5,#2196f3); transform:translateY(-2px); }
+  #modal-qr-autonoma { display:none; position:fixed; inset:0; background:#0a0a1a; z-index:9999; flex-direction:column; overflow:hidden; }
+  #modal-qr-autonoma.open { display:flex; }
+  .qr-toolbar { display:flex; align-items:center; gap:8px; background:#111128; padding:10px 14px; border-bottom:2px solid #0C447C; flex-shrink:0; flex-wrap:wrap; }
+  .qr-toolbar-title { flex:1; color:#00d4ff; font-weight:bold; font-size:14px; text-align:center; }
+  .qr-btn { padding:8px 14px; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; transition:all 0.2s; }
+  .qr-btn-close { background:#c0392b; color:white; }
+  .qr-btn-gen { background:#f39c12; color:#1a1a2e; }
+  .qr-btn-scan { background:#2ecc71; color:#1a1a2e; }
+  .qr-btn-cam { background:#555; color:white; }
+  #panel-generar-qr, #panel-leer-qr { display:none; flex-direction:column; align-items:center; flex:1; overflow-y:auto; padding:12px; }
+  #panel-generar-qr.activo, #panel-leer-qr.activo { display:flex; }
+  .qr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; width:100%; max-width:700px; }
+  .qr-card { background:white; border:2px solid #0C447C; border-radius:10px; padding:10px; text-align:center; color:#1a1a2e; }
+  .qr-card img { width:120px; height:120px; }
+  .qr-nombre { font-size:11px; font-weight:bold; color:#0C447C; margin-top:5px; word-break:break-word; }
+  .qr-nie-label { font-size:10px; color:#555; margin-top:2px; }
+  #qr-video-container { position:relative; width:100%; max-width:480px; border-radius:12px; overflow:hidden; background:#000; margin-bottom:10px; }
+  #qr-video { width:100%; display:block; }
+  #qr-overlay-frame { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  #qr-overlay-frame::before { content:''; width:200px; height:200px; border:3px solid #00d4ff; border-radius:8px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); }
+  #qr-scan-line { position:absolute; width:200px; height:2px; background:linear-gradient(90deg,transparent,#00d4ff,transparent); animation:scanMove 1.8s linear infinite; top:calc(50% - 100px); }
+  @keyframes scanMove { 0%{transform:translateY(0)} 100%{transform:translateY(200px)} }
+  #qr-estado-scan { font-size:14px; font-weight:bold; text-align:center; padding:8px; color:#00d4ff; min-height:36px; width:100%; max-width:480px; }
+  #qr-lista-escaneados { width:100%; max-width:480px; display:flex; flex-direction:column; gap:6px; }
+  .qr-escaneado-item { display:flex; align-items:center; gap:10px; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); border-radius:8px; padding:8px 12px; animation:slideInQR 0.3s ease; }
+  @keyframes slideInQR { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  .qr-escaneado-nombre { flex:1; color:#eee; font-size:13px; }
+  .badge-presente { background:#2ecc71; color:#1a1a2e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; }
+</style>
 </head>
 
 <body>
@@ -861,6 +901,11 @@
 
         <!-- ══ NUEVO BOTÓN VER REPORTES PDF ══ -->
         <button id="btn-ver-reportes" class="btn-ver-reportes" onclick="abrirVisorReportes()">📂 Ver Reportes PDF</button>
+        <button class="btn-qr-autonoma" onclick="abrirQRAutonomo()">📷 Asistencia Autónoma QR</button>
+        <button onclick="generarYCompartirPDF()"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#8E44AD,#a259c4);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;text-transform:uppercase;">
+          📤 Generar PDF y Compartir
+        </button>
       </div>
     </div>
 
@@ -4365,7 +4410,404 @@
           console.error("Error handling native action:", e);
       }
   }
+
+  // =========================================================================
+  // ASISTENCIA AUTÓNOMA QR
+  // =========================================================================
+
+  function cargarLibreriaJsQR(callback) {
+    if (window.jsQR) { callback(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    s.onload = callback;
+    s.onerror = () => alert('No se pudo cargar jsQR. Verifique conexión.');
+    document.head.appendChild(s);
+  }
+
+  function cargarLibreriaQRCode(callback) {
+    if (window.QRCode) { callback(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = callback;
+    s.onerror = () => { window.QRCode = null; callback(); };
+    document.head.appendChild(s);
+  }
+
+  let qrCamaraFrontal = false;
+  let qrStream = null;
+  let qrScanLoop = null;
+  let qrEscaneados = new Set();
+  let qrEstados = {};
+  let qrAlumnos = [];
+
+  function abrirQRAutonomo() {
+    const grado = document.getElementById('grado-select').value;
+    const seccion = document.getElementById('seccion-select').value;
+    if (!grado || !seccion) {
+      alert('Seleccione primero un grado y una sección.');
+      return;
+    }
+    qrAlumnos = alumnosFiltrados.slice();
+    qrEscaneados = new Set();
+    qrEstados = {};
+    qrAlumnos.forEach(a => { qrEstados[String(a.nie)] = 'pendiente'; });
+    document.getElementById('modal-qr-autonoma').classList.add('open');
+    document.getElementById('panel-generar-qr').classList.remove('activo');
+    document.getElementById('panel-leer-qr').classList.remove('activo');
+    document.getElementById('qr-lista-escaneados').innerHTML = '';
+    actualizarContadoresQR();
+  }
+
+  function cerrarQRAutonomo() {
+    detenerCamaraQR();
+    document.getElementById('modal-qr-autonoma').classList.remove('open');
+  }
+
+  function mostrarPanelQR(panel) {
+    detenerCamaraQR();
+    document.getElementById('panel-generar-qr').classList.remove('activo');
+    document.getElementById('panel-leer-qr').classList.remove('activo');
+    if (panel === 'generar') {
+      document.getElementById('panel-generar-qr').classList.add('activo');
+      cargarLibreriaQRCode(generarTarjetasQR);
+    } else {
+      document.getElementById('panel-leer-qr').classList.add('activo');
+      cargarLibreriaJsQR(iniciarCamaraQR);
+    }
+  }
+
+  // ── GENERAR TARJETAS QR ──────────────────────────────────
+  function generarTarjetasQR() {
+    const grid = document.getElementById('qr-grid-alumnos');
+    grid.innerHTML = '';
+    if (!qrAlumnos.length) {
+      grid.innerHTML = '<p style="color:#aaa;text-align:center;grid-column:1/-1;">No hay alumnos cargados.</p>';
+      return;
+    }
+    const grado = document.getElementById('grado-select').value;
+    const seccion = document.getElementById('seccion-select').value;
+
+    qrAlumnos.forEach(alumno => {
+      const nie = String(alumno.nie);
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+
+      const qrDiv = document.createElement('div');
+      qrDiv.id = 'qrimg-' + nie;
+
+      const nombreEl = document.createElement('div');
+      nombreEl.className = 'qr-nombre';
+      nombreEl.textContent = alumno.nombre;
+
+      const nieLabel = document.createElement('div');
+      nieLabel.className = 'qr-nie-label';
+      nieLabel.textContent = 'NIE: ' + nie;
+
+      const gradoLabel = document.createElement('div');
+      gradoLabel.className = 'qr-nie-label';
+      gradoLabel.textContent = grado + ' ' + seccion;
+
+      card.append(qrDiv, nombreEl, nieLabel, gradoLabel);
+      grid.appendChild(card);
+
+      if (window.QRCode) {
+        try {
+          new QRCode(qrDiv, { text: nie, width: 120, height: 120,
+            colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+        } catch(e) {
+          qrDiv.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(nie) + '" width="120" height="120">';
+        }
+      } else {
+        qrDiv.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(nie) + '" width="120" height="120">';
+      }
+    });
+  }
+
+  function imprimirTodosQR() {
+    const grado = document.getElementById('grado-select').value;
+    const seccion = document.getElementById('seccion-select').value;
+    let html = '<html><head><title>Carnets QR</title><style>';
+    html += 'body{font-family:Arial,sans-serif;margin:10px;background:white;}';
+    html += '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}';
+    html += '.card{border:2px solid #0C447C;border-radius:10px;padding:10px;text-align:center;page-break-inside:avoid;}';
+    html += '.card img{width:120px;height:120px;}';
+    html += '.nombre{font-size:11px;font-weight:bold;color:#0C447C;margin-top:5px;word-break:break-word;}';
+    html += '.nie{font-size:10px;color:#555;margin-top:2px;}';
+    html += '@media print{body{margin:0;}.grid{gap:5px;}}';
+    html += '</style></head><body><div class="grid">';
+    qrAlumnos.forEach(alumno => {
+      const nie = String(alumno.nie);
+      const url = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(nie);
+      html += '<div class="card"><img src="' + url + '"><div class="nombre">' + alumno.nombre + '</div>';
+      html += '<div class="nie">NIE: ' + nie + '</div><div class="nie">' + grado + ' ' + seccion + '</div></div>';
+    });
+    html += '</div></body></html>';
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 800);
+  }
+
+  // ── ESCÁNER QR ───────────────────────────────────────────
+  function iniciarCamaraQR() {
+    const video = document.getElementById('qr-video');
+    if (qrStream) qrStream.getTracks().forEach(t => t.stop());
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: qrCamaraFrontal ? 'user' : 'environment', width:{ideal:1280}, height:{ideal:720} }
+    }).then(stream => {
+      qrStream = stream;
+      video.srcObject = stream;
+      video.play();
+      video.onloadedmetadata = iniciarLoopEscaneo;
+    }).catch(err => {
+      document.getElementById('qr-estado-scan').textContent = '⚠ Error de cámara: ' + err.message;
+    });
+  }
+
+  function detenerCamaraQR() {
+    if (qrScanLoop) { clearInterval(qrScanLoop); qrScanLoop = null; }
+    if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  }
+
+  function girarCamaraQR() {
+    qrCamaraFrontal = !qrCamaraFrontal;
+    iniciarCamaraQR();
+  }
+
+  function iniciarLoopEscaneo() {
+    const video = document.getElementById('qr-video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let ultimoNie = ''; let ultimoTime = 0;
+    if (qrScanLoop) clearInterval(qrScanLoop);
+
+    qrScanLoop = setInterval(() => {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (!window.jsQR) return;
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+      if (code) {
+        const now = Date.now();
+        const nie = code.data.trim();
+        if (nie === ultimoNie && (now - ultimoTime) < 2000) return;
+        ultimoNie = nie; ultimoTime = now;
+        procesarNieEscaneado(nie);
+      }
+    }, 150);
+  }
+
+  function procesarNieEscaneado(nie) {
+    const estadoDiv = document.getElementById('qr-estado-scan');
+    const lista = document.getElementById('qr-lista-escaneados');
+    const alumno = qrAlumnos.find(a => String(a.nie) === String(nie));
+
+    if (!alumno) {
+      estadoDiv.style.color = '#e74c3c';
+      estadoDiv.textContent = '⚠ NIE ' + nie + ' no pertenece a este grado/sección';
+      if (navigator.vibrate) navigator.vibrate([100,50,100]);
+      setTimeout(() => { estadoDiv.style.color = '#00d4ff'; estadoDiv.textContent = 'Apunte el QR del estudiante hacia la cámara'; }, 2200);
+      return;
+    }
+
+    if (qrEscaneados.has(String(nie))) {
+      estadoDiv.style.color = '#f39c12';
+      estadoDiv.textContent = '⚡ ' + alumno.nombre + ' ya fue marcado';
+      if (navigator.vibrate) navigator.vibrate(200);
+      setTimeout(() => { estadoDiv.style.color = '#00d4ff'; estadoDiv.textContent = 'Apunte el QR del estudiante hacia la cámara'; }, 1500);
+      return;
+    }
+
+    // Marcar presente
+    qrEscaneados.add(String(nie));
+    qrEstados[String(nie)] = 'presente';
+
+    // Sincronizar con el listado DOM principal
+    const idx = alumnosFiltrados.findIndex(a => String(a.nie) === String(nie));
+    if (idx !== -1) {
+      const chk = document.getElementById('chk-' + idx);
+      if (chk) {
+        chk.checked = true;
+        chk.dataset.estado = 'presente';
+        const row = document.getElementById('row-' + idx);
+        if (row) row.classList.remove('ausente', 'permiso');
+      }
+    }
+
+    actualizarContadoresQR();
+
+    estadoDiv.style.color = '#2ecc71';
+    estadoDiv.textContent = '✅ ' + alumno.nombre + ' — PRESENTE';
+    if (navigator.vibrate) navigator.vibrate(80);
+
+    const item = document.createElement('div');
+    item.className = 'qr-escaneado-item';
+    item.innerHTML = '<span style="font-size:18px;">✅</span><span class="qr-escaneado-nombre">' + alumno.nombre + '</span><span class="badge-presente">PRESENTE</span>';
+    lista.insertBefore(item, lista.firstChild);
+
+    setTimeout(() => { estadoDiv.style.color = '#00d4ff'; estadoDiv.textContent = 'Apunte el QR del estudiante hacia la cámara'; }, 1800);
+  }
+
+  function actualizarContadoresQR() {
+    const total = qrAlumnos.length;
+    const presentes = qrEscaneados.size;
+    document.getElementById('qr-cnt-presentes').textContent = presentes;
+    document.getElementById('qr-cnt-pendientes').textContent = total - presentes;
+    document.getElementById('qr-cnt-total').textContent = total;
+  }
+
+  function marcarTodosAusentes() {
+    if (!confirm('¿Marcar como AUSENTES a todos los estudiantes aún no escaneados?')) return;
+    qrAlumnos.forEach((alumno, idx) => {
+      const nie = String(alumno.nie);
+      if (!qrEscaneados.has(nie)) {
+        qrEstados[nie] = 'ausente';
+        const chk = document.getElementById('chk-' + idx);
+        if (chk) {
+          chk.checked = false;
+          chk.dataset.estado = 'ausente';
+          const row = document.getElementById('row-' + idx);
+          if (row) { row.classList.add('ausente'); row.classList.remove('permiso'); }
+        }
+      }
+    });
+    actualizarContadoresQR();
+    if (typeof mostrarNotificacion === 'function') mostrarNotificacion('Ausentes marcados correctamente', 'success');
+  }
+
+  async function generarPDFDesdeQR() {
+    detenerCamaraQR();
+    cerrarQRAutonomo();
+    await generarPDF();
+  }
+
+  // ── COMPARTIR PDF ──────────────────────────────────────────
+  async function compartirPDF(blob, nombre) {
+    const file = new File([blob], nombre, { type: 'application/pdf' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ title: 'Reporte de Asistencia', files: [file] });
+        return true;
+      } catch(e) {
+        if (e.name !== 'AbortError') console.log('Share error:', e);
+      }
+    }
+    return false;
+  }
+
+  async function generarYCompartirPDF() {
+    const docente = document.getElementById('docente-nombre').value.trim();
+    const grado = document.getElementById('grado-select').value;
+    const seccion = document.getElementById('seccion-select').value;
+    if (!grado || !seccion || !docente) { alert('Faltan datos: grado, sección o docente.'); return; }
+
+    const presentes = [], ausentes = [], permisos = [], personalObservaciones = [];
+    let masc = 0, fem = 0;
+    alumnosFiltrados.forEach((alumno, index) => {
+      const chk = document.getElementById('chk-' + index);
+      const estado = chk ? (chk.dataset.estado || (chk.checked ? 'presente' : 'ausente')) : 'presente';
+      const obsP = chk ? (chk.dataset.observacionPersonal || '') : '';
+      const just = chk ? (chk.dataset.justificante || '') : '';
+      if (estado === 'permiso') permisos.push({ ...alumno, justificante: just });
+      else if (chk && chk.checked) { presentes.push(alumno); alumno.sexo === 'M' ? masc++ : fem++; }
+      else ausentes.push(alumno);
+      if (obsP) personalObservaciones.push({ nombre: alumno.nombre, nie: alumno.nie, sexo: alumno.sexo, asistio: estado !== 'ausente', observacion_personal: obsP });
+    });
+
+    const ahora = new Date();
+    const fechaStr = ahora.toLocaleDateString('es-ES');
+    const d = ahora.getDate(), m = ahora.getMonth()+1, y = ahora.getFullYear();
+    const secLimpia = seccion.replace(/"/g,'');
+    const docenteLimpio = docente.replace(/\./g,'').replace(/[\/\:*?"<>|]/g,'_').trim();
+    const nombreArchivo = 'Asistencia_' + grado + '_' + secLimpia + '_' + d+'-'+m+'-'+y + '_' + docenteLimpio + '.pdf';
+    const obsGeneral = (document.getElementById('observacion-general')||{}).value || '';
+
+    const orientacion = document.querySelector('input[name="orientacion"]:checked') ?
+      document.querySelector('input[name="orientacion"]:checked').value : 'portrait';
+
+    const containerHTML = document.getElementById('pdf-content');
+    containerHTML.innerHTML = generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados:[], estudiantesPeligro:[], personalObservaciones });
+    await new Promise(r => setTimeout(r, 400));
+
+    const opt = {
+      margin: 15, filename: nombreArchivo,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 1.5, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion }
+    };
+
+    if (typeof mostrarNotificacion === 'function') mostrarNotificacion('Generando PDF para compartir...', 'info');
+    try {
+      const blob = await html2pdf().set(opt).from(containerHTML).outputPdf('blob');
+      const compartido = await compartirPDF(blob, nombreArchivo);
+      if (!compartido) {
+        await html2pdf().set(opt).from(containerHTML).save();
+        if (typeof mostrarNotificacion === 'function') mostrarNotificacion('PDF descargado (compartir no disponible en este navegador)', 'warning');
+      } else {
+        if (typeof mostrarNotificacion === 'function') mostrarNotificacion('PDF compartido exitosamente ✓', 'success');
+      }
+    } catch(e) {
+      if (typeof mostrarNotificacion === 'function') mostrarNotificacion('Error al generar PDF: ' + e.message, 'error');
+    }
+  }
+
 </script>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: ASISTENCIA AUTÓNOMA QR
+════════════════════════════════════════════════ -->
+<div id="modal-qr-autonoma">
+
+  <div class="qr-toolbar">
+    <button class="qr-btn qr-btn-close" onclick="cerrarQRAutonomo()">✕ Cerrar</button>
+    <div class="qr-toolbar-title">📷 Asistencia Autónoma QR</div>
+    <button class="qr-btn qr-btn-gen" onclick="mostrarPanelQR('generar')">🖨 Generar QR</button>
+    <button class="qr-btn qr-btn-scan" onclick="mostrarPanelQR('leer')">📷 Leer QR</button>
+  </div>
+
+  <!-- PANEL: GENERAR QR -->
+  <div id="panel-generar-qr">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;width:100%;max-width:700px;">
+      <p style="color:#ccc;font-size:13px;flex:1;margin:0;">Carnets QR para imprimir y laminar. Cada alumno muestra su carnet al escáner.</p>
+      <button onclick="imprimirTodosQR()" style="padding:10px 16px;background:#f39c12;color:#1a1a2e;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">🖨 Imprimir todos</button>
+    </div>
+    <div id="qr-grid-alumnos" class="qr-grid">
+      <p style="color:#aaa;text-align:center;grid-column:1/-1;">Cargando alumnos...</p>
+    </div>
+  </div>
+
+  <!-- PANEL: LEER QR -->
+  <div id="panel-leer-qr">
+    <div id="qr-video-container">
+      <video id="qr-video" playsinline autoplay muted></video>
+      <div id="qr-overlay-frame"><div id="qr-scan-line"></div></div>
+    </div>
+    <div id="qr-estado-scan">Apunte el QR del estudiante hacia la cámara</div>
+    <div style="display:flex;gap:8px;padding:0 12px 10px;width:100%;max-width:480px;flex-wrap:wrap;">
+      <button class="qr-btn qr-btn-cam" style="flex:1;" onclick="girarCamaraQR()">🔄 Girar cámara</button>
+      <button class="qr-btn" style="flex:1;background:#e74c3c;color:white;" onclick="marcarTodosAusentes()">✗ Ausentes restantes</button>
+      <button class="qr-btn" style="flex:1;background:#185FA5;color:white;" onclick="generarPDFDesdeQR()">📥 Generar PDF</button>
+    </div>
+    <div style="display:flex;gap:12px;padding:0 12px;width:100%;max-width:480px;margin-bottom:8px;">
+      <div style="flex:1;background:rgba(46,204,113,0.15);border-radius:8px;padding:8px;text-align:center;border:1px solid #2ecc71;">
+        <div style="color:#2ecc71;font-size:22px;font-weight:bold;" id="qr-cnt-presentes">0</div>
+        <div style="color:#ccc;font-size:11px;">Presentes</div>
+      </div>
+      <div style="flex:1;background:rgba(231,76,60,0.15);border-radius:8px;padding:8px;text-align:center;border:1px solid #e74c3c;">
+        <div style="color:#e74c3c;font-size:22px;font-weight:bold;" id="qr-cnt-pendientes">0</div>
+        <div style="color:#ccc;font-size:11px;">Pendientes</div>
+      </div>
+      <div style="flex:1;background:rgba(0,212,255,0.15);border-radius:8px;padding:8px;text-align:center;border:1px solid #00d4ff;">
+        <div style="color:#00d4ff;font-size:22px;font-weight:bold;" id="qr-cnt-total">0</div>
+        <div style="color:#ccc;font-size:11px;">Total</div>
+      </div>
+    </div>
+    <div id="qr-lista-escaneados"></div>
+  </div>
+
+</div>
 </body>
 
 </html>
