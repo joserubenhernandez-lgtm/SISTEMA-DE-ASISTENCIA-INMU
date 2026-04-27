@@ -647,7 +647,7 @@
         min-width: 45px;
         text-align: center;
     }
-  
+
   /* ═══════════════ ASISTENCIA AUTÓNOMA QR ═══════════════ */
   .btn-qr-autonoma {
     width: 100%; padding: 14px;
@@ -687,16 +687,16 @@
   @keyframes slideInQR { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
   .qr-escaneado-nombre { flex:1; color:#eee; font-size:13px; }
   .badge-presente { background:#2ecc71; color:#1a1a2e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; }
-</style>
+  </style>
 </head>
 
 <body>
 
 <div id="fallback-loading" style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#fff; color:#333; font-family:Arial, sans-serif; z-index:100000; padding:20px; text-align:center;">
-    <div>
-        <div style="font-size:24px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
-        <div style="font-size:14px; color:#555;">Conectando con el servidor. Si demora más de 10 segundos, es posible que no haya conexión a internet.</div>
-    </div>
+  <div>
+    <div style="font-size:24px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
+    <div style="font-size:14px; color:#555;">Conectando con el servidor. Si demora más de 10 segundos, es posible que no haya conexión a internet.</div>
+  </div>
 </div>
 
 <div id="pantalla-mantenimiento">
@@ -858,12 +858,12 @@
         </div>
       </div>
       <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center;">
-          <input type="text" id="student-list-search" placeholder="Buscar por nombre o NIE..." oninput="filtrarStudentList()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-          <button type="button" onclick="clearStudentListSearch()" style="padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#333;font-size:13px;cursor:pointer;white-space:nowrap;">Limpiar</button>
+        <input type="text" id="student-list-search" placeholder="Buscar por nombre o NIE..." oninput="filtrarStudentList()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+        <button type="button" onclick="clearStudentListSearch()" style="padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#333;font-size:13px;cursor:pointer;white-space:nowrap;">Limpiar</button>
       </div>
       <div style="margin-bottom: 25px;">
-          <button onclick="abrirPanelActualizarAsistencia()"
-                  style="background:none; border:none; color:#ff00e1; cursor:pointer; font-size:25px; font-weight:bold;">🔄 Actualizar asistencia</button>
+        <button onclick="abrirPanelActualizarAsistencia()"
+                style="background:none; border:none; color:#ff00e1; cursor:pointer; font-size:25px; font-weight:bold;">🔄 Actualizar asistencia</button>
       </div>
       <div class="student-list" id="tabla-alumnos">
         <div style="padding: 20px; text-align: center; color: var(--gray-600);">⏳ Conectando a la base de
@@ -903,7 +903,7 @@
         <button id="btn-ver-reportes" class="btn-ver-reportes" onclick="abrirVisorReportes()">📂 Ver Reportes PDF</button>
         <button class="btn-qr-autonoma" onclick="abrirQRAutonomo()">📷 Asistencia Autónoma QR</button>
         <button onclick="generarYCompartirPDF()"
-          style="width:100%;padding:14px;background:linear-gradient(135deg,#8E44AD,#a259c4);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;text-transform:uppercase;">
+                style="width:100%;padding:14px;background:linear-gradient(135deg,#8E44AD,#a259c4);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;text-transform:uppercase;">
           📤 Generar PDF y Compartir
         </button>
       </div>
@@ -1390,7 +1390,11 @@
   // =========================================================================
   async function chequearMantenimientoNube() {
       try {
-          const res = await fetch(SCRIPT_URL + "?tipo=check_mantenimiento");
+          // Timeout de 7 segundos para el fetch
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 7000);
+          const res = await fetch(SCRIPT_URL + "?tipo=check_mantenimiento", { signal: controller.signal });
+          clearTimeout(timer);
           const data = await res.json();
 
           if (data.mantenimiento === true) {
@@ -1425,26 +1429,15 @@
               setTimeout(restaurarSesionGuardada, 2000);
           }
       } catch (error) {
-          console.warn('No se pudo conectar con la nube:', error);
+          console.warn('No se pudo conectar con la nube:', error.name === 'AbortError' ? 'Timeout de red' : error);
           sistemaEnMantenimiento = false;
-          if (!esAppAndroid()) {
-              loginRequerido = false;
-              marcarModoOffline();
-              document.getElementById('pantalla-mantenimiento').style.display = 'none';
-              document.getElementById('modal-inicio-dropdown').classList.remove('open');
-              document.getElementById('modal-inicio-login').classList.add('open');
-              document.getElementById("mantenimiento-titulo").innerText = "SIN CONEXIÓN";
-              document.getElementById("mantenimiento-texto").innerText = "Cargando modo offline. Si hay datos guardados localmente, se restaurarán.";
-              setTimeout(restaurarSesionGuardada, 2000);
-              return;
-          }
+          modoOffline = true;
+          loginRequerido = true;
           document.getElementById('pantalla-mantenimiento').style.display = 'none';
           document.getElementById('modal-inicio-dropdown').classList.remove('open');
           document.getElementById('modal-inicio-login').classList.add('open');
-          document.getElementById("mantenimiento-titulo").innerText = "SIN CONEXIÓN";
-          document.getElementById("mantenimiento-texto").innerText = "Cargando modo offline. Si hay datos guardados localmente, se restaurarán.";
-          inicializarBaseDatos();
-          setTimeout(restaurarSesionGuardada, 2000);
+          marcarModoOffline();
+          setTimeout(restaurarSesionGuardada, 500);
       }
   }
 
@@ -1528,26 +1521,47 @@
       } catch (e) { }
   }
 
-  window.onload = function() {
-      // Eliminar la pantalla de carga en todo caso (máximo 8 segundos)
+  window.onload = async function() {
+      // Quitar pantalla de carga inmediatamente — nunca debe bloquear
       const fallback = document.getElementById('fallback-loading');
       if (fallback) fallback.remove();
-      const _fallbackTimer = setTimeout(function() {
-          const fb = document.getElementById('fallback-loading');
-          if (fb) fb.remove();
-      }, 8000);
 
       try {
           actualizarUISegunPlataforma();
-          chequearMantenimientoNube();
-          clearTimeout(_fallbackTimer);
+      } catch(e) {
+          console.error('Error en actualizarUISegunPlataforma:', e);
+      }
+
+      // Si estamos en file:// (PC/prueba local), ir directo a modo offline
+      if (window.location.protocol === 'file:' && !esAppAndroid()) {
+          console.log('Protocolo file:// detectado → modo offline automático');
+          modoOffline = true;
+          loginRequerido = true;
+          marcarModoOffline();
+          document.getElementById('pantalla-mantenimiento').style.display = 'none';
+          document.getElementById('modal-inicio-dropdown').classList.remove('open');
+          document.getElementById('modal-inicio-login').classList.add('open');
+          setTimeout(restaurarSesionGuardada, 500);
+          return;
+      }
+
+      // Intentar conectar con la nube con timeout de 8 segundos
+      try {
+          const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 8000)
+          );
+          await Promise.race([chequearMantenimientoNube(), timeoutPromise]);
       } catch (e) {
-          console.error('Error en window.onload:', e);
-          clearTimeout(_fallbackTimer);
+          console.warn('chequearMantenimientoNube falló o tardó demasiado:', e);
+          // Activar modo offline como fallback de emergencia
+          sistemaEnMantenimiento = false;
           modoOffline = true;
           loginRequerido = false;
           marcarModoOffline();
-          desbloquearInterfazMain('invitado');
+          document.getElementById('pantalla-mantenimiento').style.display = 'none';
+          document.getElementById('modal-inicio-dropdown').classList.remove('open');
+          document.getElementById('modal-inicio-login').classList.add('open');
+          setTimeout(restaurarSesionGuardada, 500);
       }
   };
 
@@ -2814,7 +2828,7 @@
           const url = `${SCRIPT_URL}?tipo=observacion_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}&fecha=${fecha}`;
           const res = await fetch(url);
           const data = await res.json();
-          
+
           // Obtener estudiantes en peligro
           let estudiantesPeligro = [];
           try {
@@ -2823,13 +2837,13 @@
           } catch (e) {
               console.log('Error obteniendo estudiantes en peligro:', e);
           }
-          
+
           const cont = document.getElementById('obs-grado-contenido');
           if (cont) {
               let htmlObs = data.observacion
                   ? `<div style="margin-bottom:10px;"><strong>Observación General:</strong><br><em style="color:#333;">${data.observacion}</em><br><small style="color:var(--gray-600);">— ${data.docente || ''} (${data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES') : ''})</small></div>`
                   : '<div style="margin-bottom:10px;"><span style="color:var(--gray-600);">Sin observación registrada para hoy.</span></div>';
-              
+
               if (estudiantesPeligro.length > 0) {
                   htmlObs += '<div style="margin-top:10px;"><strong style="color:var(--red-600);">⚠️ Estudiantes en Riesgo:</strong><ul style="margin:5px 0 0 20px;padding:0;">';
                   estudiantesPeligro.forEach(e => {
@@ -2839,7 +2853,7 @@
                   });
                   htmlObs += '</ul></div>';
               }
-              
+
               cont.innerHTML = htmlObs;
           }
       } catch (e) {
@@ -2849,7 +2863,7 @@
               let htmlObs = obsLocal
                   ? `<em>${obsLocal}</em><br><small style="color:var(--amber-600);">(Observación local — no enviada a la nube aún)</small>`
                   : '<span style="color:var(--gray-600);">Sin observación local registrada.</span>';
-              
+
               // Agregar estudiantes en peligro incluso en local
               try {
                   const resPeligro = await fetch(`${SCRIPT_URL}?tipo=estudiantes_peligro&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`);
@@ -2861,7 +2875,7 @@
               } catch (e2) {
                   console.log('Error obteniendo estudiantes en peligro:', e2);
               }
-              
+
               cont.innerHTML = htmlObs;
           }
       }
@@ -3361,7 +3375,7 @@
 
           let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
           html += '<tr style="background:var(--blue-50); border-bottom:1px solid var(--blue-800);"><th>Nombre</th><th>Sexo</th><th>NIE</th></tr>';
-          
+
           lista.forEach(a => {
               const nombre = typeof a === 'string' ? a : a.nombre;
               const sexo = (typeof a === 'string' ? '' : a.sexo) || '';
@@ -3623,7 +3637,7 @@
           const data = await response.json();
           const justificantes = Array.isArray(data.justificantes) ? data.justificantes : [];
           const faltas = Number(data.faltas_totales) || 0;
-          
+
           // Determinar estado del estudiante
           let estadoHtml = '';
           let colorEstado = '#333';
@@ -4791,7 +4805,7 @@ var qrcode = function() {
  var c, mc, r, mr, qrSvg='', rect;
  rect = 'l' + cellSize + ',0 0,' + cellSize +
  ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
- qrSvg += '<svg version="1.1" xmlns="http:
+qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
  qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
  qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
  qrSvg += ' preserveAspectRatio="xMinYMin meet"';
@@ -5862,7 +5876,7 @@ var qrcode = function() {
  out.writeString('GIF87a');
  out.writeShort(_width);
  out.writeShort(_height);
- out.writeByte(0x80); 
+ out.writeByte(0x80);
  out.writeByte(0);
  out.writeByte(0);
  out.writeByte(0x00);
@@ -6051,7 +6065,7 @@ var qrcode = function() {
 	else
 		root["jsQR"] = factory();
 })(typeof self !== 'undefined' ? self : this, function() {
-return (function(modules) { 
+return (function(modules) {
  	var installedModules = {};
  	function __webpack_require__(moduleId) {
  		if(installedModules[moduleId]) {
@@ -6126,7 +6140,7 @@ exports.BitMatrix = BitMatrix;
 Object.defineProperty(exports, "__esModule", { value: true });
 var GenericGFPoly_1 = __webpack_require__(2);
 function addOrSubtractGF(a, b) {
- return a ^ b; 
+ return a ^ b;
 }
 exports.addOrSubtractGF = addOrSubtractGF;
 var GenericGF = (function () {
@@ -6141,7 +6155,7 @@ var GenericGF = (function () {
  this.expTable[i] = x;
  x = x * 2;
  if (x >= this.size) {
- x = (x ^ this.primitive) & (this.size - 1); 
+ x = (x ^ this.primitive) & (this.size - 1);
  }
  }
  for (var i = 0; i < this.size - 1; i++) {
@@ -6541,9 +6555,9 @@ var DATA_MASKS = [
 function buildFunctionPatternMask(version) {
  var dimension = 17 + 4 * version.versionNumber;
  var matrix = BitMatrix_1.BitMatrix.createEmpty(dimension, dimension);
- matrix.setRegion(0, 0, 9, 9, true); 
- matrix.setRegion(dimension - 8, 0, 8, 9, true); 
- matrix.setRegion(0, dimension - 8, 9, 8, true); 
+ matrix.setRegion(0, 0, 9, 9, true);
+ matrix.setRegion(dimension - 8, 0, 8, 9, true);
+ matrix.setRegion(0, dimension - 8, 9, 8, true);
  for (var _i = 0, _a = version.alignmentPatternCenters; _i < _a.length; _i++) {
  var x = _a[_i];
  for (var _b = 0, _c = version.alignmentPatternCenters; _b < _c.length; _b++) {
@@ -6553,11 +6567,11 @@ function buildFunctionPatternMask(version) {
  }
  }
  }
- matrix.setRegion(6, 9, 1, dimension - 17, true); 
- matrix.setRegion(9, 6, dimension - 17, 1, true); 
+ matrix.setRegion(6, 9, 1, dimension - 17, true);
+ matrix.setRegion(9, 6, dimension - 17, 1, true);
  if (version.versionNumber > 6) {
- matrix.setRegion(dimension - 11, 0, 3, 6, true); 
- matrix.setRegion(0, dimension - 11, 6, 3, true); 
+ matrix.setRegion(dimension - 11, 0, 3, 6, true);
+ matrix.setRegion(0, dimension - 11, 6, 3, true);
  }
  return matrix;
 }
@@ -6570,7 +6584,7 @@ function readCodewords(matrix, version, formatInfo) {
  var bitsRead = 0;
  var readingUp = true;
  for (var columnIndex = dimension - 1; columnIndex > 0; columnIndex -= 2) {
- if (columnIndex === 6) { 
+ if (columnIndex === 6) {
  columnIndex--;
  }
  for (var i = 0; i < dimension; i++) {
@@ -6584,7 +6598,7 @@ function readCodewords(matrix, version, formatInfo) {
  bit = !bit;
  }
  currentByte = pushBit(bit, currentByte);
- if (bitsRead === 8) { 
+ if (bitsRead === 8) {
  codewords.push(currentByte);
  bitsRead = 0;
  currentByte = 0;
@@ -6599,7 +6613,7 @@ function readCodewords(matrix, version, formatInfo) {
 function readVersion(matrix) {
  var dimension = matrix.height;
  var provisionalVersion = Math.floor((dimension - 17) / 4);
- if (provisionalVersion <= 6) { 
+ if (provisionalVersion <= 6) {
  return version_1.VERSIONS[provisionalVersion - 1];
  }
  var topRightVersionBits = 0;
@@ -6639,21 +6653,21 @@ function readVersion(matrix) {
 function readFormatInformation(matrix) {
  var topLeftFormatInfoBits = 0;
  for (var x = 0; x <= 8; x++) {
- if (x !== 6) { 
+ if (x !== 6) {
  topLeftFormatInfoBits = pushBit(matrix.get(x, 8), topLeftFormatInfoBits);
  }
  }
  for (var y = 7; y >= 0; y--) {
- if (y !== 6) { 
+ if (y !== 6) {
  topLeftFormatInfoBits = pushBit(matrix.get(8, y), topLeftFormatInfoBits);
  }
  }
  var dimension = matrix.height;
  var topRightBottomRightFormatInfoBits = 0;
- for (var y = dimension - 1; y >= dimension - 7; y--) { 
+ for (var y = dimension - 1; y >= dimension - 7; y--) {
  topRightBottomRightFormatInfoBits = pushBit(matrix.get(8, y), topRightBottomRightFormatInfoBits);
  }
- for (var x = dimension - 8; x < dimension; x++) { 
+ for (var x = dimension - 8; x < dimension; x++) {
  topRightBottomRightFormatInfoBits = pushBit(matrix.get(x, 8), topRightBottomRightFormatInfoBits);
  }
  var bestDifference = Infinity;
@@ -6668,7 +6682,7 @@ function readFormatInformation(matrix) {
  bestFormatInfo = formatInfo;
  bestDifference = difference;
  }
- if (topLeftFormatInfoBits !== topRightBottomRightFormatInfoBits) { 
+ if (topLeftFormatInfoBits !== topRightBottomRightFormatInfoBits) {
  difference = numBitsDiffering(topRightBottomRightFormatInfoBits, bits);
  if (difference < bestDifference) {
  bestFormatInfo = formatInfo;
@@ -14153,7 +14167,7 @@ function findErrorMagnitudes(field, errorEvaluator, errorLocations) {
 function decode(bytes, twoS) {
  var outputBytes = new Uint8ClampedArray(bytes.length);
  outputBytes.set(bytes);
- var field = new GenericGF_1.default(0x011D, 256, 0); 
+ var field = new GenericGF_1.default(0x011D, 256, 0);
  var poly = new GenericGFPoly_1.default(field, outputBytes);
  var syndromeCoefficients = new Uint8ClampedArray(twoS);
  var error = false;
@@ -15505,7 +15519,7 @@ var BitMatrix_1 = __webpack_require__(0);
 function squareToQuadrilateral(p1, p2, p3, p4) {
  var dx3 = p1.x - p2.x + p3.x - p4.x;
  var dy3 = p1.y - p2.y + p3.y - p4.y;
- if (dx3 === 0 && dy3 === 0) { 
+ if (dx3 === 0 && dy3 === 0) {
  return {
  a11: p2.x - p1.x,
  a12: p2.y - p1.y,
@@ -15626,7 +15640,7 @@ function reorderFinderPatterns(pattern1, pattern2, pattern3) {
  return { bottomLeft: bottomLeft, topLeft: topLeft, topRight: topRight };
 }
 function computeDimension(topLeft, topRight, bottomLeft, matrix) {
- var moduleSize = (sum(countBlackWhiteRun(topLeft, bottomLeft, matrix, 5)) / 7 + 
+ var moduleSize = (sum(countBlackWhiteRun(topLeft, bottomLeft, matrix, 5)) / 7 +
  sum(countBlackWhiteRun(topLeft, topRight, matrix, 5)) / 7 +
  sum(countBlackWhiteRun(bottomLeft, topLeft, matrix, 5)) / 7 +
  sum(countBlackWhiteRun(topRight, topLeft, matrix, 5)) / 7) / 4;
@@ -15707,7 +15721,7 @@ function countBlackWhiteRun(origin, end, matrix, length) {
  var run = end.x - origin.x;
  var towardsEnd = countBlackWhiteRunTowardsPoint(origin, end, matrix, Math.ceil(length / 2));
  var awayFromEnd = countBlackWhiteRunTowardsPoint(origin, { x: origin.x - run, y: origin.y - rise }, matrix, Math.ceil(length / 2));
- var middleValue = towardsEnd.shift() + awayFromEnd.shift() - 1; 
+ var middleValue = towardsEnd.shift() + awayFromEnd.shift() - 1;
  return (_a = awayFromEnd.concat(middleValue)).concat.apply(_a, towardsEnd);
 }
 function scoreBlackWhiteRun(sequence, ratios) {
@@ -15796,12 +15810,12 @@ function locate(matrix) {
  Math.abs(scans[2] - 3 * averageFinderPatternBlocksize) < 3 * averageFinderPatternBlocksize &&
  Math.abs(scans[3] - averageFinderPatternBlocksize) < averageFinderPatternBlocksize &&
  Math.abs(scans[4] - averageFinderPatternBlocksize) < averageFinderPatternBlocksize &&
- !v; 
+ !v;
  var averageAlignmentPatternBlocksize = sum(scans.slice(-3)) / 3;
  var validAlignmentPattern = Math.abs(scans[2] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
  Math.abs(scans[3] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
  Math.abs(scans[4] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
- v; 
+ v;
  if (validFinderPattern) {
  var endX_1 = x - scans[3] - scans[4];
  var startX_1 = endX_1 - scans[2];
@@ -15852,7 +15866,7 @@ function locate(matrix) {
  finderPatternQuads.push.apply(finderPatternQuads, activeFinderPatternQuads.filter(function (q) { return q.bottom.y - q.top.y >= 2; }));
  alignmentPatternQuads.push.apply(alignmentPatternQuads, activeAlignmentPatternQuads);
  var finderPatternGroups = finderPatternQuads
- .filter(function (q) { return q.bottom.y - q.top.y >= 2; }) 
+ .filter(function (q) { return q.bottom.y - q.top.y >= 2; })
  .map(function (q) {
  var x = (q.top.startX + q.top.endX + q.bottom.startX + q.bottom.endX) / 4;
  var y = (q.top.y + q.bottom.y + 1) / 2;
@@ -15864,7 +15878,7 @@ function locate(matrix) {
  var score = scorePattern({ x: Math.round(x), y: Math.round(y) }, [1, 1, 3, 1, 1], matrix);
  return { score: score, x: x, y: y, size: size };
  })
- .filter(function (q) { return !!q; }) 
+ .filter(function (q) { return !!q; })
  .sort(function (a, b) { return a.score - b.score; })
  .map(function (point, i, finderPatterns) {
  if (i > MAX_FINDERPATTERNS_TO_SEARCH) {
@@ -15880,7 +15894,7 @@ function locate(matrix) {
  var score = point.score + otherPoints[0].score + otherPoints[1].score;
  return { points: [point].concat(otherPoints.slice(0, 2)), score: score };
  })
- .filter(function (q) { return !!q; }) 
+ .filter(function (q) { return !!q; })
  .sort(function (a, b) { return a.score - b.score; });
  if (finderPatternGroups.length === 0) {
  return null;
