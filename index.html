@@ -647,7 +647,7 @@
         min-width: 45px;
         text-align: center;
     }
-
+  
   /* ═══════════════ ASISTENCIA AUTÓNOMA QR ═══════════════ */
   .btn-qr-autonoma {
     width: 100%; padding: 14px;
@@ -687,16 +687,16 @@
   @keyframes slideInQR { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
   .qr-escaneado-nombre { flex:1; color:#eee; font-size:13px; }
   .badge-presente { background:#2ecc71; color:#1a1a2e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; }
-  </style>
+</style>
 </head>
 
 <body>
 
 <div id="fallback-loading" style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#fff; color:#333; font-family:Arial, sans-serif; z-index:100000; padding:20px; text-align:center;">
-  <div>
-    <div style="font-size:24px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
-    <div style="font-size:14px; color:#555;">Conectando con el servidor. Si demora más de 10 segundos, es posible que no haya conexión a internet.</div>
-  </div>
+    <div>
+        <div style="font-size:24px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
+        <div style="font-size:14px; color:#555;">Conectando con el servidor. Si demora más de 10 segundos, es posible que no haya conexión a internet.</div>
+    </div>
 </div>
 
 <div id="pantalla-mantenimiento">
@@ -858,12 +858,12 @@
         </div>
       </div>
       <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center;">
-        <input type="text" id="student-list-search" placeholder="Buscar por nombre o NIE..." oninput="filtrarStudentList()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-        <button type="button" onclick="clearStudentListSearch()" style="padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#333;font-size:13px;cursor:pointer;white-space:nowrap;">Limpiar</button>
+          <input type="text" id="student-list-search" placeholder="Buscar por nombre o NIE..." oninput="filtrarStudentList()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <button type="button" onclick="clearStudentListSearch()" style="padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#333;font-size:13px;cursor:pointer;white-space:nowrap;">Limpiar</button>
       </div>
       <div style="margin-bottom: 25px;">
-        <button onclick="abrirPanelActualizarAsistencia()"
-                style="background:none; border:none; color:#ff00e1; cursor:pointer; font-size:25px; font-weight:bold;">🔄 Actualizar asistencia</button>
+          <button onclick="abrirPanelActualizarAsistencia()"
+                  style="background:none; border:none; color:#ff00e1; cursor:pointer; font-size:25px; font-weight:bold;">🔄 Actualizar asistencia</button>
       </div>
       <div class="student-list" id="tabla-alumnos">
         <div style="padding: 20px; text-align: center; color: var(--gray-600);">⏳ Conectando a la base de
@@ -903,7 +903,7 @@
         <button id="btn-ver-reportes" class="btn-ver-reportes" onclick="abrirVisorReportes()">📂 Ver Reportes PDF</button>
         <button class="btn-qr-autonoma" onclick="abrirQRAutonomo()">📷 Asistencia Autónoma QR</button>
         <button onclick="generarYCompartirPDF()"
-                style="width:100%;padding:14px;background:linear-gradient(135deg,#8E44AD,#a259c4);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;text-transform:uppercase;">
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#8E44AD,#a259c4);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;text-transform:uppercase;">
           📤 Generar PDF y Compartir
         </button>
       </div>
@@ -2828,7 +2828,7 @@
           const url = `${SCRIPT_URL}?tipo=observacion_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}&fecha=${fecha}`;
           const res = await fetch(url);
           const data = await res.json();
-
+          
           // Obtener estudiantes en peligro
           let estudiantesPeligro = [];
           try {
@@ -2837,13 +2837,13 @@
           } catch (e) {
               console.log('Error obteniendo estudiantes en peligro:', e);
           }
-
+          
           const cont = document.getElementById('obs-grado-contenido');
           if (cont) {
               let htmlObs = data.observacion
                   ? `<div style="margin-bottom:10px;"><strong>Observación General:</strong><br><em style="color:#333;">${data.observacion}</em><br><small style="color:var(--gray-600);">— ${data.docente || ''} (${data.fecha ? new Date(data.fecha).toLocaleDateString('es-ES') : ''})</small></div>`
                   : '<div style="margin-bottom:10px;"><span style="color:var(--gray-600);">Sin observación registrada para hoy.</span></div>';
-
+              
               if (estudiantesPeligro.length > 0) {
                   htmlObs += '<div style="margin-top:10px;"><strong style="color:var(--red-600);">⚠️ Estudiantes en Riesgo:</strong><ul style="margin:5px 0 0 20px;padding:0;">';
                   estudiantesPeligro.forEach(e => {
@@ -2853,7 +2853,7 @@
                   });
                   htmlObs += '</ul></div>';
               }
-
+              
               cont.innerHTML = htmlObs;
           }
       } catch (e) {
@@ -2863,7 +2863,7 @@
               let htmlObs = obsLocal
                   ? `<em>${obsLocal}</em><br><small style="color:var(--amber-600);">(Observación local — no enviada a la nube aún)</small>`
                   : '<span style="color:var(--gray-600);">Sin observación local registrada.</span>';
-
+              
               // Agregar estudiantes en peligro incluso en local
               try {
                   const resPeligro = await fetch(`${SCRIPT_URL}?tipo=estudiantes_peligro&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`);
@@ -2875,7 +2875,7 @@
               } catch (e2) {
                   console.log('Error obteniendo estudiantes en peligro:', e2);
               }
-
+              
               cont.innerHTML = htmlObs;
           }
       }
@@ -3375,7 +3375,7 @@
 
           let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
           html += '<tr style="background:var(--blue-50); border-bottom:1px solid var(--blue-800);"><th>Nombre</th><th>Sexo</th><th>NIE</th></tr>';
-
+          
           lista.forEach(a => {
               const nombre = typeof a === 'string' ? a : a.nombre;
               const sexo = (typeof a === 'string' ? '' : a.sexo) || '';
@@ -3637,7 +3637,7 @@
           const data = await response.json();
           const justificantes = Array.isArray(data.justificantes) ? data.justificantes : [];
           const faltas = Number(data.faltas_totales) || 0;
-
+          
           // Determinar estado del estudiante
           let estadoHtml = '';
           let colorEstado = '#333';
@@ -4805,7 +4805,7 @@ var qrcode = function() {
  var c, mc, r, mr, qrSvg='', rect;
  rect = 'l' + cellSize + ',0 0,' + cellSize +
  ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
-qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+ qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
  qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
  qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
  qrSvg += ' preserveAspectRatio="xMinYMin meet"';
@@ -5876,7 +5876,7 @@ qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
  out.writeString('GIF87a');
  out.writeShort(_width);
  out.writeShort(_height);
- out.writeByte(0x80);
+ out.writeByte(0x80); 
  out.writeByte(0);
  out.writeByte(0);
  out.writeByte(0x00);
@@ -6066,7 +6066,7 @@ qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
 	else
 		root["jsQR"] = factory();
 })(typeof self !== 'undefined' ? self : this, function() {
-return (function(modules) {
+return (function(modules) { 
  	var installedModules = {};
  	function __webpack_require__(moduleId) {
  		if(installedModules[moduleId]) {
@@ -6141,7 +6141,7 @@ exports.BitMatrix = BitMatrix;
 Object.defineProperty(exports, "__esModule", { value: true });
 var GenericGFPoly_1 = __webpack_require__(2);
 function addOrSubtractGF(a, b) {
- return a ^ b;
+ return a ^ b; 
 }
 exports.addOrSubtractGF = addOrSubtractGF;
 var GenericGF = (function () {
@@ -6156,7 +6156,7 @@ var GenericGF = (function () {
  this.expTable[i] = x;
  x = x * 2;
  if (x >= this.size) {
- x = (x ^ this.primitive) & (this.size - 1);
+ x = (x ^ this.primitive) & (this.size - 1); 
  }
  }
  for (var i = 0; i < this.size - 1; i++) {
@@ -6556,9 +6556,9 @@ var DATA_MASKS = [
 function buildFunctionPatternMask(version) {
  var dimension = 17 + 4 * version.versionNumber;
  var matrix = BitMatrix_1.BitMatrix.createEmpty(dimension, dimension);
- matrix.setRegion(0, 0, 9, 9, true);
- matrix.setRegion(dimension - 8, 0, 8, 9, true);
- matrix.setRegion(0, dimension - 8, 9, 8, true);
+ matrix.setRegion(0, 0, 9, 9, true); 
+ matrix.setRegion(dimension - 8, 0, 8, 9, true); 
+ matrix.setRegion(0, dimension - 8, 9, 8, true); 
  for (var _i = 0, _a = version.alignmentPatternCenters; _i < _a.length; _i++) {
  var x = _a[_i];
  for (var _b = 0, _c = version.alignmentPatternCenters; _b < _c.length; _b++) {
@@ -6568,11 +6568,11 @@ function buildFunctionPatternMask(version) {
  }
  }
  }
- matrix.setRegion(6, 9, 1, dimension - 17, true);
- matrix.setRegion(9, 6, dimension - 17, 1, true);
+ matrix.setRegion(6, 9, 1, dimension - 17, true); 
+ matrix.setRegion(9, 6, dimension - 17, 1, true); 
  if (version.versionNumber > 6) {
- matrix.setRegion(dimension - 11, 0, 3, 6, true);
- matrix.setRegion(0, dimension - 11, 6, 3, true);
+ matrix.setRegion(dimension - 11, 0, 3, 6, true); 
+ matrix.setRegion(0, dimension - 11, 6, 3, true); 
  }
  return matrix;
 }
@@ -6585,7 +6585,7 @@ function readCodewords(matrix, version, formatInfo) {
  var bitsRead = 0;
  var readingUp = true;
  for (var columnIndex = dimension - 1; columnIndex > 0; columnIndex -= 2) {
- if (columnIndex === 6) {
+ if (columnIndex === 6) { 
  columnIndex--;
  }
  for (var i = 0; i < dimension; i++) {
@@ -6599,7 +6599,7 @@ function readCodewords(matrix, version, formatInfo) {
  bit = !bit;
  }
  currentByte = pushBit(bit, currentByte);
- if (bitsRead === 8) {
+ if (bitsRead === 8) { 
  codewords.push(currentByte);
  bitsRead = 0;
  currentByte = 0;
@@ -6614,7 +6614,7 @@ function readCodewords(matrix, version, formatInfo) {
 function readVersion(matrix) {
  var dimension = matrix.height;
  var provisionalVersion = Math.floor((dimension - 17) / 4);
- if (provisionalVersion <= 6) {
+ if (provisionalVersion <= 6) { 
  return version_1.VERSIONS[provisionalVersion - 1];
  }
  var topRightVersionBits = 0;
@@ -6654,21 +6654,21 @@ function readVersion(matrix) {
 function readFormatInformation(matrix) {
  var topLeftFormatInfoBits = 0;
  for (var x = 0; x <= 8; x++) {
- if (x !== 6) {
+ if (x !== 6) { 
  topLeftFormatInfoBits = pushBit(matrix.get(x, 8), topLeftFormatInfoBits);
  }
  }
  for (var y = 7; y >= 0; y--) {
- if (y !== 6) {
+ if (y !== 6) { 
  topLeftFormatInfoBits = pushBit(matrix.get(8, y), topLeftFormatInfoBits);
  }
  }
  var dimension = matrix.height;
  var topRightBottomRightFormatInfoBits = 0;
- for (var y = dimension - 1; y >= dimension - 7; y--) {
+ for (var y = dimension - 1; y >= dimension - 7; y--) { 
  topRightBottomRightFormatInfoBits = pushBit(matrix.get(8, y), topRightBottomRightFormatInfoBits);
  }
- for (var x = dimension - 8; x < dimension; x++) {
+ for (var x = dimension - 8; x < dimension; x++) { 
  topRightBottomRightFormatInfoBits = pushBit(matrix.get(x, 8), topRightBottomRightFormatInfoBits);
  }
  var bestDifference = Infinity;
@@ -6683,7 +6683,7 @@ function readFormatInformation(matrix) {
  bestFormatInfo = formatInfo;
  bestDifference = difference;
  }
- if (topLeftFormatInfoBits !== topRightBottomRightFormatInfoBits) {
+ if (topLeftFormatInfoBits !== topRightBottomRightFormatInfoBits) { 
  difference = numBitsDiffering(topRightBottomRightFormatInfoBits, bits);
  if (difference < bestDifference) {
  bestFormatInfo = formatInfo;
@@ -14168,7 +14168,7 @@ function findErrorMagnitudes(field, errorEvaluator, errorLocations) {
 function decode(bytes, twoS) {
  var outputBytes = new Uint8ClampedArray(bytes.length);
  outputBytes.set(bytes);
- var field = new GenericGF_1.default(0x011D, 256, 0);
+ var field = new GenericGF_1.default(0x011D, 256, 0); 
  var poly = new GenericGFPoly_1.default(field, outputBytes);
  var syndromeCoefficients = new Uint8ClampedArray(twoS);
  var error = false;
@@ -15520,7 +15520,7 @@ var BitMatrix_1 = __webpack_require__(0);
 function squareToQuadrilateral(p1, p2, p3, p4) {
  var dx3 = p1.x - p2.x + p3.x - p4.x;
  var dy3 = p1.y - p2.y + p3.y - p4.y;
- if (dx3 === 0 && dy3 === 0) {
+ if (dx3 === 0 && dy3 === 0) { 
  return {
  a11: p2.x - p1.x,
  a12: p2.y - p1.y,
@@ -15641,7 +15641,7 @@ function reorderFinderPatterns(pattern1, pattern2, pattern3) {
  return { bottomLeft: bottomLeft, topLeft: topLeft, topRight: topRight };
 }
 function computeDimension(topLeft, topRight, bottomLeft, matrix) {
- var moduleSize = (sum(countBlackWhiteRun(topLeft, bottomLeft, matrix, 5)) / 7 +
+ var moduleSize = (sum(countBlackWhiteRun(topLeft, bottomLeft, matrix, 5)) / 7 + 
  sum(countBlackWhiteRun(topLeft, topRight, matrix, 5)) / 7 +
  sum(countBlackWhiteRun(bottomLeft, topLeft, matrix, 5)) / 7 +
  sum(countBlackWhiteRun(topRight, topLeft, matrix, 5)) / 7) / 4;
@@ -15722,7 +15722,7 @@ function countBlackWhiteRun(origin, end, matrix, length) {
  var run = end.x - origin.x;
  var towardsEnd = countBlackWhiteRunTowardsPoint(origin, end, matrix, Math.ceil(length / 2));
  var awayFromEnd = countBlackWhiteRunTowardsPoint(origin, { x: origin.x - run, y: origin.y - rise }, matrix, Math.ceil(length / 2));
- var middleValue = towardsEnd.shift() + awayFromEnd.shift() - 1;
+ var middleValue = towardsEnd.shift() + awayFromEnd.shift() - 1; 
  return (_a = awayFromEnd.concat(middleValue)).concat.apply(_a, towardsEnd);
 }
 function scoreBlackWhiteRun(sequence, ratios) {
@@ -15811,12 +15811,12 @@ function locate(matrix) {
  Math.abs(scans[2] - 3 * averageFinderPatternBlocksize) < 3 * averageFinderPatternBlocksize &&
  Math.abs(scans[3] - averageFinderPatternBlocksize) < averageFinderPatternBlocksize &&
  Math.abs(scans[4] - averageFinderPatternBlocksize) < averageFinderPatternBlocksize &&
- !v;
+ !v; 
  var averageAlignmentPatternBlocksize = sum(scans.slice(-3)) / 3;
  var validAlignmentPattern = Math.abs(scans[2] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
  Math.abs(scans[3] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
  Math.abs(scans[4] - averageAlignmentPatternBlocksize) < averageAlignmentPatternBlocksize &&
- v;
+ v; 
  if (validFinderPattern) {
  var endX_1 = x - scans[3] - scans[4];
  var startX_1 = endX_1 - scans[2];
@@ -15867,7 +15867,7 @@ function locate(matrix) {
  finderPatternQuads.push.apply(finderPatternQuads, activeFinderPatternQuads.filter(function (q) { return q.bottom.y - q.top.y >= 2; }));
  alignmentPatternQuads.push.apply(alignmentPatternQuads, activeAlignmentPatternQuads);
  var finderPatternGroups = finderPatternQuads
- .filter(function (q) { return q.bottom.y - q.top.y >= 2; })
+ .filter(function (q) { return q.bottom.y - q.top.y >= 2; }) 
  .map(function (q) {
  var x = (q.top.startX + q.top.endX + q.bottom.startX + q.bottom.endX) / 4;
  var y = (q.top.y + q.bottom.y + 1) / 2;
@@ -15879,7 +15879,7 @@ function locate(matrix) {
  var score = scorePattern({ x: Math.round(x), y: Math.round(y) }, [1, 1, 3, 1, 1], matrix);
  return { score: score, x: x, y: y, size: size };
  })
- .filter(function (q) { return !!q; })
+ .filter(function (q) { return !!q; }) 
  .sort(function (a, b) { return a.score - b.score; })
  .map(function (point, i, finderPatterns) {
  if (i > MAX_FINDERPATTERNS_TO_SEARCH) {
@@ -15895,7 +15895,7 @@ function locate(matrix) {
  var score = point.score + otherPoints[0].score + otherPoints[1].score;
  return { points: [point].concat(otherPoints.slice(0, 2)), score: score };
  })
- .filter(function (q) { return !!q; })
+ .filter(function (q) { return !!q; }) 
  .sort(function (a, b) { return a.score - b.score; });
  if (finderPatternGroups.length === 0) {
  return null;
@@ -16000,14 +16000,12 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   let qrEstados = {};
   let qrAlumnos = [];
 
+  // Lista actualmente visible en el panel QR
+  let qrAlumnosFiltradosPanel = [];
+
   function abrirQRAutonomo() {
-    const grado = document.getElementById('grado-select').value;
-    const seccion = document.getElementById('seccion-select').value;
-    if (!grado || !seccion) {
-      alert('Seleccione primero un grado y una sección.');
-      return;
-    }
-    qrAlumnos = alumnosFiltrados.slice();
+    // Cargar TODOS los alumnos (no solo el grado seleccionado)
+    qrAlumnos = baseDatosAlumnos.length > 0 ? baseDatosAlumnos.slice() : alumnosFiltrados.slice();
     qrEscaneados = new Set();
     qrEstados = {};
     qrAlumnos.forEach(a => { qrEstados[String(a.nie)] = 'pendiente'; });
@@ -16015,7 +16013,34 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     document.getElementById('panel-generar-qr').classList.remove('activo');
     document.getElementById('panel-leer-qr').classList.remove('activo');
     document.getElementById('qr-lista-escaneados').innerHTML = '';
+    // Resetear filtros del panel QR
+    const fg = document.getElementById('qr-filtro-grado');
+    const fs = document.getElementById('qr-filtro-seccion');
+    const fb = document.getElementById('qr-buscador');
+    if (fg) fg.value = 'TODOS';
+    if (fs) fs.value = 'TODAS';
+    if (fb) fb.value = '';
     actualizarContadoresQR();
+  }
+
+  // Aplica los filtros del panel generar QR y vuelve a renderizar
+  function qrAplicarFiltros() {
+    const gradoFiltro   = (document.getElementById('qr-filtro-grado')   || {}).value || 'TODOS';
+    const seccionFiltro = (document.getElementById('qr-filtro-seccion') || {}).value || 'TODAS';
+    const busqueda      = ((document.getElementById('qr-buscador')       || {}).value || '').toLowerCase().trim();
+
+    let base = qrAlumnos.slice();
+    if (gradoFiltro !== 'TODOS')   base = base.filter(a => (a.grado   || '') === gradoFiltro);
+    if (seccionFiltro !== 'TODAS') base = base.filter(a => (a.seccion || '') === seccionFiltro);
+    if (busqueda) base = base.filter(a =>
+      (a.nombre || '').toLowerCase().includes(busqueda) ||
+      String(a.nie).includes(busqueda)
+    );
+
+    qrAlumnosFiltradosPanel = base;
+    const contador = document.getElementById('qr-contador-carnet');
+    if (contador) contador.textContent = 'Mostrando ' + base.length + ' alumno' + (base.length !== 1 ? 's' : '');
+    generarTarjetasQR(base);
   }
 
   function cerrarQRAutonomo() {
@@ -16029,7 +16054,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     document.getElementById('panel-leer-qr').classList.remove('activo');
     if (panel === 'generar') {
       document.getElementById('panel-generar-qr').classList.add('activo');
-      generarTarjetasQR();
+      qrAplicarFiltros(); // respeta los filtros actuales
     } else {
       document.getElementById('panel-leer-qr').classList.add('activo');
       iniciarCamaraQR();
@@ -16037,17 +16062,16 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   }
 
   // ── GENERAR TARJETAS QR (canvas puro, sin CDN) ───────────────────────────
-  function generarTarjetasQR() {
+  function generarTarjetasQR(listaParam) {
+    const lista = listaParam || qrAlumnos;
     const grid = document.getElementById('qr-grid-alumnos');
     grid.innerHTML = '';
-    if (!qrAlumnos.length) {
-      grid.innerHTML = '<p style="color:#aaa;text-align:center;grid-column:1/-1;">No hay alumnos cargados.</p>';
+    if (!lista.length) {
+      grid.innerHTML = '<p style="color:#aaa;text-align:center;grid-column:1/-1;">No hay alumnos que coincidan.</p>';
       return;
     }
-    const grado   = document.getElementById('grado-select').value;
-    const seccion = document.getElementById('seccion-select').value;
 
-    qrAlumnos.forEach(alumno => {
+    lista.forEach(alumno => {
       const nie = String(alumno.nie);
 
       const card = document.createElement('div');
@@ -16069,7 +16093,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 
       const gradoLabel = document.createElement('div');
       gradoLabel.className = 'qr-nie-label';
-      gradoLabel.textContent = grado + ' ' + seccion;
+      gradoLabel.textContent = (alumno.grado || '') + ' ' + (alumno.seccion || '');
 
       card.append(nombreEl, nieLabel, gradoLabel);
       grid.appendChild(card);
@@ -16105,11 +16129,9 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   }
 
   function imprimirTodosQR() {
-    const grado   = document.getElementById('grado-select').value;
-    const seccion = document.getElementById('seccion-select').value;
-
     // Convertir canvas a dataURL para imprimir
     const cards = document.querySelectorAll('#qr-grid-alumnos .qr-card');
+    const listaImprimir = qrAlumnosFiltradosPanel.length > 0 ? qrAlumnosFiltradosPanel : qrAlumnos;
     let html = '<html><head><title>Carnets QR</title><style>';
     html += 'body{font-family:Arial,sans-serif;margin:10px;background:white;}';
     html += '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}';
@@ -16120,7 +16142,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     html += '@media print{body{margin:0;}.grid{gap:5px;}}';
     html += '</style></head><body><div class="grid">';
 
-    qrAlumnos.forEach((alumno, i) => {
+    listaImprimir.forEach((alumno, i) => {
       const nie    = String(alumno.nie);
       const card   = cards[i];
       const canvas = card ? card.querySelector('canvas') : null;
@@ -16129,7 +16151,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       if (imgSrc) html += '<img src="' + imgSrc + '">';
       html += '<div class="nombre">' + alumno.nombre + '</div>';
       html += '<div class="nie">NIE: ' + nie + '</div>';
-      html += '<div class="nie">' + grado + ' ' + seccion + '</div>';
+      html += '<div class="nie">' + (alumno.grado || '') + ' ' + (alumno.seccion || '') + '</div>';
       html += '</div>';
     });
 
@@ -16203,38 +16225,90 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
   }
 
   function iniciarLoopEscaneo() {
-    const video  = document.getElementById('qr-video');
-    const canvas = document.createElement('canvas');
-    const ctx    = canvas.getContext('2d');
-    let ultimoNie  = '';
-    let ultimoTime = 0;
+    const video     = document.getElementById('qr-video');
+    const canvas    = document.createElement('canvas');
+    const ctx       = canvas.getContext('2d', { willReadFrequently: true });
+    let ultimoNie   = '';
+    let ultimoTime  = 0;
+    let frameCount  = 0;
+
+    // Resolver jsQR una sola vez
+    const _jsQR = (typeof jsQR === 'function') ? jsQR
+                : (typeof jsQR === 'object' && jsQR !== null && typeof jsQR.default === 'function') ? jsQR.default
+                : null;
+
+    /* ── Mejora de contraste (umbralización adaptativa simple) ── */
+    function mejorarContraste(imgData) {
+      const d = imgData.data;
+      // Calcular luminancia promedio para umbral adaptativo
+      let suma = 0;
+      const paso = 4 * 4; // muestrear 1 de cada 4 píxeles para velocidad
+      let count = 0;
+      for (let i = 0; i < d.length; i += paso) {
+        suma += 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        count++;
+      }
+      const umbral = suma / count;
+      // Binarizar: blanco o negro según umbral
+      for (let i = 0; i < d.length; i += 4) {
+        const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        const v = lum > umbral ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = v;
+      }
+      return imgData;
+    }
+
+    function intentarDecode(imgData, ancho, alto) {
+      if (!_jsQR) return null;
+      // Intento 1: imagen completa, invertir si hace falta
+      let code = _jsQR(imgData.data, ancho, alto, { inversionAttempts: 'attemptBoth' });
+      if (code) return code;
+      // Intento 2: imagen con contraste mejorado
+      const mejorado = mejorarContraste(imgData);
+      code = _jsQR(mejorado.data, ancho, alto, { inversionAttempts: 'attemptBoth' });
+      return code;
+    }
 
     function tick() {
-      if (!qrStream) return; // stream detenido
+      if (!qrStream) return;
       qrScanLoop = requestAnimationFrame(tick);
-
       if (video.readyState < video.HAVE_ENOUGH_DATA) return;
 
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+      frameCount++;
+      // Procesar cada 2 frames para no saturar la CPU (30fps → ~15 intentos/seg)
+      if (frameCount % 2 !== 0) return;
 
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return;
 
-      // Resolver jsQR en cualquier forma que esté disponible (WebView/navegador)
-      const _jsQR = (typeof jsQR === 'function') ? jsQR
-                  : (typeof jsQR === 'object' && jsQR !== null && typeof jsQR.default === 'function') ? jsQR.default
-                  : null;
-      if (!_jsQR) return;
+      // ── Estrategia 1: región central recortada (70% del área) ──
+      // El QR casi siempre está en el centro del encuadre
+      const margenX = Math.floor(vw * 0.15);
+      const margenY = Math.floor(vh * 0.15);
+      const cw = vw - margenX * 2;
+      const ch = vh - margenY * 2;
 
-      const code = _jsQR(imgData.data, imgData.width, imgData.height, {
-        inversionAttempts: 'dontInvert'
-      });
+      canvas.width  = cw;
+      canvas.height = ch;
+      ctx.drawImage(video, margenX, margenY, cw, ch, 0, 0, cw, ch);
+      let imgData = ctx.getImageData(0, 0, cw, ch);
+      let code = intentarDecode(imgData, cw, ch);
+
+      // ── Estrategia 2: imagen completa si el recorte no encontró nada ──
+      if (!code) {
+        canvas.width  = vw;
+        canvas.height = vh;
+        ctx.drawImage(video, 0, 0);
+        imgData = ctx.getImageData(0, 0, vw, vh);
+        code = intentarDecode(imgData, vw, vh);
+      }
 
       if (code) {
         const now = Date.now();
         const nie = code.data.trim();
-        if (nie === ultimoNie && (now - ultimoTime) < 2000) return;
+        // Cooldown de 1.5 s para el mismo NIE (reducido de 2 s para mayor fluidez)
+        if (nie === ultimoNie && (now - ultimoTime) < 1500) return;
         ultimoNie  = nie;
         ultimoTime = now;
         procesarNieEscaneado(nie);
@@ -16296,7 +16370,9 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     item.className = 'qr-escaneado-item';
     item.innerHTML =
       '<span style="font-size:18px;">✅</span>' +
-      '<span class="qr-escaneado-nombre">' + alumno.nombre + '</span>' +
+      '<span class="qr-escaneado-nombre">' + alumno.nombre +
+        '<span style="display:block;font-size:10px;font-weight:normal;color:#aaa;">' +
+        (alumno.grado || '') + ' ' + (alumno.seccion || '') + '</span></span>' +
       '<span class="badge-presente">PRESENTE</span>';
     lista.insertBefore(item, lista.firstChild);
 
@@ -16424,10 +16500,38 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 
   <!-- PANEL: GENERAR QR -->
   <div id="panel-generar-qr">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;width:100%;max-width:700px;">
-      <p style="color:#ccc;font-size:13px;flex:1;margin:0;">Carnets QR para imprimir y laminar. Cada alumno muestra su carnet al escáner.</p>
-      <button onclick="imprimirTodosQR()" style="padding:10px 16px;background:#f39c12;color:#1a1a2e;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;">🖨 Imprimir todos</button>
+    <!-- Filtros -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;width:100%;max-width:700px;">
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <label style="color:#aaa;font-size:11px;font-weight:bold;">GRADO</label>
+        <select id="qr-filtro-grado" onchange="qrAplicarFiltros()" style="padding:8px 10px;border-radius:8px;border:none;background:#1e2a45;color:#fff;font-size:13px;cursor:pointer;">
+          <option value="TODOS">Todos los grados</option>
+          <option value="1° General">1° General</option>
+          <option value="1° Adm. Contable">1° Adm. Contable</option>
+          <option value="1° S. Eléctricos">1° S. Eléctricos</option>
+          <option value="2° General">2° General</option>
+          <option value="2° Adm. Contable">2° Adm. Contable</option>
+          <option value="2° Sist. Eléctricos">2° Sist. Eléctricos</option>
+          <option value="3° Adm. Contable">3° Adm. Contable</option>
+          <option value="3° Sist. Eléctricos">3° Sist. Eléctricos</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <label style="color:#aaa;font-size:11px;font-weight:bold;">SECCIÓN</label>
+        <select id="qr-filtro-seccion" onchange="qrAplicarFiltros()" style="padding:8px 10px;border-radius:8px;border:none;background:#1e2a45;color:#fff;font-size:13px;cursor:pointer;">
+          <option value="TODAS">Todas</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="Única">Única</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:150px;">
+        <label style="color:#aaa;font-size:11px;font-weight:bold;">BUSCAR</label>
+        <input id="qr-buscador" type="text" placeholder="Nombre o NIE..." oninput="qrAplicarFiltros()" style="padding:8px 10px;border-radius:8px;border:none;background:#1e2a45;color:#fff;font-size:13px;width:100%;box-sizing:border-box;" />
+      </div>
+      <button onclick="imprimirTodosQR()" style="padding:9px 14px;background:#f39c12;color:#1a1a2e;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;white-space:nowrap;">🖨 Imprimir</button>
     </div>
+    <div id="qr-contador-carnet" style="color:#aaa;font-size:12px;margin-bottom:8px;width:100%;max-width:700px;"></div>
     <div id="qr-grid-alumnos" class="qr-grid">
       <p style="color:#aaa;text-align:center;grid-column:1/-1;">Cargando alumnos...</p>
     </div>
