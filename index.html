@@ -2596,16 +2596,20 @@
             const titulo = document.getElementById('di-modal-titulo');
             if (titulo) titulo.textContent = accionDiRefuerzo === 'agregar' ? 'Agregar a DI Refuerzo' : 'Eliminar de DI Refuerzo';
             const input = document.getElementById('di-buscador');
+            const cont = document.getElementById('di-resultados');
             if (input) input.value = '';
-            filtrarDiRefuerzo();
             abrirModal('modal-di-refuerzo');
+            if (cont) {
+                cont.innerHTML = `<div style="padding:14px; color:#5f6c7b; text-align:center;">Cargando estudiantes...</div>`;
+            }
+            requestAnimationFrame(() => filtrarDiRefuerzo());
             setTimeout(() => { if (input) input.focus(); }, 50);
         }
 
         function obtenerListaCandidatosDI() {
-            const seleccionados = new Set((baseDatosDiRefuerzo || []).map(a => normalizarTexto(a.nie || a.nombre)));
+            const seleccionados = new Set((baseDatosDiRefuerzo || []).map(a => normalizarTexto(a && (a.nie ?? a.nombre))));
             return (baseDatosAlumnos || []).filter(a => {
-                const key = normalizarTexto(a.nie || a.nombre);
+                const key = normalizarTexto(a && (a.nie ?? a.nombre));
                 const yaEsta = seleccionados.has(key);
                 return accionDiRefuerzo === 'agregar' ? !yaEsta : yaEsta;
             });
@@ -2633,10 +2637,10 @@
         }
 
         function filtrarDiRefuerzo() {
-            const filtro = (document.getElementById('di-buscador') || {}).value.toLowerCase().trim();
+            const filtro = normalizarTexto((document.getElementById('di-buscador') || {}).value);
             const lista = obtenerListaCandidatosDI().filter(a => {
-                const nombre = (a.nombre || '').toLowerCase();
-                const nie = (a.nie || '').toLowerCase();
+                const nombre = normalizarTexto(a && a.nombre);
+                const nie = normalizarTexto(a && a.nie);
                 return !filtro || nombre.includes(filtro) || nie.includes(filtro);
             });
             renderizarResultadosDI(lista);
