@@ -416,19 +416,33 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Obtener grado/seccion/docente directo desde la API (evita problemas con base64 y caracteres especiales)
-  document.getElementById('header-info').textContent = 'Cargando...';
+  // Decodificar sesionId: grado|seccion|docente
+  let grado = '', seccion = '', docente = '';
+  try {
+    const decoded = atob(sesionId);
+    const parts = decoded.split('|');
+    grado   = parts[0] || '';
+    seccion = parts[1] || '';
+    docente = parts[2] || '';
+  } catch(e) {
+    mostrarScreen('invalido');
+    return;
+  }
+
+  document.title = `Asistencia ${grado} ${seccion} — INMU`;
+  document.getElementById('header-info').textContent = `${grado} ${seccion} — ${docente}`;
 
   // Verificar si este dispositivo ya marcó hoy
   const claveHoy = claveDia(token, sesionId);
   const alumnoGuardado = localStorage.getItem('asistencia_enviada_' + claveHoy);
+
   if (alumnoGuardado) {
     mostrarYaEnvio(JSON.parse(alumnoGuardado));
     return;
   }
 
-  // Validar sesión y obtener datos desde el backend
-  validarSesion(token, sesionId);
+  // Validar que la sesión esté activa en el backend
+  validarSesion(token, sesionId, grado, seccion, docente);
 });
 
 function claveDia(tok, ses) {
@@ -436,7 +450,7 @@ function claveDia(tok, ses) {
   return `${hoy.getFullYear()}-${hoy.getMonth()}-${hoy.getDate()}_${tok}_${ses}`;
 }
 
-async function validarSesion(token, sesionId) {
+async function validarSesion(token, sesionId, grado, seccion, docente) {
   try {
     const r = await fetch(`${API_URL}?tipo=validar_sesion_alumno&token=${encodeURIComponent(token)}&sesion=${encodeURIComponent(sesionId)}`);
     const data = await r.json();
@@ -444,13 +458,11 @@ async function validarSesion(token, sesionId) {
       mostrarScreen('invalido');
       return;
     }
-    // Usar grado/seccion/docente que devuelve la API directamente
-    const grado   = data.grado   || '';
-    const seccion = data.seccion || '';
-    const docente = data.docente || '';
+    // Cargar alumnos
     cargarAlumnos(grado, seccion, docente);
   } catch(e) {
-    mostrarScreen('invalido');
+    // Si no se puede validar, permitir igualmente (funciona offline parcial)
+    cargarAlumnos(grado, seccion, docente);
   }
 }
 
@@ -510,7 +522,7 @@ function buscarAlumno() {
 
   lista.style.display = 'block';
   lista.innerHTML = resultados.map((a, i) => `
-    <div class="resultado-item" onclick="seleccionarAlumno(${i + '_' + Date.now()}, '${escapar(a.nombre)}', '${escapar(String(a.nie))}', '${escapar(a.grado||'')}', '${escapar(a.seccion||'')}', '${escapar(a.sexo||'')}')">
+    <div class="resultado-item" onclick="seleccionarAlumno(${i}, '${escapar(a.nombre)}', '${escapar(String(a.nie))}', '${escapar(a.grado||'')}', '${escapar(a.seccion||'')}', '${escapar(a.sexo||'')}')">
       <div class="resultado-nombre">${a.nombre}</div>
       <div class="resultado-nie">NIE: ${a.nie} · ${a.grado} ${a.seccion}</div>
     </div>
