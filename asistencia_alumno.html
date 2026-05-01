@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0C447C">
+  <title>Marcar Asistencia — INMU</title>
+  <style>
+    :root {
+      --blue-800: #0C447C;
+      --blue-600: #185FA5;
+      --green-600: #1D9E75;
+      --red-600: #B71C1C;
+      --gray-50: #F0F2F5;
+      --gray-100: #D3D1C7;
+      --gray-600: #5F5E5A;
+      --gray-900: #2C2C2A;
+      --amber-600: #BA7517;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+    body { background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
+
+    .header {
+      background: var(--blue-800);
+      color: white;
+      padding: 14px 20px;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+    .header h1 { font-size: 17px; margin-bottom: 2px; }
+    .header p  { font-size: 12px; opacity: 0.85; }
+
+    .container { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--blue-800);
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--gray-50);
+      padding-bottom: 8px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-100);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--blue-600);
+    }
+
+    .resultados-lista {
+      border: 1px solid var(--gray-100);
+      border-radius: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      display: none;
+    }
+    .resultado-item {
+      padding: 11px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--gray-50);
+      transition: background 0.15s;
+    }
+    .resultado-item:last-child { border-bottom: none; }
+    .resultado-item:hover { background: #eef6ff; }
+    .resultado-nombre { font-weight: bold; font-size: 14px; color: var(--gray-900); }
+    .resultado-nie { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+    .alumno-seleccionado {
+      background: #eef6ff;
+      border: 1.5px solid var(--blue-600);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .alumno-seleccionado .nombre { font-weight: bold; font-size: 15px; color: var(--blue-800); }
+    .alumno-seleccionado .info { font-size: 12px; color: var(--gray-600); margin-top: 3px; }
+
+    /* CANVAS FIRMA */
+    .firma-container {
+      display: none;
+    }
+    #canvas-firma {
+      width: 100%;
+      height: 200px;
+      border: 2px dashed var(--gray-100);
+      border-radius: 10px;
+      background: #fafbfc;
+      touch-action: none;
+      cursor: crosshair;
+      display: block;
+    }
+    #canvas-firma.firmando {
+      border-color: var(--blue-600);
+      border-style: solid;
+    }
+
+    .firma-hint {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 12px;
+      margin: 6px 0 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-blue { background: var(--blue-600); color: white; }
+    .btn-blue:hover:not(:disabled) { background: var(--blue-800); }
+    .btn-green { background: var(--green-600); color: white; }
+    .btn-green:hover:not(:disabled) { background: #168f67; }
+    .btn-red { background: var(--red-600); color: white; }
+    .btn-red:hover:not(:disabled) { background: #9e1818; }
+    .btn-gray { background: var(--gray-600); color: white; }
+    .btn-gray:hover:not(:disabled) { background: #4a4a48; }
+    .btn-outline {
+      background: white;
+      color: var(--blue-800);
+      border: 2px solid var(--blue-800);
+    }
+
+    /* PANTALLAS */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ÉXITO */
+    .exito-box {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .exito-icon { font-size: 72px; margin-bottom: 16px; }
+    .exito-title { font-size: 22px; font-weight: bold; color: var(--green-600); margin-bottom: 8px; }
+    .exito-msg { font-size: 14px; color: var(--gray-600); line-height: 1.6; }
+
+    /* YA ENVIÓ */
+    .ya-envio-box {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .ya-envio-icon { font-size: 60px; margin-bottom: 12px; }
+    .ya-envio-title { font-size: 20px; font-weight: bold; color: var(--amber-600); margin-bottom: 8px; }
+    .ya-envio-msg { font-size: 13px; color: var(--gray-600); line-height: 1.6; margin-bottom: 20px; }
+
+    /* BLOQUEADO */
+    .bloqueado-box {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .bloqueado-icon { font-size: 60px; margin-bottom: 12px; }
+    .bloqueado-title { font-size: 20px; font-weight: bold; color: var(--red-600); margin-bottom: 8px; }
+    .bloqueado-msg { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+
+    /* MODAL CÓDIGO */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 24px;
+      width: 90%;
+      max-width: 360px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--blue-800);
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .modal-box input {
+      margin-bottom: 14px;
+    }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btns .btn { margin-bottom: 0; }
+
+    /* SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .modo-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .modo-login { background: #dbeafe; color: var(--blue-800); }
+    .modo-firma  { background: #dcfce7; color: #166534; }
+
+    .info-sesion {
+      font-size: 12px;
+      color: var(--gray-600);
+      background: var(--gray-50);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 11px;
+      color: var(--gray-600);
+      display: block;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .error-msg {
+      color: var(--red-600);
+      font-size: 13px;
+      text-align: center;
+      padding: 10px;
+      background: #FCEBEB;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .limpiar-firma-btn {
+      background: none;
+      border: 1px solid var(--gray-100);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--gray-600);
+      display: block;
+      margin: 0 0 12px auto;
+    }
+    .limpiar-firma-btn:hover { background: var(--gray-50); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 Registro de Asistencia</h1>
+  <p id="header-info">Instituto Nacional de Mercedes Umaña</p>
+</div>
+
+<div class="container">
+
+  <!-- ══ PANTALLA: ENLACE INVÁLIDO / EXPIRADO ══ -->
+  <div id="screen-invalido" class="screen panel">
+    <div class="bloqueado-box">
+      <div class="bloqueado-icon">🔒</div>
+      <div class="bloqueado-title">Enlace no válido</div>
+      <div class="bloqueado-msg">Este enlace no está activo o ha expirado.<br>Contacte a su docente.</div>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA: YA ENVIÓ ASISTENCIA ══ -->
+  <div id="screen-ya-envio" class="screen panel">
+    <div class="ya-envio-box">
+      <div class="ya-envio-icon">✅</div>
+      <div class="ya-envio-title">Asistencia ya enviada</div>
+      <div id="ya-envio-nombre" class="ya-envio-msg"></div>
+      <button class="btn btn-red" onclick="cerrarVentana()">🚪 Salir</button>
+      <button class="btn btn-outline" onclick="abrirModalCodigo()">🔑 Solicitar código para marcar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA PRINCIPAL: BUSCAR ALUMNO ══ -->
+  <div id="screen-buscar" class="screen">
+    <div class="panel">
+      <div id="modo-badge-buscar" class="modo-badge modo-login">🔓 Modo: Inicio de Sesión</div>
+      <div id="info-sesion-buscar" class="info-sesion"></div>
+      <div class="panel-title">Buscar su nombre</div>
+      <label>Ingrese su NIE o nombre completo</label>
+      <input type="text" id="input-busqueda"
+             placeholder="Ej: 123456 ó Juan Pérez"
+             oninput="buscarAlumno()"
+             autocomplete="off">
+      <div class="resultados-lista" id="lista-resultados"></div>
+      <div class="error-msg" id="error-busqueda">No se encontraron resultados.</div>
+    </div>
+
+    <!-- Alumno seleccionado -->
+    <div class="panel">
+      <div class="alumno-seleccionado" id="box-alumno-seleccionado">
+        <div class="nombre" id="sel-nombre"></div>
+        <div class="info" id="sel-info"></div>
+      </div>
+
+      <!-- Firma (solo en modo firma) -->
+      <div class="firma-container" id="firma-container">
+        <div class="panel-title">✍️ Su firma</div>
+        <p class="firma-hint">Firme en el recuadro con su dedo o con el lápiz</p>
+        <canvas id="canvas-firma"></canvas>
+        <button class="limpiar-firma-btn" onclick="limpiarFirma()">🗑 Limpiar firma</button>
+      </div>
+
+      <button id="btn-marcar" class="btn btn-green" onclick="marcarAsistencia()" disabled>
+        ✅ Marcar Asistencia
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA: ENVIANDO ══ -->
+  <div id="screen-enviando" class="screen panel">
+    <div class="exito-box">
+      <div class="exito-icon">⏳</div>
+      <div class="exito-title">Enviando asistencia...</div>
+      <div class="exito-msg">Por favor espere un momento.</div>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA: ÉXITO ══ -->
+  <div id="screen-exito" class="screen panel">
+    <div class="exito-box">
+      <div class="exito-icon">🎉</div>
+      <div class="exito-title">¡Asistencia enviada!</div>
+      <div id="exito-msg" class="exito-msg"></div>
+    </div>
+    <div style="padding: 0 22px 22px;">
+      <button class="btn btn-red" onclick="cerrarVentana()">🚪 Salir</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ══ MODAL: SOLICITAR CÓDIGO ══ -->
+<div class="modal-overlay" id="modal-codigo">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Código de autorización</div>
+    <label>Ingrese el código</label>
+    <input type="password" id="input-codigo" placeholder="Código de acceso"
+           onkeydown="if(event.key==='Enter') verificarCodigo()">
+    <div class="error-msg" id="error-codigo" style="display:none; margin-bottom:10px;">Código incorrecto.</div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="cerrarModalCodigo()">Cancelar</button>
+      <button class="btn btn-blue" onclick="verificarCodigo()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN  —  Cambia esta URL a la de tu Web App
+// ══════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbxKnxasl94QOwaLx2QZMDNnfNG8NTtnWg1agE9shf9cyeYeP1PsgtUjbu4X94lXRSIM/exec';
+
+// ══════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════════════
+let modo = '';          // 'login' | 'firma'
+let token = '';         // token del día generado por el docente
+let sesionId = '';      // id de sesión del docente (grado+seccion+docente)
+let alumnosList = [];   // lista de alumnos del grado/sección
+let alumnoSeleccionado = null;
+let firmaDataURL = '';
+
+// Canvas firma
+let canvas, ctx, dibujando = false, firmaTrazos = false;
+
+// ══════════════════════════════════════════════════════
+//  INICIALIZACIÓN
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  modo    = params.get('modo') || '';
+  token   = params.get('token') || '';
+  sesionId = params.get('sesion') || '';
+
+  if (!modo || !token || !sesionId) {
+    mostrarScreen('invalido');
+    return;
+  }
+
+  // Decodificar sesionId: grado|seccion|docente
+  let grado = '', seccion = '', docente = '';
+  try {
+    const decoded = atob(sesionId);
+    const parts = decoded.split('|');
+    grado   = parts[0] || '';
+    seccion = parts[1] || '';
+    docente = parts[2] || '';
+  } catch(e) {
+    mostrarScreen('invalido');
+    return;
+  }
+
+  document.title = `Asistencia ${grado} ${seccion} — INMU`;
+  document.getElementById('header-info').textContent = `${grado} ${seccion} — ${docente}`;
+
+  // Verificar si este dispositivo ya marcó hoy
+  const claveHoy = claveDia(token, sesionId);
+  const alumnoGuardado = localStorage.getItem('asistencia_enviada_' + claveHoy);
+
+  if (alumnoGuardado) {
+    mostrarYaEnvio(JSON.parse(alumnoGuardado));
+    return;
+  }
+
+  // Validar que la sesión esté activa en el backend
+  validarSesion(token, sesionId, grado, seccion, docente);
+});
+
+function claveDia(tok, ses) {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${hoy.getMonth()}-${hoy.getDate()}_${tok}_${ses}`;
+}
+
+async function validarSesion(token, sesionId, grado, seccion, docente) {
+  try {
+    const r = await fetch(`${API_URL}?tipo=validar_sesion_alumno&token=${encodeURIComponent(token)}&sesion=${encodeURIComponent(sesionId)}`);
+    const data = await r.json();
+    if (!data.activa) {
+      mostrarScreen('invalido');
+      return;
+    }
+    // Cargar alumnos
+    cargarAlumnos(grado, seccion, docente);
+  } catch(e) {
+    // Si no se puede validar, permitir igualmente (funciona offline parcial)
+    cargarAlumnos(grado, seccion, docente);
+  }
+}
+
+async function cargarAlumnos(grado, seccion, docente) {
+  try {
+    const r = await fetch(`${API_URL}?tipo=alumnos&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`);
+    alumnosList = await r.json();
+  } catch(e) {
+    alumnosList = [];
+  }
+
+  // Mostrar info de sesión
+  const modoLabel = modo === 'firma' ? '✍️ Firma digital requerida' : '🔓 Solo verificación de asistencia';
+  document.getElementById('modo-badge-buscar').textContent = modoLabel;
+  document.getElementById('modo-badge-buscar').className = 'modo-badge ' + (modo === 'firma' ? 'modo-firma' : 'modo-login');
+  document.getElementById('info-sesion-buscar').innerHTML =
+    `<strong>Docente:</strong> ${docente}<br>
+     <strong>Grado/Sección:</strong> ${grado} ${seccion}<br>
+     <strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}`;
+
+  mostrarScreen('buscar');
+
+  // Inicializar canvas firma
+  if (modo === 'firma') {
+    initCanvas();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  BUSCAR ALUMNO
+// ══════════════════════════════════════════════════════
+function buscarAlumno() {
+  const texto = document.getElementById('input-busqueda').value.trim().toLowerCase();
+  const lista = document.getElementById('lista-resultados');
+  const errDiv = document.getElementById('error-busqueda');
+  errDiv.style.display = 'none';
+
+  // Deseleccionar si se borra texto
+  if (!texto) {
+    lista.style.display = 'none';
+    lista.innerHTML = '';
+    deseleccionarAlumno();
+    return;
+  }
+
+  const resultados = alumnosList.filter(a =>
+    (a.nombre || '').toLowerCase().includes(texto) ||
+    String(a.nie).includes(texto)
+  ).slice(0, 10);
+
+  if (!resultados.length) {
+    lista.style.display = 'none';
+    errDiv.style.display = 'block';
+    deseleccionarAlumno();
+    return;
+  }
+
+  lista.style.display = 'block';
+  lista.innerHTML = resultados.map((a, i) => `
+    <div class="resultado-item" onclick="seleccionarAlumno(${i + '_' + Date.now()}, '${escapar(a.nombre)}', '${escapar(String(a.nie))}', '${escapar(a.grado||'')}', '${escapar(a.seccion||'')}', '${escapar(a.sexo||'')}')">
+      <div class="resultado-nombre">${a.nombre}</div>
+      <div class="resultado-nie">NIE: ${a.nie} · ${a.grado} ${a.seccion}</div>
+    </div>
+  `).join('');
+}
+
+function escapar(s) { return (s || '').replace(/'/g, "\\'"); }
+
+function seleccionarAlumno(idx, nombre, nie, grado, seccion, sexo) {
+  alumnoSeleccionado = { nombre, nie, grado, seccion, sexo };
+
+  document.getElementById('input-busqueda').value = nombre;
+  document.getElementById('lista-resultados').style.display = 'none';
+
+  const box = document.getElementById('box-alumno-seleccionado');
+  box.style.display = 'block';
+  document.getElementById('sel-nombre').textContent = nombre;
+  document.getElementById('sel-info').textContent = `NIE: ${nie} · ${grado} ${seccion}`;
+
+  if (modo === 'firma') {
+    document.getElementById('firma-container').style.display = 'block';
+    firmaDataURL = '';
+    firmaTrazos = false;
+    limpiarFirma();
+    document.getElementById('btn-marcar').disabled = true;
+  } else {
+    document.getElementById('btn-marcar').disabled = false;
+  }
+}
+
+function deseleccionarAlumno() {
+  alumnoSeleccionado = null;
+  document.getElementById('box-alumno-seleccionado').style.display = 'none';
+  document.getElementById('firma-container').style.display = 'none';
+  document.getElementById('btn-marcar').disabled = true;
+}
+
+// ══════════════════════════════════════════════════════
+//  CANVAS FIRMA
+// ══════════════════════════════════════════════════════
+function initCanvas() {
+  canvas = document.getElementById('canvas-firma');
+  ctx = canvas.getContext('2d');
+
+  // Ajustar resolución del canvas al tamaño display real
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = rect.width  * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.strokeStyle = '#0C447C';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Touch
+  canvas.addEventListener('touchstart',  e => { e.preventDefault(); startDraw(e.touches[0]); }, { passive: false });
+  canvas.addEventListener('touchmove',   e => { e.preventDefault(); draw(e.touches[0]); },      { passive: false });
+  canvas.addEventListener('touchend',    e => { e.preventDefault(); endDraw(); },                { passive: false });
+  // Mouse
+  canvas.addEventListener('mousedown',   e => startDraw(e));
+  canvas.addEventListener('mousemove',   e => { if (dibujando) draw(e); });
+  canvas.addEventListener('mouseup',     endDraw);
+  canvas.addEventListener('mouseleave',  endDraw);
+}
+
+function getPos(evt) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (evt.clientX - rect.left),
+    y: (evt.clientY - rect.top)
+  };
+}
+
+function startDraw(evt) {
+  dibujando = true;
+  canvas.classList.add('firmando');
+  const pos = getPos(evt);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(evt) {
+  if (!dibujando) return;
+  const pos = getPos(evt);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  firmaTrazos = true;
+  if (alumnoSeleccionado) document.getElementById('btn-marcar').disabled = false;
+}
+
+function endDraw() {
+  if (!dibujando) return;
+  dibujando = false;
+  ctx.beginPath();
+  if (firmaTrazos && alumnoSeleccionado) {
+    firmaDataURL = canvas.toDataURL('image/png');
+  }
+}
+
+function limpiarFirma() {
+  if (!canvas) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.classList.remove('firmando');
+  firmaDataURL = '';
+  firmaTrazos = false;
+  if (alumnoSeleccionado) document.getElementById('btn-marcar').disabled = true;
+}
+
+// ══════════════════════════════════════════════════════
+//  MARCAR ASISTENCIA
+// ══════════════════════════════════════════════════════
+async function marcarAsistencia() {
+  if (!alumnoSeleccionado) return;
+  if (modo === 'firma' && !firmaTrazos) {
+    alert('Por favor firme antes de continuar.');
+    return;
+  }
+
+  mostrarScreen('enviando');
+
+  const params = new URLSearchParams(window.location.search);
+  const sesionId = params.get('sesion') || '';
+  let grado = '', seccion = '', docente = '';
+  try {
+    const decoded = atob(sesionId);
+    const parts = decoded.split('|');
+    grado   = parts[0] || '';
+    seccion = parts[1] || '';
+    docente = parts[2] || '';
+  } catch(e) {}
+
+  // Capturar firma final
+  if (modo === 'firma' && canvas) {
+    firmaDataURL = canvas.toDataURL('image/png');
+  }
+
+  const payload = {
+    tipo_post: 'asistencia_alumno',
+    token: params.get('token') || '',
+    sesion: sesionId,
+    nie: alumnoSeleccionado.nie,
+    nombre: alumnoSeleccionado.nombre,
+    grado: grado,
+    seccion: seccion,
+    docente: docente,
+    sexo: alumnoSeleccionado.sexo || '',
+    fecha: new Date().toLocaleDateString('es-ES'),
+    modo: modo,
+    firma: modo === 'firma' ? firmaDataURL : ''
+  };
+
+  try {
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+
+    if (data.exito || data.success) {
+      // Guardar en localStorage para detectar re-envío
+      const claveHoy = claveDia(params.get('token') || '', sesionId);
+      localStorage.setItem('asistencia_enviada_' + claveHoy, JSON.stringify({
+        nombre: alumnoSeleccionado.nombre,
+        nie: alumnoSeleccionado.nie,
+        hora: new Date().toLocaleTimeString('es-ES')
+      }));
+      mostrarExito();
+    } else if (data.yaEnviada) {
+      mostrarYaEnvio({ nombre: alumnoSeleccionado.nombre, nie: alumnoSeleccionado.nie, hora: '—' });
+    } else {
+      mostrarScreen('buscar');
+      alert('Error al enviar asistencia. Intente de nuevo.');
+    }
+  } catch(e) {
+    mostrarScreen('buscar');
+    alert('Error de conexión. Verifique su internet e intente de nuevo.');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PANTALLAS
+// ══════════════════════════════════════════════════════
+function mostrarScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function mostrarYaEnvio(data) {
+  document.getElementById('ya-envio-nombre').innerHTML =
+    `Ya enviaste tu asistencia hoy.<br>
+     <strong>${data.nombre}</strong><br>
+     NIE: ${data.nie}<br>
+     Hora: ${data.hora || '—'}`;
+  mostrarScreen('ya-envio');
+}
+
+function mostrarExito() {
+  document.getElementById('exito-msg').innerHTML =
+    `Tu asistencia fue registrada exitosamente.<br>
+     <strong>${alumnoSeleccionado ? alumnoSeleccionado.nombre : ''}</strong><br>
+     <small>${new Date().toLocaleTimeString('es-ES')}</small>`;
+  mostrarScreen('exito');
+}
+
+function cerrarVentana() {
+  try { window.close(); } catch(e) {}
+  document.body.innerHTML = '<div style="text-align:center;padding:60px;font-family:sans-serif;"><h2>Puede cerrar esta ventana.</h2></div>';
+}
+
+// ══════════════════════════════════════════════════════
+//  MODAL CÓDIGO
+// ══════════════════════════════════════════════════════
+function abrirModalCodigo() {
+  document.getElementById('input-codigo').value = '';
+  document.getElementById('error-codigo').style.display = 'none';
+  document.getElementById('modal-codigo').classList.add('open');
+}
+
+function cerrarModalCodigo() {
+  document.getElementById('modal-codigo').classList.remove('open');
+}
+
+function verificarCodigo() {
+  const cod = document.getElementById('input-codigo').value.trim();
+  if (cod === '747-8') {
+    // Borrar el registro del día para permitir re-envío
+    const params = new URLSearchParams(window.location.search);
+    const tok = params.get('token') || '';
+    const ses = params.get('sesion') || '';
+    const claveHoy = claveDia(tok, ses);
+    localStorage.removeItem('asistencia_enviada_' + claveHoy);
+    cerrarModalCodigo();
+    alumnoSeleccionado = null;
+    firmaDataURL = '';
+    firmaTrazos = false;
+    document.getElementById('input-busqueda').value = '';
+    deseleccionarAlumno();
+    mostrarScreen('buscar');
+  } else {
+    document.getElementById('error-codigo').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
