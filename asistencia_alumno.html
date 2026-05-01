@@ -416,33 +416,19 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Decodificar sesionId: grado|seccion|docente
-  let grado = '', seccion = '', docente = '';
-  try {
-    const decoded = atob(sesionId);
-    const parts = decoded.split('|');
-    grado   = parts[0] || '';
-    seccion = parts[1] || '';
-    docente = parts[2] || '';
-  } catch(e) {
-    mostrarScreen('invalido');
-    return;
-  }
-
-  document.title = `Asistencia ${grado} ${seccion} — INMU`;
-  document.getElementById('header-info').textContent = `${grado} ${seccion} — ${docente}`;
+  // Obtener grado/seccion/docente directo desde la API (evita problemas con base64 y caracteres especiales)
+  document.getElementById('header-info').textContent = 'Cargando...';
 
   // Verificar si este dispositivo ya marcó hoy
   const claveHoy = claveDia(token, sesionId);
   const alumnoGuardado = localStorage.getItem('asistencia_enviada_' + claveHoy);
-
   if (alumnoGuardado) {
     mostrarYaEnvio(JSON.parse(alumnoGuardado));
     return;
   }
 
-  // Validar que la sesión esté activa en el backend
-  validarSesion(token, sesionId, grado, seccion, docente);
+  // Validar sesión y obtener datos desde el backend
+  validarSesion(token, sesionId);
 });
 
 function claveDia(tok, ses) {
@@ -450,7 +436,7 @@ function claveDia(tok, ses) {
   return `${hoy.getFullYear()}-${hoy.getMonth()}-${hoy.getDate()}_${tok}_${ses}`;
 }
 
-async function validarSesion(token, sesionId, grado, seccion, docente) {
+async function validarSesion(token, sesionId) {
   try {
     const r = await fetch(`${API_URL}?tipo=validar_sesion_alumno&token=${encodeURIComponent(token)}&sesion=${encodeURIComponent(sesionId)}`);
     const data = await r.json();
@@ -458,11 +444,13 @@ async function validarSesion(token, sesionId, grado, seccion, docente) {
       mostrarScreen('invalido');
       return;
     }
-    // Cargar alumnos
+    // Usar grado/seccion/docente que devuelve la API directamente
+    const grado   = data.grado   || '';
+    const seccion = data.seccion || '';
+    const docente = data.docente || '';
     cargarAlumnos(grado, seccion, docente);
   } catch(e) {
-    // Si no se puede validar, permitir igualmente (funciona offline parcial)
-    cargarAlumnos(grado, seccion, docente);
+    mostrarScreen('invalido');
   }
 }
 
