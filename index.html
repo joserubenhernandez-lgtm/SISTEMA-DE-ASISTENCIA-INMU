@@ -374,6 +374,139 @@
             display: none;
         }
 
+        /* ══════════════════════════════════════════════════
+           VISTA TABLA DE NOTAS
+        ══════════════════════════════════════════════════ */
+        #view-notas {
+            display: none;
+        }
+        #view-notas.view-active {
+            display: block;
+        }
+        .notas-table-wrapper {
+            overflow-x: auto;
+            margin-top: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(12,68,124,0.08);
+        }
+        .notas-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 760px;
+        }
+        .notas-table thead tr {
+            background: var(--blue-800);
+            color: white;
+        }
+        .notas-table thead th {
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.15);
+            white-space: nowrap;
+        }
+        .notas-table thead th.th-periodo {
+            background: var(--blue-600);
+        }
+        .notas-table thead th.th-final {
+            background: var(--green-600);
+        }
+        .notas-table tbody tr {
+            border-bottom: 1px solid var(--gray-100);
+            transition: background 0.15s;
+        }
+        .notas-table tbody tr:nth-child(even) {
+            background: var(--gray-50);
+        }
+        .notas-table tbody tr:hover {
+            background: var(--blue-50);
+        }
+        .notas-table td {
+            padding: 9px 8px;
+            text-align: center;
+            border: 1px solid var(--gray-100);
+            font-size: 12px;
+        }
+        .notas-table td.td-nombre {
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-900);
+            min-width: 160px;
+        }
+        .notas-table td.td-nie {
+            color: var(--gray-600);
+            font-size: 11px;
+        }
+        .nota-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .nota-aprobado  { background: var(--green-50);  color: var(--green-600); }
+        .nota-reprobado { background: var(--red-50);    color: var(--red-600); }
+        .nota-final-aprobado  { background: var(--green-600); color: white; }
+        .nota-final-reprobado { background: var(--red-600);   color: white; }
+        .notas-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-600);
+            font-style: italic;
+        }
+        .notas-loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--blue-600);
+        }
+        .btn-notas {
+            background: linear-gradient(135deg, #185FA5, #0C447C);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .btn-notas:hover {
+            background: linear-gradient(135deg, #0C447C, #083460);
+            box-shadow: 0 4px 12px rgba(12,68,124,0.3);
+        }
+        .notas-stats-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .notas-stat-card {
+            flex: 1;
+            min-width: 110px;
+            background: white;
+            border-radius: 8px;
+            padding: 10px 14px;
+            border: 1px solid var(--gray-100);
+            text-align: center;
+        }
+        .notas-stat-card .stat-num {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--blue-800);
+        }
+        .notas-stat-card .stat-label {
+            font-size: 10px;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
         /* PANTALLA DE MANTENIMIENTO */
         #pantalla-mantenimiento {
             display: none;
@@ -1254,6 +1387,8 @@
                     <button class="btn-generate" id="btn-pdf-generate" onclick="generarPDF()">📥 Generar PDF y Guardar
                         Reporte</button>
 
+                    <!-- ══ BOTÓN TABLA DE NOTAS ══ -->
+                    <button class="btn-notas" id="btn-ver-notas" onclick="abrirVisorNotas()">📊 Ver Notas por Periodo</button>
 
                     <!-- ══ NUEVO BOTÓN VER REPORTES PDF ══ -->
                     <button id="btn-ver-reportes" class="btn-ver-reportes" onclick="abrirVisorReportes()">📂 Ver
@@ -1317,10 +1452,70 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════
+ VISTA: TABLA DE NOTAS POR PERIODO
+══════════════════════════════════════════════════════ -->
+        <div id="view-notas" class="view-section">
+            <div class="panel">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                    <h2 style="color:var(--blue-800); font-size:16px; margin:0;">📊 Notas por Periodo</h2>
+                    <button onclick="cambiarVista('docente')"
+                        style="padding:8px 14px; background:var(--blue-600); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">←
+                        Volver</button>
+                </div>
+
+                <div id="notas-info-grado"
+                    style="background:var(--blue-50); border:1px solid #b6d7ff; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--blue-800); font-weight:bold;">
+                </div>
+
+                <div class="notas-stats-row" id="notas-stats-row"></div>
+
+                <div class="notas-table-wrapper">
+                    <table class="notas-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="min-width:160px; text-align:left; padding-left:12px;">Estudiante</th>
+                                <th rowspan="2">NIE</th>
+                                <th colspan="3" class="th-periodo">📘 Periodo 1</th>
+                                <th rowspan="2" class="th-periodo">P1</th>
+                                <th colspan="3" class="th-periodo">📗 Periodo 2</th>
+                                <th rowspan="2" class="th-periodo">P2</th>
+                                <th colspan="3" class="th-periodo">📙 Periodo 3</th>
+                                <th rowspan="2" class="th-periodo">P3</th>
+                                <th colspan="3" class="th-periodo">📕 Periodo 4</th>
+                                <th rowspan="2" class="th-periodo">P4</th>
+                                <th rowspan="2" class="th-final">🏆 Final</th>
+                            </tr>
+                            <tr>
+                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
+                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
+                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
+                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
+                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
+                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
+                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
+                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
+                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
+                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
+                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
+                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notas-tbody">
+                            <tr><td colspan="19" class="notas-loading">⏳ Cargando notas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p style="font-size:11px; color:var(--gray-600); margin-top:12px;">
+                    📌 Cuaderno ×30% + Integradora ×30% + Examen ×40% = Nota Periodo &nbsp;|&nbsp;
+                    Nota Final = (P1+P2+P3+P4) ÷ 4 &nbsp;|&nbsp; ✅ Aprobado ≥ 5.0 &nbsp;|&nbsp; ❌ Reprobado &lt; 5.0
+                </p>
+            </div>
+        </div>
+
         <div class="panel">
             <div class="web-logo-container">
-                <img src="logo2.svg" alt="Logo Institucional" class="web-logo" ondblclick="toggleMantenimiento()"
-                    onerror="this.src='logo2.jpg'; this.onerror=null;">
             </div>
 
             <div id="view-subdireccion" class="view-section">
@@ -1681,10 +1876,12 @@
                     <button class="qr-btn qr-btn-cam" style="flex:1;" onclick="girarCamaraQR()">🔄 Girar cámara</button>
                     <button class="qr-btn" style="flex:1;background:#e74c3c;color:white;"
                         onclick="marcarTodosAusentes()">✗ Ausentes restantes</button>
+                    <button class="qr-btn" style="flex:1;background:#185FA5;color:white;"
+                        onclick="generarPDFDesdeQR()">📥 Generar PDF</button>
                 </div>
                 <!-- Boton Regresar al PDF principal -->
                 <div style="padding:0 12px 4px;width:100%;max-width:480px;box-sizing:border-box;">
-                    <button onclick="regresarDesdeQR()" style="width:100%;padding:10px;background:#1D9E75;color:white;border:none;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;">&#8617; Regresar a Generar PDF y Guardar Reporte</button>
+                    <button onclick="regresarDesdeQR()" style="width:100%;padding:10px;background:#5F5E5A;color:white;border:none;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;">&#8617; Regresar a Generar PDF y Guardar Reporte</button>
                 </div>
                 <!-- Buscador manual -->
                 <div style="padding:0 12px 8px;width:100%;max-width:480px;box-sizing:border-box;">
@@ -2350,6 +2547,11 @@
                 const btn = document.getElementById('btn-volver-asist');
                 if (btn) btn.style.display = 'block';
                 cargarListaPDFs();
+            } else if (vista === 'notas') {
+                const view = document.getElementById('view-notas');
+                if (view) view.classList.add('view-active');
+                const btn = document.getElementById('btn-volver-asist');
+                if (btn) btn.style.display = 'block';
             } else {
                 const view = document.getElementById('view-docente');
                 if (view) view.classList.add('view-active');
@@ -17419,7 +17621,151 @@
             }
         }
 
-        // ── Buscador manual de alumno (para registrar sin QR) ─────────────────────
+        // ══════════════════════════════════════════════════════════
+        // SISTEMA DE NOTAS POR PERIODO
+        // ══════════════════════════════════════════════════════════
+
+        function abrirVisorNotas() {
+            const grado = document.getElementById('grado-select').value;
+            if (!grado) {
+                alert('⚠️ Por favor seleccioná un grado antes de ver las notas.');
+                return;
+            }
+            cambiarVista('notas');
+            cargarNotasGrado(grado);
+        }
+
+        function calcularNotaPeriodo(cuaderno, integradora, examen) {
+            const c = parseFloat(cuaderno) || 0;
+            const i = parseFloat(integradora) || 0;
+            const e = parseFloat(examen) || 0;
+            return (c * 0.30) + (i * 0.30) + (e * 0.40);
+        }
+
+        function badgeNota(valor, esFinal) {
+            const n = parseFloat(valor);
+            if (isNaN(n)) return '<span style="color:#aaa;">—</span>';
+            const aprobado = n >= 5.0;
+            const cls = esFinal
+                ? (aprobado ? 'nota-final-aprobado' : 'nota-final-reprobado')
+                : (aprobado ? 'nota-aprobado'       : 'nota-reprobado');
+            return `<span class="nota-badge ${cls}">${n.toFixed(2)}</span>`;
+        }
+
+        function renderizarTablaNotas(datos) {
+            const tbody = document.getElementById('notas-tbody');
+            const statsRow = document.getElementById('notas-stats-row');
+
+            if (!datos || datos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="19" class="notas-empty">😕 No se encontraron datos de notas para este grado.<br><small>Verificá que la hoja "notas" en Google Sheets tenga datos.</small></td></tr>';
+                statsRow.innerHTML = '';
+                return;
+            }
+
+            let aprobados = 0, reprobados = 0, sumFinal = 0;
+
+            const filas = datos.map((est, idx) => {
+                const p1 = calcularNotaPeriodo(est.p1_cuaderno, est.p1_integradora, est.p1_examen);
+                const p2 = calcularNotaPeriodo(est.p2_cuaderno, est.p2_integradora, est.p2_examen);
+                const p3 = calcularNotaPeriodo(est.p3_cuaderno, est.p3_integradora, est.p3_examen);
+                const p4 = calcularNotaPeriodo(est.p4_cuaderno, est.p4_integradora, est.p4_examen);
+                const final = (p1 + p2 + p3 + p4) / 4;
+
+                if (final >= 5.0) aprobados++; else reprobados++;
+                sumFinal += final;
+
+                const fmtRaw = v => {
+                    const n = parseFloat(v);
+                    return isNaN(n) ? '<span style="color:#aaa;">—</span>' : n.toFixed(1);
+                };
+
+                return `<tr>
+                    <td class="td-nombre" style="padding-left:12px;">${idx + 1}. ${est.nombre || '—'}</td>
+                    <td class="td-nie">${est.nie || '—'}</td>
+                    <td>${fmtRaw(est.p1_cuaderno)}</td>
+                    <td>${fmtRaw(est.p1_integradora)}</td>
+                    <td>${fmtRaw(est.p1_examen)}</td>
+                    <td>${badgeNota(p1, false)}</td>
+                    <td>${fmtRaw(est.p2_cuaderno)}</td>
+                    <td>${fmtRaw(est.p2_integradora)}</td>
+                    <td>${fmtRaw(est.p2_examen)}</td>
+                    <td>${badgeNota(p2, false)}</td>
+                    <td>${fmtRaw(est.p3_cuaderno)}</td>
+                    <td>${fmtRaw(est.p3_integradora)}</td>
+                    <td>${fmtRaw(est.p3_examen)}</td>
+                    <td>${badgeNota(p3, false)}</td>
+                    <td>${fmtRaw(est.p4_cuaderno)}</td>
+                    <td>${fmtRaw(est.p4_integradora)}</td>
+                    <td>${fmtRaw(est.p4_examen)}</td>
+                    <td>${badgeNota(p4, false)}</td>
+                    <td>${badgeNota(final, true)}</td>
+                </tr>`;
+            }).join('');
+
+            tbody.innerHTML = filas;
+
+            const promedio = datos.length > 0 ? (sumFinal / datos.length) : 0;
+            statsRow.innerHTML = `
+                <div class="notas-stat-card">
+                    <div class="stat-num">${datos.length}</div>
+                    <div class="stat-label">Estudiantes</div>
+                </div>
+                <div class="notas-stat-card" style="border-left:3px solid var(--green-600);">
+                    <div class="stat-num" style="color:var(--green-600);">${aprobados}</div>
+                    <div class="stat-label">✅ Aprobados</div>
+                </div>
+                <div class="notas-stat-card" style="border-left:3px solid var(--red-600);">
+                    <div class="stat-num" style="color:var(--red-600);">${reprobados}</div>
+                    <div class="stat-label">❌ Reprobados</div>
+                </div>
+                <div class="notas-stat-card" style="border-left:3px solid var(--blue-600);">
+                    <div class="stat-num" style="color:var(--blue-600);">${promedio.toFixed(2)}</div>
+                    <div class="stat-label">Promedio Gral.</div>
+                </div>`;
+        }
+
+        function cargarNotasGrado(grado) {
+            const tbody = document.getElementById('notas-tbody');
+            const infoGrado = document.getElementById('notas-info-grado');
+            const statsRow = document.getElementById('notas-stats-row');
+
+            tbody.innerHTML = '<tr><td colspan="19" class="notas-loading">⏳ Cargando notas desde Google Sheets...</td></tr>';
+            statsRow.innerHTML = '';
+            if (infoGrado) infoGrado.textContent = `📚 Grado: ${grado}`;
+
+            // Intentar con google.script.run (entorno Google Apps Script)
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(datos) {
+                        renderizarTablaNotas(datos);
+                    })
+                    .withFailureHandler(function(err) {
+                        tbody.innerHTML = `<tr><td colspan="19" class="notas-empty">❌ Error al cargar: ${err.message || err}</td></tr>`;
+                    })
+                    .obtenerNotasPorGrado(grado);
+            } else {
+                // Fallback: cargar desde API externa (si existe)
+                const url = window.GAS_URL || '';
+                if (url) {
+                    fetch(url + '?tipo=notas&grado=' + encodeURIComponent(grado))
+                        .then(r => r.json())
+                        .then(datos => renderizarTablaNotas(datos))
+                        .catch(err => {
+                            tbody.innerHTML = `<tr><td colspan="19" class="notas-empty">❌ Error de conexión: ${err.message}</td></tr>`;
+                        });
+                } else {
+                    // Modo demo para previsualización sin Google Sheets
+                    const demo = [
+                        { nombre: 'Ejemplo Estudiante 1', nie: '12345678', p1_cuaderno: 8, p1_integradora: 7.5, p1_examen: 6, p2_cuaderno: 7, p2_integradora: 8, p2_examen: 7, p3_cuaderno: 9, p3_integradora: 8, p3_examen: 8.5, p4_cuaderno: 6, p4_integradora: 7, p4_examen: 6.5 },
+                        { nombre: 'Ejemplo Estudiante 2', nie: '87654321', p1_cuaderno: 4, p1_integradora: 3.5, p1_examen: 3, p2_cuaderno: 5, p2_integradora: 4, p2_examen: 4.5, p3_cuaderno: 6, p3_integradora: 5, p3_examen: 5, p4_cuaderno: 7, p4_integradora: 6, p4_examen: 6 },
+                    ];
+                    renderizarTablaNotas(demo);
+                    if (infoGrado) infoGrado.textContent = `📚 Grado: ${grado} — (Modo demo: sin conexión a Google Sheets)`;
+                }
+            }
+        }
+
+
         function qrManualBuscar() {
             const input = document.getElementById('qr-manual-buscar');
             const contenedor = document.getElementById('qr-manual-resultados');
