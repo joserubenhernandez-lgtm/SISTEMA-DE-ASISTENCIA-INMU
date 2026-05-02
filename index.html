@@ -1697,8 +1697,6 @@
                     <button class="qr-btn qr-btn-cam" style="flex:1;" onclick="girarCamaraQR()">🔄 Girar cámara</button>
                     <button class="qr-btn" style="flex:1;background:#e74c3c;color:white;"
                         onclick="marcarTodosAusentes()">✗ Ausentes restantes</button>
-                    <button class="qr-btn" style="flex:1;background:#185FA5;color:white;"
-                        onclick="generarPDFDesdeQR()">📥 Generar PDF</button>
                 </div>
                 <!-- Boton Regresar al PDF principal -->
                 <div style="padding:0 12px 4px;width:100%;max-width:480px;box-sizing:border-box;">
@@ -2969,14 +2967,25 @@
             notasPeriodoActual = 1;
             notasCambiadas = false;
             actualizarBtnGuardar(false);
+            setEstadoGuardado('guardado');
             seleccionarPeriodo(1);
             document.getElementById('modal-notas-periodo').style.display = 'block';
+            // Autoguardado cada 2 segundos
+            if (window._autoGuardadoInterval) clearInterval(window._autoGuardadoInterval);
+            window._autoGuardadoInterval = setInterval(() => {
+                if (notasCambiadas) guardarCambiosNotas();
+            }, 2000);
         }
 
         function cerrarPanelNotas() {
             if (notasCambiadas) {
-                if (!confirm('Hay cambios sin guardar. ¿Cerrar de todas formas?')) return;
+                if (!confirm('⚠ Hay cambios sin guardar. ¿Deseas guardar antes de cerrar?')) {
+                    // Close without saving
+                } else {
+                    guardarCambiosNotas();
+                }
             }
+            if (window._autoGuardadoInterval) { clearInterval(window._autoGuardadoInterval); window._autoGuardadoInterval = null; }
             document.getElementById('modal-notas-periodo').style.display = 'none';
             notasCambiadas = false;
             actualizarBtnGuardar(false);
@@ -3008,8 +3017,9 @@
                     <th style="width:60px;">Sx</th>
                     <th style="width:70px;">Act 1<br><small style="font-weight:normal;opacity:.8;">×0.35</small></th>
                     <th style="width:70px;">Act 2<br><small style="font-weight:normal;opacity:.8;">×0.35</small></th>
-                    <th style="width:70px;">Act 3<br><small style="font-weight:normal;opacity:.8;">×0.30</small></th>
+                    <th style="width:70px;border-right:2px solid rgba(255,255,255,0.5) !important;">Act 3<br><small style="font-weight:normal;opacity:.8;">×0.30</small></th>
                     <th style="width:70px;background:#065F46;">Promedio</th>
+                    <th style="width:80px;background:#1A3A6E;">Estado</th>
                 </tr>`;
 
             // TBODY
@@ -3019,6 +3029,22 @@
                 const nie = String(alumno.nie);
                 const nd  = notasData[nie]?.[p] || {a1:'', a2:'', a3:'', prom:''};
                 const tr  = document.createElement('tr');
+                const promVal = nd.prom !== '' ? Number(nd.prom) : null;
+                const promTxt = promVal !== null ? promVal.toFixed(2) : '—';
+                let promStyle = 'background:#ECFDF5;font-weight:bold;color:#065F46;'; // ≥6 verde
+                let estadoHtml = '<span style="font-size:11px;color:#6B7280;">—</span>';
+                if (promVal !== null) {
+                    if (promVal >= 6.0) {
+                        promStyle = 'background:#DCFCE7;font-weight:bold;color:#15803D;';
+                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#16A34A;color:white;padding:2px 6px;border-radius:10px;">✓ Aprobado</span>';
+                    } else if (promVal >= 5.0) {
+                        promStyle = 'background:#FEF9C3;font-weight:bold;color:#854D0E;';
+                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#CA8A04;color:white;padding:2px 6px;border-radius:10px;">⚠ Riesgo</span>';
+                    } else {
+                        promStyle = 'background:#FEE2E2;font-weight:bold;color:#991B1B;';
+                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#DC2626;color:white;padding:2px 6px;border-radius:10px;">✗ Reprobado</span>';
+                    }
+                }
                 tr.innerHTML = `
                     <td>${idx + 1}</td>
                     <td>${nie}</td>
@@ -3032,13 +3058,39 @@
                         id="nota-${nie}-a2" value="${nd.a2}"
                         oninput="onNotaChange('${nie}','${p}','a2',this.value)"
                         onchange="onNotaChange('${nie}','${p}','a2',this.value)"></td>
-                    <td><input class="nota-input" type="number" min="0" max="10" step="0.1"
+                    <td class="sep-col-right"><input class="nota-input" type="number" min="0" max="10" step="0.1"
                         id="nota-${nie}-a3" value="${nd.a3}"
                         oninput="onNotaChange('${nie}','${p}','a3',this.value)"
                         onchange="onNotaChange('${nie}','${p}','a3',this.value)"></td>
-                    <td class="col-promedio" id="prom-${nie}-${p}">${nd.prom !== '' ? Number(nd.prom).toFixed(2) : '—'}</td>`;
+                    <td class="col-promedio" id="prom-${nie}-${p}" style="${promStyle}">${promTxt}</td>
+                    <td id="estado-${nie}-${p}">${estadoHtml}</td>`;
                 tbody.appendChild(tr);
             });
+            // Update resumen bar
+            _actualizarResumenNotas();
+        }
+
+        function _actualizarResumenNotas() {
+            if (!alumnosFiltrados) return;
+            const p = 'p' + notasPeriodoActual;
+            let total = alumnosFiltrados.length, aprobados = 0, reprobados = 0, sumaProm = 0, conProm = 0;
+            alumnosFiltrados.forEach(al => {
+                const nd = notasData[String(al.nie)]?.[p];
+                if (nd && nd.prom !== '') {
+                    const v = Number(nd.prom);
+                    if (v >= 6.0) aprobados++; else reprobados++;
+                    sumaProm += v; conProm++;
+                }
+            });
+            const prom = conProm > 0 ? (sumaProm / conProm).toFixed(2) : '—';
+            const elT = document.getElementById('resumen-total');
+            const elA = document.getElementById('resumen-aprobados');
+            const elR = document.getElementById('resumen-reprobados');
+            const elP = document.getElementById('resumen-promedio');
+            if (elT) elT.textContent = total + ' estudiantes';
+            if (elA) elA.textContent = '✓ ' + aprobados + ' Aprobados';
+            if (elR) elR.textContent = '✗ ' + reprobados + ' Reprobados';
+            if (elP) elP.textContent = 'Prom: ' + prom;
         }
 
         function onNotaChange(nie, periodo, actividad, valor) {
@@ -3057,7 +3109,23 @@
             notasData[nie][periodo].prom = prom;
 
             const promEl = document.getElementById(`prom-${nie}-${periodo}`);
-            if (promEl) promEl.textContent = prom !== '' ? prom.toFixed(2) : '—';
+            const estadoEl = document.getElementById(`estado-${nie}-${periodo}`);
+            if (promEl) {
+                promEl.textContent = prom !== '' ? prom.toFixed(2) : '—';
+                if (prom === '') {
+                    promEl.style.cssText = 'background:#ECFDF5;font-weight:bold;color:#065F46;';
+                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;color:#6B7280;">—</span>';
+                } else if (prom >= 6.0) {
+                    promEl.style.cssText = 'background:#DCFCE7;font-weight:bold;color:#15803D;';
+                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#16A34A;color:white;padding:2px 6px;border-radius:10px;">✓ Aprobado</span>';
+                } else if (prom >= 5.0) {
+                    promEl.style.cssText = 'background:#FEF9C3;font-weight:bold;color:#854D0E;';
+                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#CA8A04;color:white;padding:2px 6px;border-radius:10px;">⚠ Riesgo</span>';
+                } else {
+                    promEl.style.cssText = 'background:#FEE2E2;font-weight:bold;color:#991B1B;';
+                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#DC2626;color:white;padding:2px 6px;border-radius:10px;">✗ Reprobado</span>';
+                }
+            }
 
             // Marcar input como cambiado
             const inputEl = document.getElementById(`nota-${nie}-${actividad.replace('a','')}`);
@@ -3066,6 +3134,8 @@
                 notasCambiadas = true;
                 actualizarBtnGuardar(true);
             }
+            setEstadoGuardado('pendiente');
+            _actualizarResumenNotas();
         }
 
         function actualizarBtnGuardar(parpadeando) {
@@ -3081,21 +3151,31 @@
         }
 
         function guardarCambiosNotas() {
-            // Guardar en localStorage por ahora (persistencia local)
             const grado   = document.getElementById('grado-select')?.value || '';
             const seccion = document.getElementById('seccion-select')?.value || '';
             const key     = 'notas_' + grado + '_' + seccion;
+            // Show saving state
+            setEstadoGuardado('guardando');
             try {
                 localStorage.setItem(key, JSON.stringify(notasData));
             } catch(e) { console.warn('localStorage no disponible:', e); }
-
             notasCambiadas = false;
             actualizarBtnGuardar(false);
-
+            setTimeout(() => setEstadoGuardado('guardado'), 600);
             if (typeof mostrarNotificacion === 'function') {
                 mostrarNotificacion('✓ Notas guardadas localmente', 'success');
-            } else {
-                alert('✓ Notas guardadas');
+            }
+        }
+
+        function setEstadoGuardado(estado) {
+            const el = document.getElementById('estado-guardado');
+            if (!el) return;
+            if (estado === 'pendiente') {
+                el.innerHTML = '<span style="color:#CA8A04;font-size:12px;font-weight:bold;">● Pendiente</span>';
+            } else if (estado === 'guardando') {
+                el.innerHTML = '<span style="color:#2563EB;font-size:12px;font-weight:bold;animation:parpadeo-guardar 0.8s infinite;">⟳ Guardando...</span>';
+            } else if (estado === 'guardado') {
+                el.innerHTML = '<span style="color:#16A34A;font-size:12px;font-weight:bold;">✓ Guardado</span>';
             }
         }
 
@@ -17908,7 +17988,7 @@
       <div style="background:#fff;border-radius:14px;max-width:900px;margin:20px auto;padding:0;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.4);">
         <div id="notas-modal-header" style="background:linear-gradient(135deg,#1A3A6E,#2563EB);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
           <span style="color:white;font-weight:bold;font-size:16px;">📊 Notas por Periodo</span>
-          <button onclick="cerrarPanelNotas()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;line-height:1;">✕</button>
+          <button onclick="cerrarPanelNotas()" style="background:#DC2626;border:none;color:white;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:bold;cursor:pointer;">Cerrar ✕</button>
         </div>
         <div id="notas-modal-info" style="background:#EFF6FF;padding:10px 20px;font-size:13px;color:#1A3A6E;font-weight:bold;border-bottom:1px solid #BFDBFE;"></div>
         <div style="padding:12px 20px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -17925,13 +18005,31 @@
             <tbody id="tbody-notas"></tbody>
           </table>
         </div>
-        <div style="padding:14px 20px;background:#F8FAFC;border-top:1px solid #E2E8F0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <!-- Resumen estadístico -->
+        <div id="notas-resumen-bar" style="padding:10px 20px;background:#F0F9FF;border-top:1px solid #BAE6FD;display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px;">
+          <span style="font-weight:bold;color:#1A3A6E;">📊 Resumen:</span>
+          <span id="resumen-total" style="color:#374151;">— estudiantes</span>
+          <span id="resumen-aprobados" style="color:#16A34A;font-weight:bold;">✓ — Aprobados</span>
+          <span id="resumen-reprobados" style="color:#DC2626;font-weight:bold;">✗ — Reprobados</span>
+          <span id="resumen-promedio" style="color:#1D6A38;font-weight:bold;">Prom: —</span>
+        </div>
+        <!-- Guardar arriba + periodo label -->
+        <div style="padding:10px 20px;background:#F8FAFC;border-top:1px solid #E2E8F0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <button id="btn-guardar-notas" onclick="guardarCambiosNotas()"
-            style="flex:1;min-width:180px;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;color:white;background:linear-gradient(135deg,#1D9E75,#27ae60);transition:all 0.3s;">
+            style="flex:2;min-width:180px;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;color:white;background:linear-gradient(135deg,#1D9E75,#27ae60);transition:all 0.3s;">
             💾 Guardar Cambios
           </button>
+          <span style="font-size:12px;color:#6B7280;white-space:nowrap;">Act1×0.35 | Act2×0.35 | Act3×0.30</span>
+          <div id="estado-guardado" style="min-width:90px;text-align:right;"></div>
+        </div>
+        <!-- Bottom row: cerrar + exportar + resumen -->
+        <div style="padding:10px 20px;background:#F1F5F9;border-top:1px solid #CBD5E1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button onclick="cerrarPanelNotas()"
+            style="padding:10px 18px;background:#DC2626;color:white;border:none;border-radius:10px;font-size:13px;font-weight:bold;cursor:pointer;">
+            Cerrar ✕
+          </button>
           <button onclick="exportarNotasXLSX()"
-            style="flex:1;min-width:180px;padding:13px;background:linear-gradient(135deg,#1D6A38,#27ae60);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+            style="flex:1;min-width:150px;padding:10px;background:linear-gradient(135deg,#1D6A38,#27ae60);color:white;border:none;border-radius:10px;font-size:13px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
             📊 Exportar a Excel (.xls)
           </button>
         </div>
@@ -17951,8 +18049,13 @@
         font-size:12px;text-align:center;white-space:nowrap;position:sticky;top:0;
       }
       #tabla-notas-periodo td {
-        padding:5px 4px;text-align:center;border-bottom:1px solid #E5E7EB;font-size:12px;
+        padding:5px 4px;text-align:center;border-bottom:1px solid #CBD5E1;border-right:1px solid #E2E8F0;font-size:12px;
       }
+      #tabla-notas-periodo td:last-child { border-right:none; }
+      #tabla-notas-periodo th { border-right:1px solid rgba(255,255,255,0.25); }
+      #tabla-notas-periodo th:last-child { border-right:none; }
+      /* Separator after Act3 column */
+      .sep-col-right { border-right:2px solid #94A3B8 !important; }
       #tabla-notas-periodo tr:nth-child(even) td { background:#F0F7FF; }
       #tabla-notas-periodo tr:hover td { background:#DBEAFE; }
       .nota-input {
