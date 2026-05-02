@@ -2699,7 +2699,6 @@
                 return;
             }
 
-            const usaPaginacion = ((normalizarTexto(document.getElementById('grado-select').value) === 'direccion' || normalizarTexto(document.getElementById('grado-select').value) === 'dirección') && (normalizarTexto(document.getElementById('seccion-select').value) === 'unica' || normalizarTexto(document.getElementById('seccion-select').value) === 'única'));
             const alumnosVisibles = usaPaginacion
                 ? alumnosFiltrados.slice((paginaActual - 1) * alumnosPorPagina, paginaActual * alumnosPorPagina)
                 : alumnosFiltrados.slice();
