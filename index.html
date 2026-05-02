@@ -1738,6 +1738,7 @@
                         <option value="2° Sist. Eléctricos">2° Sist. Eléctricos</option>
                         <option value="3° Adm. Contable">3° Adm. Contable</option>
                         <option value="3° Sist. Eléctricos">3° Sist. Eléctricos</option>
+                        <option value="DI REFUERZO">DI REFUERZO</option>
                     </select>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:3px;">
@@ -1748,6 +1749,7 @@
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="Única">Única</option>
+                        <option value="Unica">Unica</option>
                     </select>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:150px;">
@@ -2027,7 +2029,7 @@
         let loginRequerido = true;
         window.usuarioActual = '';
         let paginaActual = 1;
-        const alumnosPorPagina = 10;
+        let alumnosPorPagina = 10; // dynamic: 10 for Dirección, Infinity for normal grades
         let listaContraida = false;
 
         // ── Variables del visor PDF ──────────────────────────────────────
@@ -2659,6 +2661,7 @@
 
             if (modoDiRefuerzo) {
                 alumnosFiltrados = await obtenerAlumnosDiRefuerzo();
+                window._diRefuerzoAlumnos = alumnosFiltrados.slice(); // cache for QR
             } else if (esDireccion && esUnica) {
                 alumnosFiltrados = baseDatosAlumnos.slice();
             } else {
@@ -2676,9 +2679,12 @@
                 return;
             }
 
-            // Aplicar Paginación
-            const inicio = (paginaActual - 1) * alumnosPorPagina;
-            const fin = inicio + alumnosPorPagina;
+            // Aplicar Paginación: solo para Dirección (todos), los demás grados muestran todos
+            const esPaginado = esDireccion || modoDiRefuerzo;
+            alumnosPorPagina = esPaginado ? 10 : Infinity;
+            if (!esPaginado) paginaActual = 1;
+            const inicio = (paginaActual - 1) * (esPaginado ? 10 : 0);
+            const fin = esPaginado ? inicio + 10 : alumnosFiltrados.length;
             const alumnosVisibles = alumnosFiltrados.slice(inicio, fin);
 
             let html = `<div class="student-row student-header">
@@ -3361,14 +3367,26 @@
                 const alumnos = alumnosFiltrados || [];
                 alumnos.forEach((alumno, idx) => {
                     const r = 10 + idx;  // fila Excel (1-based)
+                    const borderStyle = {
+                        top:    { style: 'thin', color: { rgb: 'B0B0B0' } },
+                        bottom: { style: 'thin', color: { rgb: 'B0B0B0' } },
+                        left:   { style: 'thin', color: { rgb: 'B0B0B0' } },
+                        right:  { style: 'thin', color: { rgb: 'B0B0B0' } }
+                    };
                     const setN = (col, val) => {
                         const addr = col + r;
                         if (val === '' || val === null || val === undefined) return;
-                        ws[addr] = { v: parseFloat(val) || 0, t: 'n', z: '0.00' };
+                        const existing = ws[addr] || {};
+                        ws[addr] = { v: parseFloat(val) || 0, t: 'n', z: '0.00',
+                            s: Object.assign({}, existing.s || {}, { border: borderStyle, alignment: { horizontal: 'center' } })
+                        };
                     };
                     const setS = (col, val) => {
                         const addr = col + r;
-                        ws[addr] = { v: String(val || ''), t: 's' };
+                        const existing = ws[addr] || {};
+                        ws[addr] = { v: String(val || ''), t: 's',
+                            s: Object.assign({}, existing.s || {}, { border: borderStyle })
+                        };
                     };
 
                     setN('A', idx + 1);
@@ -3426,7 +3444,7 @@
                 const gradoLimpio  = grado.replace(/[°\s"]/g,'_').replace(/__+/g,'_').replace(/^_|_$/g,'');
                 const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xls`;
 
-                XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary' });
+                XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary', cellStyles: true });
 
                 if (typeof mostrarNotificacion === 'function')
                     mostrarNotificacion('✓ Plantilla de notas descargada: ' + nombreArch, 'success');
@@ -17257,14 +17275,16 @@
         let qrAlumnosFiltradosPanel = [];
 
         function abrirQRAutonomo() {
-            // Si hay grado+seccion seleccionados, usar solo esos alumnos; si no, usar todos
+            // Always use the full baseDatosAlumnos for QR so the panel filters work correctly
             const gradoSel = (document.getElementById('grado-select') || {}).value || '';
             const seccionSel = (document.getElementById('seccion-select') || {}).value || '';
             const hayFiltro = gradoSel && seccionSel;
-            if (hayFiltro) {
-                qrAlumnos = alumnosFiltrados.slice();
-            } else {
-                qrAlumnos = baseDatosAlumnos.length > 0 ? baseDatosAlumnos.slice() : alumnosFiltrados.slice();
+            // Build full list: baseDatosAlumnos + DI Refuerzo (if loaded separately)
+            qrAlumnos = baseDatosAlumnos.length > 0 ? baseDatosAlumnos.slice() : alumnosFiltrados.slice();
+            // Add DI Refuerzo students if not already included
+            if (Array.isArray(window._diRefuerzoAlumnos) && window._diRefuerzoAlumnos.length) {
+                const niesExistentes = new Set(qrAlumnos.map(a => String(a.nie)));
+                window._diRefuerzoAlumnos.forEach(a => { if (!niesExistentes.has(String(a.nie))) qrAlumnos.push(a); });
             }
             qrEscaneados = new Set();
             qrEstados = {};
@@ -17281,12 +17301,6 @@
             if (fs) fs.value = hayFiltro ? (seccionSel || 'TODAS') : 'TODAS';
             if (fb) fb.value = '';
             actualizarContadoresQR();
-            // Pre-render the cards with current filters so PDF/print works immediately
-            setTimeout(() => {
-                if (document.getElementById('panel-generar-qr').classList.contains('activo')) {
-                    qrAplicarFiltros();
-                }
-            }, 100);
         }
 
         // Aplica los filtros del panel generar QR y vuelve a renderizar
@@ -17296,8 +17310,14 @@
             const busqueda = ((document.getElementById('qr-buscador') || {}).value || '').toLowerCase().trim();
 
             let base = qrAlumnos.slice();
-            if (gradoFiltro !== 'TODOS') base = base.filter(a => (a.grado || '') === gradoFiltro);
-            if (seccionFiltro !== 'TODAS') base = base.filter(a => (a.seccion || '') === seccionFiltro);
+            if (gradoFiltro !== 'TODOS') {
+                const gNorm = normalizarTexto(gradoFiltro);
+                base = base.filter(a => normalizarTexto(a.grado || '') === gNorm);
+            }
+            if (seccionFiltro !== 'TODAS') {
+                const sNorm = normalizarTexto(seccionFiltro);
+                base = base.filter(a => normalizarTexto(a.seccion || '') === sNorm);
+            }
             if (busqueda) base = base.filter(a =>
                 (a.nombre || '').toLowerCase().includes(busqueda) ||
                 String(a.nie).includes(busqueda)
@@ -17342,7 +17362,6 @@
 
                 const card = document.createElement('div');
                 card.className = 'qr-card';
-                card.dataset.nie = nie;
 
                 // Canvas para el QR
                 const canvas = document.createElement('canvas');
@@ -17396,11 +17415,9 @@
         }
 
         function imprimirTodosQR() {
-            // Use the list that's currently shown, fall back to all students
-            const listaImprimir = qrAlumnosFiltradosPanel.length > 0 ? qrAlumnosFiltradosPanel : qrAlumnos;
-            if (!listaImprimir.length) { alert('No hay alumnos para imprimir.'); return; }
-            // Get canvas dataURLs from the rendered grid (cards rendered in same order as listaImprimir)
+            // Convertir canvas a dataURL para imprimir
             const cards = document.querySelectorAll('#qr-grid-alumnos .qr-card');
+            const listaImprimir = qrAlumnosFiltradosPanel.length > 0 ? qrAlumnosFiltradosPanel : qrAlumnos;
             let html = '<html><head><title>Carnets QR</title><style>';
             html += 'body{font-family:Arial,sans-serif;margin:10px;background:white;}';
             html += '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}';
@@ -17413,9 +17430,8 @@
 
             listaImprimir.forEach((alumno, i) => {
                 const nie = String(alumno.nie);
-                // Match canvas by data-nie attribute for reliable alignment
-                const matchCard = document.querySelector('#qr-grid-alumnos .qr-card[data-nie="' + CSS.escape(nie) + '"]');
-                const canvas = (matchCard || (cards[i] ? cards[i] : null)) ? (matchCard || cards[i]).querySelector('canvas') : null;
+                const card = cards[i];
+                const canvas = card ? card.querySelector('canvas') : null;
                 const imgSrc = canvas ? canvas.toDataURL('image/png') : '';
                 html += '<div class="card">';
                 if (imgSrc) html += '<img src="' + imgSrc + '">';
@@ -17768,11 +17784,9 @@
         // Función auxiliar: crear contenedor temporal para PDF (no toca el #pdf-content)
         function crearContenedorPDFTemporal(htmlContenido, anchoFijo) {
             const tmp = document.createElement('div');
-            // Use position:absolute with left offset so html2canvas can capture it
-            // (position:fixed off-screen causes blank PDFs in html2canvas)
-            tmp.style.cssText = 'position:absolute;top:0;left:-' + (anchoFijo + 50) + 'px;width:' + anchoFijo + 'px;' +
+            tmp.style.cssText = 'position:fixed;top:-19999px;left:-19999px;width:' + anchoFijo + 'px;' +
                 'padding:40px;font-family:Arial,sans-serif;color:black;background:white;' +
-                'box-sizing:border-box;z-index:9999;overflow:visible;';
+                'box-sizing:border-box;z-index:-1;';
             tmp.innerHTML = htmlContenido;
             document.body.appendChild(tmp);
             return tmp;
@@ -17918,7 +17932,7 @@
             return true;
         }
 
-        async function generarPDFInforme() {
+        function generarPDFInforme() {
             const tipo = document.getElementById('tipo-documento-informe').value;
             const fecha = document.getElementById('fecha-informe').value;
             const docente = (document.getElementById('docente-informe') || {}).value.trim();
@@ -17930,96 +17944,87 @@
             if (!validarInforme(informe)) {
                 return alert('Complete todos los campos obligatorios. Para actas, agregue al menos un alumno.');
             }
-            const orientacion = 'portrait';
-            const anchoFijo = Math.round((216 / 25.4) * 96);
-            const htmlContenido = generarHTMLInformeParaPDF(informe);
-            const container = crearContenedorPDFTemporal(htmlContenido, anchoFijo);
-            const nombreArchivo = `${tipo} - ${docente} - ${fecha}.pdf`.replace(/[\\/:*?"<>|]/g, '');
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: nombreArchivo,
-                image: { type: 'jpeg', quality: 0.97 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    imageTimeout: 15000,
-                    width: anchoFijo,
-                    windowWidth: anchoFijo,
-                    removeContainer: false
-                },
-                jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
-                pagebreak: { mode: ['css', 'legacy'] }
-            };
-            try {
-                await new Promise(r => setTimeout(r, 600));
-                await html2pdf().set(opt).from(container).save();
-                guardarInformeEnNube(informe);
-                mostrarNotificacion('Informe generado y guardado.', 'success');
-                cargarHistorialInformes();
-            } catch (e) {
-                alert('Error al generar PDF: ' + (e.message || e));
-            } finally {
-                container.remove();
-            }
+            // Open print window directly — html2canvas + offscreen produces blank PDFs
+            const htmlCompleto = generarHTMLInformeVentana(informe);
+            const w = window.open('', '_blank', 'width=900,height=700');
+            if (!w) { alert('Activa las ventanas emergentes para generar el PDF.'); return; }
+            w.document.open();
+            w.document.write(htmlCompleto);
+            w.document.close();
+            w.onload = function() { setTimeout(() => w.print(), 500); };
+            guardarInformeEnNube(informe);
+            mostrarNotificacion('Informe listo. Usa Ctrl+P o el botón imprimir para guardar como PDF.', 'success');
+            cargarHistorialInformes();
         }
 
-        function generarHTMLInformeParaPDF(data) {
-            const listaAlumnos = Array.isArray(data.alumnos) && data.alumnos.length ? `
-                <div style="margin-top:24px;">
-                    <h3 style="margin-bottom:12px; font-size:15px; color:#0C447C;">Alumnos</h3>
-                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead>
-                            <tr style="background:#f2f6fb;">
-                                <th style="border:1px solid #d8dbe0; padding:10px; text-align:left;">Nombre</th>
-                                <th style="border:1px solid #d8dbe0; padding:10px; text-align:left;">NIE</th>
-                                <th style="border:1px solid #d8dbe0; padding:10px; text-align:left;">Grado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.alumnos.map(a => `
-                                <tr>
-                                    <td style="border:1px solid #d8dbe0; padding:10px;">${a.nombre}</td>
-                                    <td style="border:1px solid #d8dbe0; padding:10px;">${a.nie}</td>
-                                    <td style="border:1px solid #d8dbe0; padding:10px;">${a.grado} ${a.seccion || ''}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>` : '';
-            return `
-                <div style="font-family:Arial, sans-serif; color:#111; background:#fff; width:100%; max-width:780px; margin:0 auto; box-sizing:border-box; padding:24px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:26px;">
-                        <div style="max-width:60%;">
-                            <div style="font-size:18px; font-weight:700; color:#0C447C;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</div>
-                            <div style="font-size:15px; color:#2C2C2A; margin-top:4px;">INSTITUTO NACIONAL DE MERCEDES UMAÑA</div>
-                            <div style="margin-top:12px; font-size:14px; color:#555;">${data.tipo}</div>
-                        </div>
-                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                            <img src="logo.jpg" style="height:60px; object-fit:contain;" />
-                            <img src="logo3.jpg" style="height:60px; object-fit:contain;" />
-                        </div>
-                    </div>
-                    <div style="border:1px solid #ddd; border-radius:14px; padding:20px; margin-bottom:24px; background:#f9fafb;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:14px; line-height:1.6;">
-                            <div><strong>Fecha:</strong> ${data.fecha}</div>
-                            <div><strong>Docente:</strong> ${data.docente}</div>
-                            <div><strong>Grado:</strong> ${data.grado}</div>
-                            <div><strong>Sección:</strong> ${data.seccion}</div>
-                        </div>
-                    </div>
-                    <div style="margin-bottom:24px; font-size:14px; line-height:1.7;">
-                        <strong>Contenido:</strong>
-                        <div style="margin-top:10px; padding:16px; border:1px solid #e3e7ec; border-radius:12px; background:#fff; white-space:pre-wrap;">${String(data.contenido).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                    </div>
-                    ${listaAlumnos}
-                    <div style="margin-top:32px; padding-top:18px; border-top:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; color:#555;">
-                        <div>Documento generado desde el sistema INMU</div>
-                        <img src="logo2.svg" style="height:50px; object-fit:contain;" />
-                        <div>${new Date().toLocaleString('es-ES')}</div>
-                    </div>
-                </div>`;
+        function generarHTMLInformeVentana(data) {
+            const fechaF = data.fecha ? new Date(data.fecha + 'T12:00:00').toLocaleDateString('es-SV',{day:'2-digit',month:'long',year:'numeric'}) : data.fecha;
+            const alumnosRows = (Array.isArray(data.alumnos) && data.alumnos.length)
+                ? data.alumnos.map((a,i) => `<tr style="background:${i%2===0?'#f8fafc':'#fff'}">
+                    <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${i+1}</td>
+                    <td style="padding:6px 10px;border:1px solid #ddd;">${a.nombre||''}</td>
+                    <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${a.nie||'—'}</td>
+                    <td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${a.sexo||'—'}</td>
+                    </tr>`).join('') : '';
+
+            return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>${data.tipo} — INMU</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,sans-serif;padding:28px 36px;color:#1e293b;font-size:13px;background:#fff;}
+  .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1a3a5c;padding-bottom:14px;margin-bottom:20px;}
+  .header-center{text-align:center;flex:1;}
+  .header-center h1{font-size:14px;color:#1a3a5c;text-transform:uppercase;font-weight:800;letter-spacing:.5px;}
+  .header-center h2{font-size:12px;color:#475569;margin-top:4px;font-weight:500;}
+  .header-side{width:80px;text-align:center;font-size:10px;color:#94a3b8;}
+  .badge{display:inline-block;background:#1a3a5c;color:#fff;padding:4px 20px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:16px;}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;}
+  .meta-item label{display:block;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px;}
+  .meta-item span{font-size:13px;color:#1e293b;font-weight:500;}
+  .meta-item.full{grid-column:1/-1;}
+  .content-box{border:1px solid #e2e8f0;border-radius:10px;padding:14px;min-height:80px;line-height:1.8;white-space:pre-wrap;margin-bottom:16px;font-size:13px;}
+  .section-title{font-weight:700;color:#1a3a5c;margin:16px 0 8px;font-size:13px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  table thead tr{background:#1a3a5c;color:#fff;}
+  table th{padding:8px 10px;text-align:left;border:1px solid #ccc;}
+  .firmas{display:flex;gap:60px;justify-content:center;margin-top:50px;}
+  .firma{text-align:center;width:200px;}
+  .firma-linea{border-top:1.5px solid #1a3a5c;padding-top:6px;font-size:11px;color:#334155;}
+  .footer{text-align:center;margin-top:24px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px;}
+  .noprint{display:block;text-align:center;margin-top:20px;}
+  @media print{.noprint{display:none!important;}body{padding:15px;}}
+</style></head><body>
+<div class="header">
+  <div class="header-side">🏫<br>MINEDUCYT<br>El Salvador</div>
+  <div class="header-center">
+    <h1>Instituto Nacional de Mercedes Umaña</h1>
+    <h2>Dirección Nacional de Educación — El Salvador</h2>
+  </div>
+  <div class="header-side">📋<br>INMU<br>${new Date().getFullYear()}</div>
+</div>
+<div style="text-align:center;margin-bottom:16px;"><span class="badge">${data.tipo}</span></div>
+<div class="meta">
+  <div class="meta-item"><label>Fecha</label><span>${fechaF||'—'}</span></div>
+  <div class="meta-item"><label>Docente</label><span>${data.docente||'—'}</span></div>
+  ${data.grado ? `<div class="meta-item"><label>Grado</label><span>${data.grado}</span></div>` : ''}
+  ${data.seccion ? `<div class="meta-item"><label>Sección</label><span>${data.seccion}</span></div>` : ''}
+  ${data.tipo ? `<div class="meta-item full"><label>Tipo de Documento</label><span>${data.tipo}</span></div>` : ''}
+</div>
+${data.contenido ? `<p class="section-title">Contenido:</p><div class="content-box">${String(data.contenido).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
+${alumnosRows ? `<p class="section-title">Estudiantes involucrados:</p>
+<table>
+  <thead><tr><th style="width:40px;text-align:center;">N°</th><th>Nombre</th><th style="width:100px;text-align:center;">NIE</th><th style="width:60px;text-align:center;">Sexo</th></tr></thead>
+  <tbody>${alumnosRows}</tbody>
+</table>` : ''}
+<div class="firmas">
+  <div class="firma"><div class="firma-linea">Docente<br><strong>${data.docente||''}</strong></div></div>
+  <div class="firma"><div class="firma-linea">Director/a<br><strong>Instituto Nacional de Mercedes Umaña</strong></div></div>
+</div>
+<div class="footer">Instituto Nacional de Mercedes Umaña — El Salvador | ${new Date().toLocaleString('es-SV')}</div>
+<div class="noprint">
+  <button onclick="window.print()" style="margin-top:10px;padding:10px 28px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold;">🖨️ Imprimir / Guardar como PDF</button>
+</div>
+</body></html>`;
         }
 
         function guardarInformeEnNube(data) {
@@ -18034,7 +18039,7 @@
             const cont = document.getElementById('historial-informes-list');
             if (!cont) return;
             try {
-                const response = await fetch(`${SCRIPT_URL}?tipo=historial_informes`);
+                const response = await fetch(`${SCRIPT_URL}?tipo=informes`);
                 const data = await response.json();
                 window.informeHistorial = Array.isArray(data) ? data : [];
                 renderHistorialInformes();
@@ -18082,39 +18087,14 @@
             alert(texto);
         }
 
-        async function descargarInformeHistorial(index) {
-            const item = window.informeHistorial[index];
+        function descargarInformeHistorial(index) {
+            const item = (window._infHistCache || window.informeHistorial || [])[index];
             if (!item) return;
-            const data = { tipo: item.tipo, fecha: item.fecha, docente: item.docente, grado: item.grado, seccion: item.seccion, contenido: item.contenido, alumnos: item.alumnos || [] };
-            const orientacion = 'portrait';
-            const anchoFijo = Math.round((216 / 25.4) * 96);
-            const htmlContenido = generarHTMLInformeParaPDF(data);
-            const container = crearContenedorPDFTemporal(htmlContenido, anchoFijo);
-            const nombreArchivo = `${data.tipo} - ${data.docente} - ${data.fecha}.pdf`.replace(/[\\/:*?"<>|]/g, '');
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: nombreArchivo,
-                image: { type: 'jpeg', quality: 0.97 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    imageTimeout: 15000,
-                    width: anchoFijo,
-                    windowWidth: anchoFijo,
-                    removeContainer: false
-                },
-                jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
-                pagebreak: { mode: ['css', 'legacy'] }
-            };
-            try {
-                await html2pdf().set(opt).from(container).save();
-            } catch (e) {
-                alert('Error al descargar informe: ' + (e.message || e));
-            } finally {
-                container.remove();
-            }
+            const htmlCompleto = generarHTMLInformeVentana(item);
+            const w = window.open('', '_blank', 'width=900,height=700');
+            if (!w) { alert('Activa las ventanas emergentes.'); return; }
+            w.document.open(); w.document.write(htmlCompleto); w.document.close();
+            w.onload = function() { setTimeout(() => w.print(), 500); };
         }
 
         async function generarPDFDesdeQR() {
@@ -18422,6 +18402,15 @@
 
         function actualizarInfoPagina() {
             const info = document.getElementById('info-pagina');
+            const esPaginado = (alumnosPorPagina !== Infinity && alumnosPorPagina < alumnosFiltrados.length + 1);
+            // Hide Anterior/Siguiente buttons when not paginating
+            const controles = document.getElementById('controles-lista-alumnos');
+            if (controles) {
+                const bots = controles.querySelectorAll('.btn-action');
+                bots.forEach((b,i) => { if(i !== 0) b.style.display = esPaginado ? '' : 'none'; });
+                const infoEl = document.getElementById('info-pagina');
+                if(infoEl) infoEl.style.display = esPaginado ? '' : 'none';
+            }
             if (info) {
                 const totalPaginas = Math.ceil(alumnosFiltrados.length / alumnosPorPagina) || 1;
                 // Validar que la página actual no exceda el total si la lista cambió
