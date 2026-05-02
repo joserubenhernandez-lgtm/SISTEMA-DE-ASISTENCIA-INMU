@@ -12,7 +12,7 @@
     <link rel="icon" href="logo.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="logo.jpg">
     <title>Registro de Asistencia — INMU</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
 :root {
             --blue-800: #0C447C;
@@ -1001,7 +1001,7 @@
 
 </style>
     <!-- SheetJS para exportar Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -1708,7 +1708,7 @@
     </div>
 
     <!-- PDF.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <!-- ═══════════════════════════════════════════
      MODAL: ASISTENCIA AUTÓNOMA QR
@@ -1839,6 +1839,13 @@
 
     </div>
     <script>
+        const fallbackLoader = document.getElementById('fallback-loading');
+        if (fallbackLoader) fallbackLoader.remove();
+        setTimeout(() => {
+            const fallback = document.getElementById('fallback-loading');
+            if (fallback) fallback.remove();
+        }, 12000);
+
 // Autocompletar docente responsable si se selecciona Dirección
                                 document.getElementById('grado-select').addEventListener('change', function () {
                                     if (this.value === 'Dirección') {
