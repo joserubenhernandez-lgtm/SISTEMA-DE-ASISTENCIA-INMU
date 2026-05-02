@@ -2650,31 +2650,36 @@
             const seccionTodas = seccion === 'todas';
             const contenedor = document.getElementById('tabla-alumnos');
 
-            if (!grado && !seccion) {
-                alumnosFiltrados = baseDatosAlumnos.slice();
-            } else {
-                const esDireccion = grado === "direccion" || grado === "dirección";
-                const esDiRefuerzo = grado === "di refuerzo";
-                const esUnica = seccion === "unica" || seccion === "única";
-                modoDiRefuerzo = esDiRefuerzo && esUnica;
+            if (!gradoRaw) {
+                alumnosFiltrados = [];
+                contenedor.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--blue-800);">Seleccione un grado para ver la lista de estudiantes.</div>';
+                actualizarInfoPagina();
+                actualizarControlesLista();
+                mostrarPanelDiRefuerzo(false);
+                return;
+            }
 
-                if (modoDiRefuerzo) {
-                    alumnosFiltrados = await obtenerAlumnosDiRefuerzo();
-                } else if (esDireccion && esUnica) {
-                    alumnosFiltrados = baseDatosAlumnos.slice();
-                } else if (gradoTodas && seccionTodas) {
-                    alumnosFiltrados = baseDatosAlumnos.slice();
-                } else if (gradoTodas && seccion && !seccionTodas) {
-                    alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.seccion) === seccion);
-                } else if (seccionTodas && grado && !gradoTodas) {
-                    alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado);
-                } else if (grado && (seccion === '' || seccionTodas)) {
-                    alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado);
-                } else if (seccion && (grado === '' || gradoTodas)) {
-                    alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.seccion) === seccion);
-                } else {
-                    alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado && normalizarTexto(a.seccion) === seccion);
-                }
+            const esDireccion = grado === "direccion" || grado === "dirección";
+            const esDiRefuerzo = grado === "di refuerzo";
+            const esUnica = seccion === "unica" || seccion === "única";
+            modoDiRefuerzo = esDiRefuerzo && esUnica;
+
+            if (modoDiRefuerzo) {
+                alumnosFiltrados = await obtenerAlumnosDiRefuerzo();
+            } else if (esDireccion && esUnica) {
+                alumnosFiltrados = baseDatosAlumnos.slice();
+            } else if (gradoTodas && seccionTodas) {
+                alumnosFiltrados = baseDatosAlumnos.slice();
+            } else if (gradoTodas && seccion && !seccionTodas) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.seccion) === seccion);
+            } else if (seccionTodas && grado && !gradoTodas) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado);
+            } else if (grado && (seccion === '' || seccionTodas)) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado);
+            } else if (seccion && (grado === '' || gradoTodas)) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.seccion) === seccion);
+            } else {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado && normalizarTexto(a.seccion) === seccion);
             }
             cargarNotasGuardadas(document.getElementById('grado-select')?.value||'', document.getElementById('seccion-select')?.value||'');
 
@@ -4359,28 +4364,35 @@
             if (!validarInforme(informe)) {
                 return alert('Complete todos los campos obligatorios. Para actas, agregue al menos un alumno.');
             }
-            const container = document.createElement('div');
+            const container = document.getElementById('pdf-content');
+            const contenidoOriginal = container.innerHTML;
+            const estiloOriginal = {
+                width: container.style.width,
+                maxWidth: container.style.maxWidth,
+                padding: container.style.padding,
+                background: container.style.background,
+                boxSizing: container.style.boxSizing,
+                margin: container.style.margin
+            };
             container.style.width = '780px';
             container.style.maxWidth = '780px';
             container.style.padding = '24px';
             container.style.background = 'white';
             container.style.boxSizing = 'border-box';
+            container.style.margin = '0 auto';
             container.innerHTML = generarHTMLInformeParaPDF(informe);
-            document.body.appendChild(container);
             const nombreArchivo = `${tipo} - ${docente} - ${fecha}.pdf`.replace(/[\\/:*?"<>|]/g, '');
             const opt = {
-                margin: 18,
+                margin: 15,
                 filename: nombreArchivo,
                 image: { type: 'jpeg', quality: 0.95 },
                 html2canvas: {
-                    scale: 2,
+                    scale: 1.5,
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
                     imageTimeout: 15000,
-                    removeContainer: false,
-                    width: 780,
-                    windowWidth: 780
+                    removeContainer: false
                 },
                 jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
                 pagebreak: { mode: ['css', 'legacy'] }
@@ -4393,7 +4405,13 @@
             } catch (e) {
                 alert('Error al generar PDF: ' + (e.message || e));
             } finally {
-                container.remove();
+                container.innerHTML = contenidoOriginal;
+                container.style.width = estiloOriginal.width;
+                container.style.maxWidth = estiloOriginal.maxWidth;
+                container.style.padding = estiloOriginal.padding;
+                container.style.background = estiloOriginal.background;
+                container.style.boxSizing = estiloOriginal.boxSizing;
+                container.style.margin = estiloOriginal.margin;
             }
         }
 
@@ -4421,7 +4439,7 @@
                     </table>
                 </div>` : '';
             return `
-                <div style="font-family:Arial, sans-serif; color:#111; background:#fff; width:100%; box-sizing:border-box; padding:24px;">
+                <div style="font-family:Arial, sans-serif; color:#111; background:#fff; width:100%; max-width:780px; margin:0 auto; box-sizing:border-box; padding:24px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:26px;">
                         <div style="max-width:60%;">
                             <div style="font-size:18px; font-weight:700; color:#0C447C;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</div>
@@ -4519,9 +4537,12 @@
             if (!item) return;
             const data = { tipo: item.tipo, fecha: item.fecha, docente: item.docente, grado: item.grado, seccion: item.seccion, contenido: item.contenido, alumnos: item.alumnos || [] };
             const container = document.createElement('div');
-            container.style.width = '900px';
+            container.style.width = '780px';
+            container.style.maxWidth = '780px';
             container.style.padding = '24px';
             container.style.background = 'white';
+            container.style.boxSizing = 'border-box';
+            container.style.margin = '0 auto';
             container.innerHTML = generarHTMLInformeParaPDF(data);
             document.body.appendChild(container);
             const nombreArchivo = `${data.tipo} - ${data.docente} - ${data.fecha}.pdf`.replace(/[\\/:*?"<>|]/g, '');
