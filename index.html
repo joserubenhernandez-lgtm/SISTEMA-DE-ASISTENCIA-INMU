@@ -1356,7 +1356,10 @@
                     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
                         <div style="flex:1; min-width:220px;">
                             <label>Buscar estudiante</label>
-                            <input type="text" id="busqueda-alumno-informe" placeholder="NIE o nombre" style="width:100%; padding:10px; border:1.5px solid var(--gray-100); border-radius:8px;" oninput="buscarAlumnoInforme(this.value)" />
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="busqueda-alumno-informe" placeholder="NIE o nombre" style="width:100%; padding:10px; border:1.5px solid var(--gray-100); border-radius:8px;" oninput="buscarAlumnoInforme(this.value)" />
+                                <button type="button" onclick="clearBusquedaAlumnoInforme()" style="padding:10px 12px; border:1px solid var(--gray-200); background:#fff; color:#333; border-radius:8px; cursor:pointer;">✖</button>
+                            </div>
                         </div>
                         <button onclick="agregarAlumnoDesdeBusqueda()" style="padding:12px 16px; border:none; background:var(--green-600); color:white; border-radius:8px; font-weight:bold; cursor:pointer;">➕ Agregar alumno</button>
                     </div>
@@ -2641,8 +2644,8 @@
             const seccion = normalizarTexto(document.getElementById('seccion-select').value);
             const contenedor = document.getElementById('tabla-alumnos');
 
-            if (!grado || !seccion) {
-                contenedor.innerHTML = '<div style="padding: 20px; text-align: center; color: #5F5E5A;">Seleccione un grado y una sección.</div>';
+            if (!grado && !seccion) {
+                contenedor.innerHTML = '<div style="padding: 20px; text-align: center; color: #5F5E5A;">Seleccione un grado o una sección.</div>';
                 alumnosFiltrados = [];
                 modoDiRefuerzo = false;
                 actualizarControlesLista();
@@ -2658,10 +2661,14 @@
                 alumnosFiltrados = await obtenerAlumnosDiRefuerzo();
             } else if (esDireccion && esUnica) {
                 alumnosFiltrados = baseDatosAlumnos.slice();
+            } else if (grado && !seccion) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado);
+            } else if (!grado && seccion) {
+                alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.seccion) === seccion);
             } else {
                 alumnosFiltrados = baseDatosAlumnos.filter(a => normalizarTexto(a.grado) === grado && normalizarTexto(a.seccion) === seccion);
-            cargarNotasGuardadas(document.getElementById('grado-select')?.value||'', document.getElementById('seccion-select')?.value||'');
             }
+            cargarNotasGuardadas(document.getElementById('grado-select')?.value||'', document.getElementById('seccion-select')?.value||'');
 
             if (alumnosFiltrados.length === 0) {
                 contenedor.innerHTML = modoDiRefuerzo
@@ -4220,30 +4227,57 @@
 
         async function buscarAlumnoInforme(query) {
             const cont = document.getElementById('alumnos-informe-sugerencias');
-            if (!query || query.trim().length < 2) {
+            const texto = String(query || '').trim();
+            if (texto.length < 2) {
                 cont.innerHTML = '';
                 window.informeResultadoBusqueda = [];
                 return;
             }
-            try {
-                const grado = encodeURIComponent((document.getElementById('grado-informe') || {}).value || '');
-                const seccion = encodeURIComponent((document.getElementById('seccion-informe') || {}).value || '');
-                const response = await fetch(`${SCRIPT_URL}?tipo=buscar_alumno&query=${encodeURIComponent(query)}&grado=${grado}&seccion=${seccion}`);
-                const data = await response.json();
-                window.informeResultadoBusqueda = Array.isArray(data) ? data : [];
-                if (window.informeResultadoBusqueda.length === 0) {
-                    cont.innerHTML = '<div style="color:var(--gray-600); padding:10px;">No se encontraron alumnos.</div>';
-                    return;
+            const grado = normalizarTexto((document.getElementById('grado-informe') || {}).value || '');
+            const seccion = normalizarTexto((document.getElementById('seccion-informe') || {}).value || '');
+            let alumnos = Array.isArray(baseDatosAlumnos) ? baseDatosAlumnos.slice() : [];
+            if (!alumnos.length) {
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?tipo=alumnos`);
+                    if (response.ok) {
+                        alumnos = await response.json();
+                        baseDatosAlumnos = Array.isArray(alumnos) ? alumnos : [];
+                    }
+                } catch (e) {
+                    console.warn('Error cargando base de alumnos:', e);
                 }
-                cont.innerHTML = window.informeResultadoBusqueda.map((alumno, index) => `
-                    <div class="student-row" style="padding:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                        <div style="flex:1;">
-                            <strong>${alumno.nombre}</strong><br><small>${alumno.nie} · ${alumno.grado} ${alumno.seccion}</small>
-                        </div>
-                        <button onclick="seleccionarAlumnoInforme(${index})" style="padding:8px 10px; border:none; background:var(--blue-600); color:white; border-radius:8px; cursor:pointer;">Agregar</button>
-                    </div>`).join('');
-            } catch (e) {
-                cont.innerHTML = '<div style="color:var(--red-600); padding:10px;">Error buscando alumnos.</div>';
+            }
+            const filtro = normalizarTexto(texto);
+            const coincidencias = alumnos.filter(alumno => {
+                const nombre = normalizarTexto(alumno.nombre);
+                const nie = normalizarTexto(alumno.nie);
+                const gradoA = normalizarTexto(alumno.grado);
+                const seccionA = normalizarTexto(alumno.seccion);
+                const matchTexto = nombre.includes(filtro) || nie.includes(filtro);
+                if (!matchTexto) return false;
+                if (grado && gradoA !== grado) return false;
+                if (seccion && seccionA !== seccion) return false;
+                return true;
+            }).slice(0, 25);
+            window.informeResultadoBusqueda = coincidencias;
+            if (!coincidencias.length) {
+                cont.innerHTML = '<div style="color:var(--gray-600); padding:10px;">No se encontraron alumnos.</div>';
+                return;
+            }
+            cont.innerHTML = coincidencias.map((alumno, index) => `
+                <div class="student-row" style="padding:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div style="flex:1;">
+                        <strong>${alumno.nombre}</strong><br><small>${alumno.nie} · ${alumno.grado} ${alumno.seccion}</small>
+                    </div>
+                    <button onclick="seleccionarAlumnoInforme(${index})" style="padding:8px 10px; border:none; background:var(--blue-600); color:white; border-radius:8px; cursor:pointer;">Agregar</button>
+                </div>`).join('');
+        }
+
+        function clearBusquedaAlumnoInforme() {
+            const input = document.getElementById('busqueda-alumno-informe');
+            if (input) {
+                input.value = '';
+                buscarAlumnoInforme('');
             }
         }
 
@@ -4325,10 +4359,10 @@
             document.body.appendChild(container);
             const nombreArchivo = `${tipo} - ${docente} - ${fecha}.pdf`.replace(/[\\/:*?"<>|]/g, '');
             const opt = {
-                margin: 15,
+                margin: 20,
                 filename: nombreArchivo,
                 image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: { scale: 1.5, useCORS: true, allowTaint: true, logging: false, imageTimeout: 15000, removeContainer: false },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, imageTimeout: 15000, removeContainer: false },
                 jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
                 pagebreak: { mode: ['css', 'legacy'] }
             };
@@ -4346,18 +4380,20 @@
 
         function generarHTMLInformeParaPDF(data) {
             const listaAlumnos = Array.isArray(data.alumnos) && data.alumnos.length ? `
-                <div style="margin-top:18px;">
+                <div style="margin-top:18px; page-break-inside: avoid; break-inside: avoid;">
                     <h3 style="margin-bottom:10px; font-size:15px;">Alumnos</h3>
-                    ${data.alumnos.map(a => `
-                        <div style="display:flex; justify-content:space-between; padding:8px 10px; border-bottom:1px solid #ddd;">
-                            <span>${a.nombre}</span>
-                            <strong>${a.nie}</strong>
-                        </div>
-                    `).join('')}
+                    <div style="border:1px solid #e1e3e6; border-radius:10px; overflow:hidden;">
+                        ${data.alumnos.map(a => `
+                            <div style="display:flex; justify-content:space-between; padding:12px 14px; background:#fafbfc; border-bottom:1px solid #e1e3e6;">
+                                <span style="font-size:14px;">${a.nombre}</span>
+                                <strong style="font-size:14px;">${a.nie}</strong>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>` : '';
             return `
-                <div style="font-family:Arial, sans-serif; color:#111;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:12px; flex-wrap:wrap;">
+                <div style="font-family:Arial, sans-serif; color:#111; background:#fff; padding:26px; box-sizing:border-box;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:12px; flex-wrap:wrap; page-break-inside: avoid; break-inside: avoid;">
                         <img src="logo.jpg" style="height:60px; object-fit:contain;" />
                         <div style="text-align:center; max-width:520px;">
                             <div style="font-size:16px; font-weight:700; letter-spacing:0.5px;">MINISTERIO DE EDUCACIÓN CIENCIA Y TECNOLOGÍA</div>
@@ -4365,21 +4401,22 @@
                         </div>
                         <img src="logo3.jpg" style="height:60px; object-fit:contain;" />
                     </div>
-                    <div style="border:1px solid #ddd; border-radius:12px; padding:18px; margin-bottom:22px;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:14px;">
+                    <div style="border:1px solid #ddd; border-radius:14px; padding:20px; margin-bottom:26px; page-break-inside: avoid; break-inside: avoid;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:14px; line-height:1.6;">
                             <div><strong>Tipo:</strong> ${data.tipo}</div>
                             <div><strong>Fecha:</strong> ${data.fecha}</div>
                             <div><strong>Docente:</strong> ${data.docente}</div>
                             <div><strong>Grado / Sección:</strong> ${data.grado} / ${data.seccion}</div>
                         </div>
                     </div>
-                    <div style="margin-bottom:18px; line-height:1.6; white-space:pre-wrap; font-size:14px;">
+                    <div style="margin-bottom:20px; line-height:1.7; white-space:pre-wrap; font-size:14px; page-break-inside: avoid; break-inside: avoid;">
                         <strong>Contenido:</strong>
                         <div style="margin-top:10px;">${String(data.contenido).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                     </div>
                     ${listaAlumnos}
-                    <div style="margin-top:28px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #ddd; padding-top:16px; font-size:12px; color:#555;">
+                    <div style="margin-top:32px; padding-top:18px; border-top:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:#555; page-break-inside: avoid; break-inside: avoid;">
                         <div>Documento generado desde el sistema INMU</div>
+                        <img src="logo2.svg" style="height:48px; object-fit:contain;" />
                         <div>${new Date().toLocaleString('es-ES')}</div>
                     </div>
                 </div>`;
@@ -17535,10 +17572,11 @@
         let qrAlumnosFiltradosPanel = [];
 
         function abrirQRAutonomo() {
-            // Si hay grado+seccion seleccionados, usar solo esos alumnos; si no, usar todos
+            // Si hay grado o sección seleccionados en la página principal, usar la lista filtrada actual;
+            // si no, usar todos los alumnos.
             const gradoSel = (document.getElementById('grado-select') || {}).value || '';
             const seccionSel = (document.getElementById('seccion-select') || {}).value || '';
-            const hayFiltro = gradoSel && seccionSel;
+            const hayFiltro = gradoSel || seccionSel;
             if (hayFiltro) {
                 qrAlumnos = alumnosFiltrados.slice();
             } else {
@@ -17565,14 +17603,18 @@
         function qrAplicarFiltros() {
             const gradoFiltro = (document.getElementById('qr-filtro-grado') || {}).value || 'TODOS';
             const seccionFiltro = (document.getElementById('qr-filtro-seccion') || {}).value || 'TODAS';
-            const busqueda = ((document.getElementById('qr-buscador') || {}).value || '').toLowerCase().trim();
+            const busqueda = ((document.getElementById('qr-buscador') || {}).value || '').trim();
+
+            const gradoFiltroNorm = normalizarTexto(gradoFiltro);
+            const seccionFiltroNorm = normalizarTexto(seccionFiltro);
+            const busquedaNorm = normalizarTexto(busqueda);
 
             let base = qrAlumnos.slice();
-            if (gradoFiltro !== 'TODOS') base = base.filter(a => (a.grado || '') === gradoFiltro);
-            if (seccionFiltro !== 'TODAS') base = base.filter(a => (a.seccion || '') === seccionFiltro);
-            if (busqueda) base = base.filter(a =>
-                (a.nombre || '').toLowerCase().includes(busqueda) ||
-                String(a.nie).includes(busqueda)
+            if (gradoFiltroNorm !== 'todos') base = base.filter(a => normalizarTexto(a.grado) === gradoFiltroNorm);
+            if (seccionFiltroNorm !== 'todas') base = base.filter(a => normalizarTexto(a.seccion) === seccionFiltroNorm);
+            if (busquedaNorm) base = base.filter(a =>
+                normalizarTexto(a.nombre).includes(busquedaNorm) ||
+                normalizarTexto(a.nie).includes(busquedaNorm)
             );
 
             qrAlumnosFiltradosPanel = base;
@@ -17776,11 +17818,12 @@
         function iniciarLoopEscaneo() {
             const video  = document.getElementById('qr-video');
             // Canvas pre-creado con tamaño fijo — NO redimensionar cada frame
-            const SCAN_W = 400, SCAN_H = 400;
+            const SCAN_W = 480, SCAN_H = 480;
             const canvas = document.createElement('canvas');
             canvas.width  = SCAN_W;
             canvas.height = SCAN_H;
             const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+            if (ctx) ctx.imageSmoothingEnabled = false;
 
             let ultimoNie  = '';
             let ultimoTime = 0;
@@ -17817,12 +17860,7 @@
                 let code = null;
                 try {
                     if (_jsQR) {
-                        // Intento principal: directo sin inversión (más rápido)
-                        code = _jsQR(imgData.data, SCAN_W, SCAN_H, { inversionAttempts: 'dontInvert' });
-                        // Si falla, intentar con inversión (QR oscuro sobre fondo claro o viceversa)
-                        if (!code) {
-                            code = _jsQR(imgData.data, SCAN_W, SCAN_H, { inversionAttempts: 'attemptBoth' });
-                        }
+                        code = _jsQR(imgData.data, SCAN_W, SCAN_H, { inversionAttempts: 'attemptBoth' });
                     }
                 } catch(e) { /* ignorar errores de decodificación */ }
 
@@ -18241,17 +18279,18 @@
         function qrManualBuscar() {
             const input = document.getElementById('qr-manual-buscar');
             const contenedor = document.getElementById('qr-manual-resultados');
-            const texto = (input ? input.value : '').trim().toLowerCase();
+            const texto = (input ? input.value : '').trim();
+            const textoNorm = normalizarTexto(texto);
 
-            if (!texto) {
+            if (!textoNorm) {
                 contenedor.style.display = 'none';
                 contenedor.innerHTML = '';
                 return;
             }
 
             const resultados = qrAlumnos.filter(a =>
-                (a.nombre || '').toLowerCase().includes(texto) ||
-                String(a.nie).includes(texto)
+                normalizarTexto(a.nombre).includes(textoNorm) ||
+                normalizarTexto(a.nie).includes(textoNorm)
             ).slice(0, 8); // máximo 8 resultados para no saturar
 
             if (!resultados.length) {
