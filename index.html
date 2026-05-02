@@ -375,14 +375,11 @@
         }
 
         /* ══════════════════════════════════════════════════
-           VISTA TABLA DE NOTAS
+           VISTA TABLA DE NOTAS — EDITABLE
         ══════════════════════════════════════════════════ */
-        #view-notas {
-            display: none;
-        }
-        #view-notas.view-active {
-            display: block;
-        }
+        #view-notas { display: none; }
+        #view-notas.view-active { display: block; }
+
         .notas-table-wrapper {
             overflow-x: auto;
             margin-top: 12px;
@@ -393,39 +390,25 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
-            min-width: 760px;
+            min-width: 900px;
         }
-        .notas-table thead tr {
-            background: var(--blue-800);
-            color: white;
-        }
+        .notas-table thead tr { background: var(--blue-800); color: white; }
         .notas-table thead th {
-            padding: 10px 8px;
+            padding: 9px 6px;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             text-transform: uppercase;
             border: 1px solid rgba(255,255,255,0.15);
             white-space: nowrap;
         }
-        .notas-table thead th.th-periodo {
-            background: var(--blue-600);
-        }
-        .notas-table thead th.th-final {
-            background: var(--green-600);
-        }
-        .notas-table tbody tr {
-            border-bottom: 1px solid var(--gray-100);
-            transition: background 0.15s;
-        }
-        .notas-table tbody tr:nth-child(even) {
-            background: var(--gray-50);
-        }
-        .notas-table tbody tr:hover {
-            background: var(--blue-50);
-        }
+        .notas-table thead th.th-periodo { background: var(--blue-600); }
+        .notas-table thead th.th-final   { background: var(--green-600); }
+        .notas-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.15s; }
+        .notas-table tbody tr:nth-child(even) { background: var(--gray-50); }
+        .notas-table tbody tr:hover { background: #eef4ff; }
         .notas-table td {
-            padding: 9px 8px;
+            padding: 5px 4px;
             text-align: center;
             border: 1px solid var(--gray-100);
             font-size: 12px;
@@ -434,77 +417,113 @@
             text-align: left;
             font-weight: 600;
             color: var(--gray-900);
-            min-width: 160px;
+            min-width: 150px;
+            padding-left: 10px;
+            white-space: nowrap;
         }
-        .notas-table td.td-nie {
-            color: var(--gray-600);
-            font-size: 11px;
+        .notas-table td.td-nie { color: var(--gray-500); font-size: 10px; white-space: nowrap; }
+
+        /* Input de nota editable */
+        .nota-input {
+            width: 46px;
+            padding: 4px 2px;
+            text-align: center;
+            border: 1.5px solid transparent;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            background: transparent;
+            color: var(--gray-800);
+            transition: all 0.2s;
+            outline: none;
         }
+        .nota-input:focus {
+            border-color: var(--blue-600);
+            background: white;
+            box-shadow: 0 0 0 2px rgba(24,95,165,0.15);
+        }
+        .nota-input.modificado {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .nota-input.guardado {
+            border-color: var(--green-600);
+            background: #f0fdf4;
+            animation: flashGreen 0.6s ease;
+        }
+        @keyframes flashGreen {
+            0%   { background: #bbf7d0; }
+            100% { background: #f0fdf4; }
+        }
+        .nota-input.error-input {
+            border-color: var(--red-600);
+            background: #fef2f2;
+        }
+
+        /* Badge resultado periodo */
         .nota-badge {
             display: inline-block;
-            padding: 3px 8px;
+            padding: 3px 7px;
             border-radius: 5px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
+            min-width: 36px;
         }
-        .nota-aprobado  { background: var(--green-50);  color: var(--green-600); }
-        .nota-reprobado { background: var(--red-50);    color: var(--red-600); }
-        .nota-final-aprobado  { background: var(--green-600); color: white; }
-        .nota-final-reprobado { background: var(--red-600);   color: white; }
-        .notas-empty {
+        .nota-aprobado       { background: var(--green-50);  color: var(--green-600); }
+        .nota-reprobado      { background: var(--red-50);    color: var(--red-600); }
+        .nota-final-aprobado { background: var(--green-600); color: white; }
+        .nota-final-reprobado{ background: var(--red-600);   color: white; }
+        .nota-vacia          { background: var(--gray-100);  color: var(--gray-400); }
+
+        /* Indicador de autoguardado por fila */
+        .fila-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            min-width: 60px;
+            display: inline-block;
             text-align: center;
-            padding: 40px 20px;
-            color: var(--gray-600);
-            font-style: italic;
         }
-        .notas-loading {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--blue-600);
-        }
+        .fila-status.pendiente  { background:#fef3c7; color:#92400e; }
+        .fila-status.guardando  { background:#dbeafe; color:#1e40af; }
+        .fila-status.guardado   { background:#dcfce7; color:#166534; }
+        .fila-status.error      { background:#fee2e2; color:#991b1b; }
+
+        .notas-empty   { text-align:center; padding:40px; color:var(--gray-500); font-style:italic; }
+        .notas-loading { text-align:center; padding:40px; color:var(--blue-600); }
+
         .btn-notas {
             background: linear-gradient(135deg, #185FA5, #0C447C);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            transition: 0.3s;
-            text-transform: uppercase;
-            margin-bottom: 10px;
+            color: white; border: none; padding: 15px; border-radius: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer; width: 100%;
+            transition: 0.3s; text-transform: uppercase; margin-bottom: 10px;
         }
-        .btn-notas:hover {
-            background: linear-gradient(135deg, #0C447C, #083460);
-            box-shadow: 0 4px 12px rgba(12,68,124,0.3);
+        .btn-notas:hover { background: linear-gradient(135deg,#0C447C,#083460); box-shadow:0 4px 12px rgba(12,68,124,0.3); }
+
+        .notas-toolbar {
+            display: flex; gap: 10px; align-items: center;
+            flex-wrap: wrap; margin-bottom: 14px;
         }
-        .notas-stats-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
-        }
+        .notas-stats-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
         .notas-stat-card {
-            flex: 1;
-            min-width: 110px;
-            background: white;
-            border-radius: 8px;
-            padding: 10px 14px;
-            border: 1px solid var(--gray-100);
-            text-align: center;
+            flex:1; min-width:100px; background:white; border-radius:8px;
+            padding:10px 12px; border:1px solid var(--gray-100); text-align:center;
         }
-        .notas-stat-card .stat-num {
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--blue-800);
+        .notas-stat-card .stat-num  { font-size:20px; font-weight:bold; color:var(--blue-800); }
+        .notas-stat-card .stat-label{ font-size:10px; color:var(--gray-500); text-transform:uppercase; margin-top:2px; }
+
+        .btn-guardar-todo {
+            padding: 10px 20px; background: var(--green-600); color: white;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 13px;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px;
         }
-        .notas-stat-card .stat-label {
-            font-size: 10px;
-            color: var(--gray-600);
-            text-transform: uppercase;
-            margin-top: 2px;
+        .btn-guardar-todo:hover { background: #15803d; box-shadow: 0 3px 8px rgba(22,163,74,0.3); }
+        .btn-guardar-todo:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+        .notas-autosave-info {
+            font-size: 11px; color: var(--gray-500);
+            display: flex; align-items: center; gap: 5px;
         }
 
         /* PANTALLA DE MANTENIMIENTO */
@@ -1452,29 +1471,40 @@
             </div>
         </div>
 
-        <!-- ══════════════════════════════════════════════════════
- VISTA: TABLA DE NOTAS POR PERIODO
-══════════════════════════════════════════════════════ -->
+        <!-- ════════════════════════════════════════════════════════
+             VISTA: NOTAS POR PERIODO — EDITABLE
+        ════════════════════════════════════════════════════════ -->
         <div id="view-notas" class="view-section">
             <div class="panel">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                <!-- Encabezado -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
                     <h2 style="color:var(--blue-800); font-size:16px; margin:0;">📊 Notas por Periodo</h2>
                     <button onclick="cambiarVista('docente')"
-                        style="padding:8px 14px; background:var(--blue-600); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">←
-                        Volver</button>
+                        style="padding:8px 14px; background:var(--blue-600); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">← Volver</button>
                 </div>
 
+                <!-- Info grado + toolbar -->
                 <div id="notas-info-grado"
-                    style="background:var(--blue-50); border:1px solid #b6d7ff; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--blue-800); font-weight:bold;">
+                    style="background:var(--blue-50); border:1px solid #b6d7ff; border-radius:8px; padding:9px 14px; margin-bottom:12px; font-size:13px; color:var(--blue-800); font-weight:bold;"></div>
+
+                <div class="notas-toolbar">
+                    <button class="btn-guardar-todo" id="btn-guardar-todo" onclick="guardarTodosLosRegistros()" disabled>
+                        💾 Guardar Cambios
+                    </button>
+                    <div class="notas-autosave-info" id="notas-autosave-info">
+                        ⚡ Autoguardado activo — los cambios se guardan 2 seg. después de editar
+                    </div>
                 </div>
 
+                <!-- Estadísticas -->
                 <div class="notas-stats-row" id="notas-stats-row"></div>
 
+                <!-- Tabla -->
                 <div class="notas-table-wrapper">
                     <table class="notas-table">
                         <thead>
                             <tr>
-                                <th rowspan="2" style="min-width:160px; text-align:left; padding-left:12px;">Estudiante</th>
+                                <th rowspan="2" style="min-width:150px; text-align:left; padding-left:10px;">#  Estudiante</th>
                                 <th rowspan="2">NIE</th>
                                 <th colspan="3" class="th-periodo">📘 Periodo 1</th>
                                 <th rowspan="2" class="th-periodo">P1</th>
@@ -1485,31 +1515,31 @@
                                 <th colspan="3" class="th-periodo">📕 Periodo 4</th>
                                 <th rowspan="2" class="th-periodo">P4</th>
                                 <th rowspan="2" class="th-final">🏆 Final</th>
+                                <th rowspan="2" style="background:var(--gray-700); min-width:70px;">Estado</th>
                             </tr>
                             <tr>
-                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
-                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
-                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
-                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
-                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
-                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
-                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
-                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
-                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
-                                <th class="th-periodo" title="Revisión de Cuaderno (30%)">Cuad.</th>
-                                <th class="th-periodo" title="Actividad Integradora (30%)">Integ.</th>
-                                <th class="th-periodo" title="Examen (40%)">Exam.</th>
+                                <th class="th-periodo" title="Cuaderno 30%">Cuad.</th>
+                                <th class="th-periodo" title="Integradora 30%">Integ.</th>
+                                <th class="th-periodo" title="Examen 40%">Exam.</th>
+                                <th class="th-periodo" title="Cuaderno 30%">Cuad.</th>
+                                <th class="th-periodo" title="Integradora 30%">Integ.</th>
+                                <th class="th-periodo" title="Examen 40%">Exam.</th>
+                                <th class="th-periodo" title="Cuaderno 30%">Cuad.</th>
+                                <th class="th-periodo" title="Integradora 30%">Integ.</th>
+                                <th class="th-periodo" title="Examen 40%">Exam.</th>
+                                <th class="th-periodo" title="Cuaderno 30%">Cuad.</th>
+                                <th class="th-periodo" title="Integradora 30%">Integ.</th>
+                                <th class="th-periodo" title="Examen 40%">Exam.</th>
                             </tr>
                         </thead>
                         <tbody id="notas-tbody">
-                            <tr><td colspan="19" class="notas-loading">⏳ Cargando notas...</td></tr>
+                            <tr><td colspan="20" class="notas-loading">⏳ Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <p style="font-size:11px; color:var(--gray-600); margin-top:12px;">
-                    📌 Cuaderno ×30% + Integradora ×30% + Examen ×40% = Nota Periodo &nbsp;|&nbsp;
-                    Nota Final = (P1+P2+P3+P4) ÷ 4 &nbsp;|&nbsp; ✅ Aprobado ≥ 5.0 &nbsp;|&nbsp; ❌ Reprobado &lt; 5.0
+                <p style="font-size:11px; color:var(--gray-500); margin-top:10px;">
+                    📌 Cuaderno ×30% + Integradora ×30% + Examen ×40% = Nota Periodo &nbsp;|&nbsp; Final = (P1+P2+P3+P4)÷4 &nbsp;|&nbsp; ✅ ≥5.0 aprobado
                 </p>
             </div>
         </div>
@@ -17631,91 +17661,312 @@
             }
         }
 
-        // ══════════════════════════════════════════════════════════
-        // SISTEMA DE NOTAS POR PERIODO
-        // ══════════════════════════════════════════════════════════
+        // ══════════════════════════════════════════════════════════════════
+        // SISTEMA DE NOTAS POR PERIODO — EDITABLE CON AUTOGUARDADO
+        // ══════════════════════════════════════════════════════════════════
+
+        // Estado global de notas
+        let notasData = [];          // datos actuales en memoria
+        let notasPendientes = {};    // { rowIndex: true } — filas con cambios sin guardar
+        let autoguardadoTimers = {}; // timers por fila
+        const AUTOGUARDADO_MS = 2000;
 
         function abrirVisorNotas() {
             const grado = document.getElementById('grado-select').value;
             if (!grado) {
-                alert('⚠️ Por favor seleccioná un grado antes de ver las notas.');
+                alert('⚠️ Seleccioná un grado antes de ver las notas.');
                 return;
             }
             cambiarVista('notas');
             cargarNotasGrado(grado);
         }
 
-        function calcularNotaPeriodo(cuaderno, integradora, examen) {
-            const c = parseFloat(cuaderno) || 0;
-            const i = parseFloat(integradora) || 0;
-            const e = parseFloat(examen) || 0;
+        // ── Carga datos desde Google Sheets via SCRIPT_URL ──────────────
+        async function cargarNotasGrado(grado) {
+            const tbody = document.getElementById('notas-tbody');
+            const infoEl = document.getElementById('notas-info-grado');
+            const statsEl = document.getElementById('notas-stats-row');
+            const btnGuardar = document.getElementById('btn-guardar-todo');
+
+            tbody.innerHTML = '<tr><td colspan="20" class="notas-loading">⏳ Cargando notas desde Google Sheets...</td></tr>';
+            statsEl.innerHTML = '';
+            if (infoEl) infoEl.textContent = `📚 Grado: ${grado}`;
+            if (btnGuardar) btnGuardar.disabled = true;
+            notasData = [];
+            notasPendientes = {};
+
+            try {
+                const url = `${SCRIPT_URL}?tipo=notas&grado=${encodeURIComponent(grado)}`;
+                const res = await fetch(url);
+                const datos = await res.json();
+                notasData = datos;
+                renderizarTablaNotasEditable(datos, grado);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="20" class="notas-empty">❌ Error al cargar: ${err.message}<br><small>Verificá que el .gs tenga la función obtenerNotasPorGrado y esté desplegado.</small></td></tr>`;
+            }
+        }
+
+        // ── Cálculo de nota de periodo ───────────────────────────────────
+        function calcNota(cuad, integ, exam) {
+            const c = parseFloat(cuad) || 0;
+            const i = parseFloat(integ) || 0;
+            const e = parseFloat(exam) || 0;
             return (c * 0.30) + (i * 0.30) + (e * 0.40);
         }
 
         function badgeNota(valor, esFinal) {
             const n = parseFloat(valor);
-            if (isNaN(n)) return '<span style="color:#aaa;">—</span>';
-            const aprobado = n >= 5.0;
-            const cls = esFinal
-                ? (aprobado ? 'nota-final-aprobado' : 'nota-final-reprobado')
-                : (aprobado ? 'nota-aprobado'       : 'nota-reprobado');
+            if (isNaN(n) || valor === null || valor === '') return `<span class="nota-badge nota-vacia">—</span>`;
+            const ok = n >= 5.0;
+            const cls = esFinal ? (ok ? 'nota-final-aprobado' : 'nota-final-reprobado')
+                                : (ok ? 'nota-aprobado' : 'nota-reprobado');
             return `<span class="nota-badge ${cls}">${n.toFixed(2)}</span>`;
         }
 
-        function renderizarTablaNotas(datos) {
+        // ── Renderiza tabla con inputs editables ─────────────────────────
+        function renderizarTablaNotasEditable(datos, grado) {
             const tbody = document.getElementById('notas-tbody');
-            const statsRow = document.getElementById('notas-stats-row');
 
             if (!datos || datos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="19" class="notas-empty">😕 No se encontraron datos de notas para este grado.<br><small>Verificá que la hoja "notas" en Google Sheets tenga datos.</small></td></tr>';
-                statsRow.innerHTML = '';
+                tbody.innerHTML = `<tr><td colspan="20" class="notas-empty">
+                    😕 No hay notas registradas para este grado todavía.<br>
+                    <small>Asegurate de que la hoja <strong>"notas"</strong> en Google Sheets tenga filas para <strong>${grado}</strong>.<br>
+                    Si la hoja no existe, el sistema la crea automáticamente al primer guardado.</small>
+                </td></tr>`;
+                actualizarEstadisticasNotas([]);
                 return;
             }
 
-            let aprobados = 0, reprobados = 0, sumFinal = 0;
+            const campos = [
+                ['p1_cuaderno','p1_integradora','p1_examen'],
+                ['p2_cuaderno','p2_integradora','p2_examen'],
+                ['p3_cuaderno','p3_integradora','p3_examen'],
+                ['p4_cuaderno','p4_integradora','p4_examen'],
+            ];
 
-            const filas = datos.map((est, idx) => {
-                const p1 = calcularNotaPeriodo(est.p1_cuaderno, est.p1_integradora, est.p1_examen);
-                const p2 = calcularNotaPeriodo(est.p2_cuaderno, est.p2_integradora, est.p2_examen);
-                const p3 = calcularNotaPeriodo(est.p3_cuaderno, est.p3_integradora, est.p3_examen);
-                const p4 = calcularNotaPeriodo(est.p4_cuaderno, est.p4_integradora, est.p4_examen);
+            let html = '';
+            datos.forEach((est, idx) => {
+                const p1 = calcNota(est.p1_cuaderno, est.p1_integradora, est.p1_examen);
+                const p2 = calcNota(est.p2_cuaderno, est.p2_integradora, est.p2_examen);
+                const p3 = calcNota(est.p3_cuaderno, est.p3_integradora, est.p3_examen);
+                const p4 = calcNota(est.p4_cuaderno, est.p4_integradora, est.p4_examen);
                 const final = (p1 + p2 + p3 + p4) / 4;
 
-                if (final >= 5.0) aprobados++; else reprobados++;
-                sumFinal += final;
-
-                const fmtRaw = v => {
-                    const n = parseFloat(v);
-                    return isNaN(n) ? '<span style="color:#aaa;">—</span>' : n.toFixed(1);
+                const inp = (campo, rowIdx) => {
+                    const val = est[campo] !== null && est[campo] !== undefined ? est[campo] : '';
+                    return `<input type="number" min="0" max="10" step="0.1"
+                        class="nota-input"
+                        id="inp-${rowIdx}-${campo}"
+                        value="${val}"
+                        data-row="${rowIdx}"
+                        data-campo="${campo}"
+                        oninput="onNotaInput(this)"
+                        onblur="onNotaBlur(this)"
+                        title="${campo.replace(/_/g,' ')}">`;
                 };
 
-                return `<tr>
-                    <td class="td-nombre" style="padding-left:12px;">${idx + 1}. ${est.nombre || '—'}</td>
+                html += `<tr id="fila-nota-${idx}">
+                    <td class="td-nombre">${idx+1}. ${est.nombre || '—'}</td>
                     <td class="td-nie">${est.nie || '—'}</td>
-                    <td>${fmtRaw(est.p1_cuaderno)}</td>
-                    <td>${fmtRaw(est.p1_integradora)}</td>
-                    <td>${fmtRaw(est.p1_examen)}</td>
-                    <td>${badgeNota(p1, false)}</td>
-                    <td>${fmtRaw(est.p2_cuaderno)}</td>
-                    <td>${fmtRaw(est.p2_integradora)}</td>
-                    <td>${fmtRaw(est.p2_examen)}</td>
-                    <td>${badgeNota(p2, false)}</td>
-                    <td>${fmtRaw(est.p3_cuaderno)}</td>
-                    <td>${fmtRaw(est.p3_integradora)}</td>
-                    <td>${fmtRaw(est.p3_examen)}</td>
-                    <td>${badgeNota(p3, false)}</td>
-                    <td>${fmtRaw(est.p4_cuaderno)}</td>
-                    <td>${fmtRaw(est.p4_integradora)}</td>
-                    <td>${fmtRaw(est.p4_examen)}</td>
-                    <td>${badgeNota(p4, false)}</td>
-                    <td>${badgeNota(final, true)}</td>
+                    ${campos[0].map(c => `<td>${inp(c, idx)}</td>`).join('')}
+                    <td id="p1-badge-${idx}">${badgeNota(p1, false)}</td>
+                    ${campos[1].map(c => `<td>${inp(c, idx)}</td>`).join('')}
+                    <td id="p2-badge-${idx}">${badgeNota(p2, false)}</td>
+                    ${campos[2].map(c => `<td>${inp(c, idx)}</td>`).join('')}
+                    <td id="p3-badge-${idx}">${badgeNota(p3, false)}</td>
+                    ${campos[3].map(c => `<td>${inp(c, idx)}</td>`).join('')}
+                    <td id="p4-badge-${idx}">${badgeNota(p4, false)}</td>
+                    <td id="final-badge-${idx}">${badgeNota(final, true)}</td>
+                    <td><span class="fila-status" id="status-${idx}"></span></td>
                 </tr>`;
-            }).join('');
+            });
 
-            tbody.innerHTML = filas;
+            tbody.innerHTML = html;
+            actualizarEstadisticasNotas(datos);
+        }
 
-            const promedio = datos.length > 0 ? (sumFinal / datos.length) : 0;
-            statsRow.innerHTML = `
+        // ── Recalcula badges de una fila al editar ───────────────────────
+        function recalcularFila(rowIdx) {
+            const est = notasData[rowIdx];
+            if (!est) return;
+            const get = campo => parseFloat(document.getElementById(`inp-${rowIdx}-${campo}`)?.value) || 0;
+
+            const p1 = calcNota(get('p1_cuaderno'), get('p1_integradora'), get('p1_examen'));
+            const p2 = calcNota(get('p2_cuaderno'), get('p2_integradora'), get('p2_examen'));
+            const p3 = calcNota(get('p3_cuaderno'), get('p3_integradora'), get('p3_examen'));
+            const p4 = calcNota(get('p4_cuaderno'), get('p4_integradora'), get('p4_examen'));
+            const final = (p1 + p2 + p3 + p4) / 4;
+
+            document.getElementById(`p1-badge-${rowIdx}`).innerHTML = badgeNota(p1, false);
+            document.getElementById(`p2-badge-${rowIdx}`).innerHTML = badgeNota(p2, false);
+            document.getElementById(`p3-badge-${rowIdx}`).innerHTML = badgeNota(p3, false);
+            document.getElementById(`p4-badge-${rowIdx}`).innerHTML = badgeNota(p4, false);
+            document.getElementById(`final-badge-${rowIdx}`).innerHTML = badgeNota(final, true);
+        }
+
+        // ── Handler cuando el usuario edita un input ─────────────────────
+        function onNotaInput(input) {
+            const rowIdx = parseInt(input.dataset.row);
+            const campo  = input.dataset.campo;
+            const val    = parseFloat(input.value);
+
+            // Validar rango 0-10
+            if (input.value !== '' && (val < 0 || val > 10)) {
+                input.classList.add('error-input');
+                return;
+            }
+            input.classList.remove('error-input');
+            input.classList.add('modificado');
+
+            // Actualizar en memoria
+            notasData[rowIdx][campo] = input.value === '' ? null : val;
+
+            // Marcar fila como pendiente
+            notasPendientes[rowIdx] = true;
+            setFilaStatus(rowIdx, 'pendiente', '● pendiente');
+            habilitarBtnGuardar();
+
+            // Recalcular badges en tiempo real
+            recalcularFila(rowIdx);
+
+            // Autoguardado con debounce
+            clearTimeout(autoguardadoTimers[rowIdx]);
+            autoguardadoTimers[rowIdx] = setTimeout(() => {
+                guardarFila(rowIdx);
+            }, AUTOGUARDADO_MS);
+        }
+
+        function onNotaBlur(input) {
+            // Si tiene error no hacer nada
+            if (input.classList.contains('error-input')) {
+                input.value = '';
+                input.classList.remove('error-input');
+            }
+        }
+
+        // ── Guardar una fila en Google Sheets ────────────────────────────
+        async function guardarFila(rowIdx) {
+            const est = notasData[rowIdx];
+            if (!est) return;
+
+            setFilaStatus(rowIdx, 'guardando', '↑ guardando...');
+
+            const payload = {
+                tipo_post: 'guardar_notas_alumno',
+                grado:   est.grado,
+                seccion: est.seccion,
+                nombre:  est.nombre,
+                nie:     est.nie,
+                p1_cuaderno:    est.p1_cuaderno,
+                p1_integradora: est.p1_integradora,
+                p1_examen:      est.p1_examen,
+                p2_cuaderno:    est.p2_cuaderno,
+                p2_integradora: est.p2_integradora,
+                p2_examen:      est.p2_examen,
+                p3_cuaderno:    est.p3_cuaderno,
+                p3_integradora: est.p3_integradora,
+                p3_examen:      est.p3_examen,
+                p4_cuaderno:    est.p4_cuaderno,
+                p4_integradora: est.p4_integradora,
+                p4_examen:      est.p4_examen,
+            };
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+
+                // Marcar inputs de esta fila como guardados
+                ['p1_cuaderno','p1_integradora','p1_examen',
+                 'p2_cuaderno','p2_integradora','p2_examen',
+                 'p3_cuaderno','p3_integradora','p3_examen',
+                 'p4_cuaderno','p4_integradora','p4_examen'].forEach(campo => {
+                    const inp = document.getElementById(`inp-${rowIdx}-${campo}`);
+                    if (inp) {
+                        inp.classList.remove('modificado');
+                        inp.classList.add('guardado');
+                        setTimeout(() => inp.classList.remove('guardado'), 1500);
+                    }
+                });
+
+                delete notasPendientes[rowIdx];
+                setFilaStatus(rowIdx, 'guardado', '✓ guardado');
+                setTimeout(() => setFilaStatus(rowIdx, '', ''), 3000);
+
+                actualizarBtnGuardar();
+            } catch (err) {
+                setFilaStatus(rowIdx, 'error', '✗ error');
+                console.error('Error guardando fila:', err);
+            }
+        }
+
+        // ── Guardar TODOS los pendientes (botón manual) ──────────────────
+        async function guardarTodosLosRegistros() {
+            const pendientes = Object.keys(notasPendientes).map(Number);
+            if (pendientes.length === 0) return;
+
+            const btn = document.getElementById('btn-guardar-todo');
+            btn.disabled = true;
+            btn.textContent = `⏳ Guardando ${pendientes.length} filas...`;
+
+            // Cancelar autoguardados pendientes
+            pendientes.forEach(idx => clearTimeout(autoguardadoTimers[idx]));
+
+            // Guardar secuencialmente para no saturar el API
+            for (const idx of pendientes) {
+                await guardarFila(idx);
+            }
+
+            btn.textContent = '✅ Todo guardado';
+            setTimeout(() => {
+                btn.textContent = '💾 Guardar Cambios';
+                btn.disabled = true;
+            }, 2000);
+        }
+
+        // ── Helpers de UI ────────────────────────────────────────────────
+        function setFilaStatus(rowIdx, tipo, texto) {
+            const el = document.getElementById(`status-${rowIdx}`);
+            if (!el) return;
+            el.className = `fila-status ${tipo}`;
+            el.textContent = texto;
+        }
+
+        function habilitarBtnGuardar() {
+            const btn = document.getElementById('btn-guardar-todo');
+            if (btn) btn.disabled = false;
+        }
+
+        function actualizarBtnGuardar() {
+            const btn = document.getElementById('btn-guardar-todo');
+            if (!btn) return;
+            btn.disabled = Object.keys(notasPendientes).length === 0;
+            if (btn.disabled) btn.textContent = '💾 Guardar Cambios';
+        }
+
+        function actualizarEstadisticasNotas(datos) {
+            const statsEl = document.getElementById('notas-stats-row');
+            if (!statsEl || !datos.length) { if(statsEl) statsEl.innerHTML = ''; return; }
+
+            let aprobados = 0, reprobados = 0, sumFinal = 0, conNotas = 0;
+            datos.forEach(est => {
+                const p1 = calcNota(est.p1_cuaderno, est.p1_integradora, est.p1_examen);
+                const p2 = calcNota(est.p2_cuaderno, est.p2_integradora, est.p2_examen);
+                const p3 = calcNota(est.p3_cuaderno, est.p3_integradora, est.p3_examen);
+                const p4 = calcNota(est.p4_cuaderno, est.p4_integradora, est.p4_examen);
+                const tieneAlgo = [est.p1_cuaderno,est.p1_examen,est.p2_cuaderno].some(v => v !== null && v !== undefined && v !== '');
+                if (tieneAlgo) {
+                    const f = (p1+p2+p3+p4)/4;
+                    sumFinal += f;
+                    conNotas++;
+                    if (f >= 5.0) aprobados++; else reprobados++;
+                }
+            });
+            const promedio = conNotas > 0 ? (sumFinal / conNotas) : 0;
+
+            statsEl.innerHTML = `
                 <div class="notas-stat-card">
                     <div class="stat-num">${datos.length}</div>
                     <div class="stat-label">Estudiantes</div>
@@ -17729,46 +17980,9 @@
                     <div class="stat-label">❌ Reprobados</div>
                 </div>
                 <div class="notas-stat-card" style="border-left:3px solid var(--blue-600);">
-                    <div class="stat-num" style="color:var(--blue-600);">${promedio.toFixed(2)}</div>
-                    <div class="stat-label">Promedio Gral.</div>
+                    <div class="stat-num" style="color:var(--blue-600);">${conNotas > 0 ? promedio.toFixed(2) : '—'}</div>
+                    <div class="stat-label">Promedio</div>
                 </div>`;
-        }
-
-        function cargarNotasGrado(grado) {
-            const tbody = document.getElementById('notas-tbody');
-            const infoGrado = document.getElementById('notas-info-grado');
-            const statsRow = document.getElementById('notas-stats-row');
-
-            tbody.innerHTML = '<tr><td colspan="19" class="notas-loading">⏳ Cargando notas desde Google Sheets...</td></tr>';
-            statsRow.innerHTML = '';
-            if (infoGrado) infoGrado.textContent = `📚 Grado: ${grado}`;
-
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(function(datos) { renderizarTablaNotas(datos); })
-                    .withFailureHandler(function(err) {
-                        tbody.innerHTML = `<tr><td colspan="19" class="notas-empty">❌ Error al cargar: ${err.message || err}</td></tr>`;
-                    })
-                    .obtenerNotasPorGrado(grado);
-            } else {
-                const url = window.GAS_URL || '';
-                if (url) {
-                    fetch(url + '?tipo=notas&grado=' + encodeURIComponent(grado))
-                        .then(r => r.json())
-                        .then(datos => renderizarTablaNotas(datos))
-                        .catch(err => {
-                            tbody.innerHTML = `<tr><td colspan="19" class="notas-empty">❌ Error de conexión: ${err.message}</td></tr>`;
-                        });
-                } else {
-                    // Modo demo sin Google Sheets
-                    const demo = [
-                        { nombre: 'Ejemplo Estudiante 1', nie: '12345678', p1_cuaderno: 8, p1_integradora: 7.5, p1_examen: 6, p2_cuaderno: 7, p2_integradora: 8, p2_examen: 7, p3_cuaderno: 9, p3_integradora: 8, p3_examen: 8.5, p4_cuaderno: 6, p4_integradora: 7, p4_examen: 6.5 },
-                        { nombre: 'Ejemplo Estudiante 2', nie: '87654321', p1_cuaderno: 4, p1_integradora: 3.5, p1_examen: 3, p2_cuaderno: 5, p2_integradora: 4, p2_examen: 4.5, p3_cuaderno: 6, p3_integradora: 5, p3_examen: 5, p4_cuaderno: 7, p4_integradora: 6, p4_examen: 6 },
-                    ];
-                    renderizarTablaNotas(demo);
-                    if (infoGrado) infoGrado.textContent = `📚 Grado: ${grado} — (Modo demo)`;
-                }
-            }
         }
 
         // ── Buscador manual de alumno (para registrar sin QR) ─────────────────────
