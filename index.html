@@ -2699,8 +2699,9 @@
                 return;
             }
 
+            const inicio = usaPaginacion ? (paginaActual - 1) * alumnosPorPagina : 0;
             const alumnosVisibles = usaPaginacion
-                ? alumnosFiltrados.slice((paginaActual - 1) * alumnosPorPagina, paginaActual * alumnosPorPagina)
+                ? alumnosFiltrados.slice(inicio, inicio + alumnosPorPagina)
                 : alumnosFiltrados.slice();
 
             if (!usaPaginacion) paginaActual = 1;
