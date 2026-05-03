@@ -3536,16 +3536,12 @@
                 return;
             }
 
-            // Materia: usar la almacenada, si no → pedir al usuario
+            // Materia: usar la almacenada o default sin prompt
             let materia = '';
             try { materia = localStorage.getItem('materia_' + docente) || ''; } catch(e){}
             if (!materia) {
                 materia = (prompt('📚 ¿Cuál es la materia/asignatura de ' + docente + '?') || '').trim();
-                if (!materia) {
-                    btn.disabled = false;
-                    btn.innerHTML = '📊 Exportar Notas a Excel (.xls)';
-                    return;
-                }
+                if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xls)'; return; }
                 try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
             }
 
@@ -17679,67 +17675,75 @@
         // ── ESCÁNER QR ────────────────────────────────────────────────────────────
         async function iniciarCamaraQR() {
             const video = document.getElementById('qr-video');
-            if (qrStream) qrStream.getTracks().forEach(t => t.stop());
-
-            // Resolución óptima para jsQR en móvil: 640x480 es el mejor balance
-            // velocidad/precisión. 1280x720 es demasiado para el hilo principal de Chrome.
-            const tryGetCamera = async (constraints) => {
-                return navigator.mediaDevices.getUserMedia(constraints);
-            };
+            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+            if (qrScanLoop) { cancelAnimationFrame(qrScanLoop); qrScanLoop = null; }
 
             const el = document.getElementById('qr-estado-scan');
+            el.textContent = 'Iniciando cámara...';
+            el.style.color = '#f39c12';
+
+            const tryGetCamera = c => navigator.mediaDevices.getUserMedia(c);
             let stream = null;
 
-            try {
-                // Intento 1: cámara trasera con resolución óptima
-                stream = await tryGetCamera({
-                    video: {
-                        facingMode: qrCamaraFrontal ? 'user' : { exact: 'environment' },
-                        width:  { ideal: 640, max: 1280 },
-                        height: { ideal: 480, max: 720 },
-                        frameRate: { ideal: 30, min: 15 }
-                    }
-                });
-            } catch (e1) {
-                try {
-                    // Intento 2: sin "exact" en facingMode (más compatible)
-                    stream = await tryGetCamera({
-                        video: {
-                            facingMode: qrCamaraFrontal ? 'user' : { ideal: 'environment' },
-                            width:  { ideal: 640 },
-                            height: { ideal: 480 }
-                        }
-                    });
-                } catch (e2) {
-                    try {
-                        // Intento 3: cualquier cámara disponible
-                        stream = await tryGetCamera({ video: true });
-                    } catch (e3) {
-                        el.style.color = '#e74c3c';
-                        if (e3.name === 'NotAllowedError' || e3.name === 'PermissionDeniedError') {
-                            el.innerHTML = '⚠ Permiso de cámara denegado.<br><small style="color:#aaa;">Vaya a Ajustes › Aplicaciones › INMU › Permisos y active la Cámara.</small><br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:8px 16px;background:#2ecc71;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">🔄 Reintentar</button>';
-                        } else if (e3.name === 'NotFoundError') {
-                            el.textContent = '⚠ No se encontró ninguna cámara en este dispositivo.';
-                        } else {
-                            el.innerHTML = '⚠ Error al abrir cámara: ' + (e3.message || e3.name) + '<br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:8px 16px;background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">🔄 Reintentar</button>';
-                        }
-                        return;
-                    }
-                }
+            // Intentos en orden de preferencia — del más específico al más genérico
+            const attempts = [
+                // 1. Trasera con resolución full — mayor área = más fácil encontrar el QR
+                { video: { facingMode: qrCamaraFrontal ? 'user' : { exact:'environment' },
+                           width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30,min:15} } },
+                // 2. Trasera sin "exact" (más compatible con WebView Android)
+                { video: { facingMode: qrCamaraFrontal ? 'user' : { ideal:'environment' },
+                           width:{ideal:1280}, height:{ideal:720} } },
+                // 3. Sólo modo de cámara, sin resolución fija
+                { video: { facingMode: qrCamaraFrontal ? 'user' : 'environment' } },
+                // 4. Cualquier cámara — último recurso
+                { video: true }
+            ];
+
+            for (const constraint of attempts) {
+                try { stream = await tryGetCamera(constraint); break; } catch(e) { stream = null; }
+            }
+
+            if (!stream) {
+                el.style.color = '#e74c3c';
+                el.innerHTML = '⚠ No se pudo abrir la cámara.<br>' +
+                    '<small style="color:#aaa">Verifique que la app tenga permisos de cámara.</small><br>' +
+                    '<button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:8px 18px;' +
+                    'background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">🔄 Reintentar</button>';
+                return;
             }
 
             qrStream = stream;
             video.srcObject = stream;
-            video.setAttribute('playsinline', true);
-            video.setAttribute('muted', true);
+            video.setAttribute('playsinline', '');
+            video.setAttribute('muted', '');
+            video.muted = true;
+
+            // Espejo visual solo para cámara frontal (NO afecta el canvas/jsQR)
+            video.style.transform = qrCamaraFrontal ? 'scaleX(-1)' : 'scaleX(1)';
+
             await video.play().catch(() => {});
-            video.addEventListener('loadedmetadata', iniciarLoopEscaneo, { once: true });
+
+            // Intentar autoenfoque continuo en Android
+            try {
+                const track = stream.getVideoTracks()[0];
+                if (track && track.applyConstraints)
+                    await track.applyConstraints({ advanced:[{focusMode:'continuous'}] }).catch(()=>{});
+            } catch(e) {}
+
             el.textContent = 'Cámara activa — acerque el carnet QR';
             el.style.color = '#00d4ff';
+
+            // Esperar a que el video tenga dimensiones reales antes de escanear
+            const esperarVideo = () => new Promise(res => {
+                if (video.videoWidth > 0) { res(); return; }
+                video.addEventListener('loadedmetadata', res, { once: true });
+            });
+            await esperarVideo();
+            iniciarLoopEscaneo();
         }
 
         function detenerCamaraQR() {
-            if (qrScanLoop) { clearTimeout(qrScanLoop); cancelAnimationFrame(qrScanLoop); qrScanLoop = null; }
+            if (qrScanLoop) { cancelAnimationFrame(qrScanLoop); qrScanLoop = null; }
             if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
         }
 
@@ -17751,76 +17755,65 @@
         }
 
         function iniciarLoopEscaneo() {
-            const video  = document.getElementById('qr-video');
-            // Canvas pre-creado con tamaño fijo — NO redimensionar cada frame
-            const SCAN_W = 400, SCAN_H = 400;
+            const video = document.getElementById('qr-video');
+
+            // ── Canvas al tamaño REAL del video — sin recorte, sin reducción ──────
+            // Razón: jsQR detecta mejor con más píxeles y sin perder esquinas del QR.
+            // Usamos el tamaño nativo del stream para no perder resolución.
+            const W = video.videoWidth  || 640;
+            const H = video.videoHeight || 480;
             const canvas = document.createElement('canvas');
-            canvas.width  = SCAN_W;
-            canvas.height = SCAN_H;
+            canvas.width  = W;
+            canvas.height = H;
             const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
 
-            let ultimoNie  = '';
-            let ultimoTime = 0;
-            let escaneando = false; // semáforo para no apilar llamadas
-
-            // Resolver jsQR una sola vez
+            // Resolver jsQR una vez
             const _jsQR = (typeof jsQR === 'function') ? jsQR
                 : (typeof jsQR === 'object' && jsQR !== null && typeof jsQR.default === 'function')
                     ? jsQR.default : null;
 
-            async function tick() {
-                if (!qrStream) return;
+            if (!_jsQR) {
+                document.getElementById('qr-estado-scan').textContent = '⚠ Error: librería QR no cargada';
+                return;
+            }
 
-                // Semáforo: si jsQR todavía está corriendo, saltar este frame
-                if (escaneando) {
-                    qrScanLoop = setTimeout(tick, 80);
-                    return;
-                }
+            let ultimoNie  = '';
+            let ultimoTime = 0;
+
+            function tick() {
+                if (!qrStream) return; // cámara detenida
 
                 if (video.readyState < video.HAVE_ENOUGH_DATA || !video.videoWidth) {
-                    qrScanLoop = setTimeout(tick, 100);
+                    qrScanLoop = requestAnimationFrame(tick);
                     return;
                 }
 
-                escaneando = true;
+                // Dibujar frame completo — sin recorte, tamaño nativo
+                ctx.drawImage(video, 0, 0, W, H);
+                const imgData = ctx.getImageData(0, 0, W, H);
 
-                // Dibujar frame centrado en canvas cuadrado fijo (muy rápido)
-                const vw = video.videoWidth, vh = video.videoHeight;
-                const lado = Math.min(vw, vh);
-                const ox = (vw - lado) / 2, oy = (vh - lado) / 2;
-                ctx.drawImage(video, ox, oy, lado, lado, 0, 0, SCAN_W, SCAN_H);
-                const imgData = ctx.getImageData(0, 0, SCAN_W, SCAN_H);
-
+                // jsQR con attemptBoth: detecta QR claro-sobre-oscuro Y oscuro-sobre-claro
                 let code = null;
                 try {
-                    if (_jsQR) {
-                        // Intento principal: directo sin inversión (más rápido)
-                        code = _jsQR(imgData.data, SCAN_W, SCAN_H, { inversionAttempts: 'dontInvert' });
-                        // Si falla, intentar con inversión (QR oscuro sobre fondo claro o viceversa)
-                        if (!code) {
-                            code = _jsQR(imgData.data, SCAN_W, SCAN_H, { inversionAttempts: 'attemptBoth' });
-                        }
-                    }
-                } catch(e) { /* ignorar errores de decodificación */ }
-
-                escaneando = false;
+                    code = _jsQR(imgData.data, W, H, { inversionAttempts: 'attemptBoth' });
+                } catch(e) {}
 
                 if (code) {
-                    const now = Date.now();
                     const nie = code.data.trim();
-                    if (nie !== ultimoNie || (now - ultimoTime) >= 2000) {
+                    const now = Date.now();
+                    // Anti-rebote: mismo NIE no se procesa dos veces en menos de 2s
+                    if (nie && (nie !== ultimoNie || now - ultimoTime >= 2000)) {
                         ultimoNie  = nie;
                         ultimoTime = now;
                         procesarNieEscaneado(nie);
                     }
                 }
 
-                // Intervalo fijo: 120ms ≈ ~8 lecturas/seg, suficiente y sin saturar Chrome
-                qrScanLoop = setTimeout(tick, 120);
+                qrScanLoop = requestAnimationFrame(tick);
             }
 
-            // Pequeño delay inicial para que el video estabilice el foco
-            qrScanLoop = setTimeout(tick, 400);
+            // Arrancar inmediatamente — el video ya está listo cuando llegamos aquí
+            qrScanLoop = requestAnimationFrame(tick);
         }
 
         // ── MOTOR DE SONIDO QR (Web Audio API, sin archivos externos) ────────────
