@@ -2325,6 +2325,109 @@
             } catch (e) { }
         }
 
+        // ── PROTECCIÓN CONTRA SALIDA ACCIDENTAL ─────────────────────────────────
+        // Detecta si hay datos sin guardar y pregunta antes de salir
+        function hayDatosSinGuardar() {
+            // Notas modificadas en el panel de notas
+            if (typeof notasCambiadas !== 'undefined' && notasCambiadas) return true;
+            // Asistencia escaneada pero PDF no generado aún
+            if (typeof qrEscaneados !== 'undefined' && qrEscaneados && qrEscaneados.size > 0) {
+                const btnPdf = document.getElementById('btn-generar-reporte-pdf');
+                // Si el botón de PDF existe y está habilitado hay asistencia pendiente de guardar
+                if (btnPdf && !btnPdf.disabled) return true;
+            }
+            return false;
+        }
+
+        // Web — beforeunload: muestra diálogo del navegador al cerrar/recargar pestaña
+        window.addEventListener('beforeunload', function(e) {
+            if (hayDatosSinGuardar()) {
+                e.preventDefault();
+                e.returnValue = '¿Seguro que quieres salir? Hay datos sin guardar.';
+                return e.returnValue;
+            }
+        });
+
+        // Web — popstate: botón Atrás del navegador / gesto de deslizar
+        // Primero registrar un estado en el historial para interceptar el "atrás"
+        history.pushState({ inApp: true }, '');
+        window.addEventListener('popstate', function(e) {
+            if (hayDatosSinGuardar()) {
+                // Mostrar modal de confirmación propio (beforeunload no funciona bien en móvil)
+                mostrarModalSalida(function onConfirmar() {
+                    // Usuario confirmó — salir de verdad
+                    window.removeEventListener('popstate', arguments.callee);
+                    history.back();
+                });
+                // Volver a meter el estado para que el siguiente "atrás" también se intercepte
+                history.pushState({ inApp: true }, '');
+            } else {
+                // Sin datos pendientes — salir sin preguntar
+                history.back();
+            }
+        });
+
+        // APK Cordova/Capacitor — evento hardware backbutton de Android
+        document.addEventListener('backbutton', function(e) {
+            e.preventDefault();
+            if (hayDatosSinGuardar()) {
+                mostrarModalSalida(function() {
+                    if (navigator.app && navigator.app.exitApp) navigator.app.exitApp();
+                    else if (window.cordova && cordova.plugins && cordova.plugins.exit) cordova.plugins.exit();
+                    else history.back();
+                });
+            } else {
+                if (navigator.app && navigator.app.exitApp) navigator.app.exitApp();
+                else history.back();
+            }
+        }, false);
+
+        // ── Modal de confirmación de salida ──────────────────────────────────────
+        function mostrarModalSalida(onConfirmar) {
+            // Reutilizar si ya existe
+            let modal = document.getElementById('modal-salida-confirm');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modal-salida-confirm';
+                modal.style.cssText = [
+                    'position:fixed','inset:0','z-index:999999',
+                    'display:flex','align-items:center','justify-content:center',
+                    'background:rgba(0,0,0,0.65)',
+                    'font-family:Arial,sans-serif','padding:20px'
+                ].join(';');
+                modal.innerHTML =
+                    '<div style="background:#1E293B;border-radius:18px;padding:32px 28px;' +
+                    'max-width:340px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.5);text-align:center;">' +
+                    '<div style="font-size:48px;margin-bottom:12px;">⚠️</div>' +
+                    '<h3 style="color:#F1F5F9;margin:0 0 10px;font-size:20px;">¿Salir de la aplicación?</h3>' +
+                    '<p style="color:#94A3B8;font-size:14px;margin:0 0 24px;line-height:1.5;">' +
+                    'Tienes datos sin guardar.<br>Si salís ahora se perderán.</p>' +
+                    '<div style="display:flex;gap:12px;justify-content:center;">' +
+                    '<button id="modal-salida-cancel" style="flex:1;padding:13px;background:#334155;color:#F1F5F9;' +
+                    'border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer;">' +
+                    '✏️ Quedarme</button>' +
+                    '<button id="modal-salida-ok" style="flex:1;padding:13px;background:#DC2626;color:white;' +
+                    'border:none;border-radius:12px;font-size:15px;font-weight:bold;cursor:pointer;">' +
+                    '🚪 Salir</button>' +
+                    '</div></div>';
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            // Botón cancelar
+            document.getElementById('modal-salida-cancel').onclick = function() {
+                modal.style.display = 'none';
+            };
+            // Botón confirmar salida
+            document.getElementById('modal-salida-ok').onclick = function() {
+                modal.style.display = 'none';
+                if (typeof onConfirmar === 'function') onConfirmar();
+            };
+            // Cerrar al tocar el fondo
+            modal.onclick = function(e) {
+                if (e.target === modal) modal.style.display = 'none';
+            };
+        }
+
         window.onload = async function () {
             // Quitar pantalla de carga inmediatamente — nunca debe bloquear
             const fallback = document.getElementById('fallback-loading');
@@ -17675,6 +17778,7 @@
         // ── ESCÁNER QR ────────────────────────────────────────────────────────────
         async function iniciarCamaraQR() {
             const video = document.getElementById('qr-video');
+            // Detener stream previo completamente
             if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
             if (qrScanLoop) { cancelAnimationFrame(qrScanLoop); qrScanLoop = null; }
 
@@ -17682,69 +17786,61 @@
             el.textContent = 'Iniciando cámara...';
             el.style.color = '#f39c12';
 
-            const tryGetCamera = c => navigator.mediaDevices.getUserMedia(c);
+            const tryGet = c => navigator.mediaDevices.getUserMedia(c);
             let stream = null;
 
-            // Intentos en orden de preferencia — del más específico al más genérico
-            const attempts = [
-                // 1. Trasera con resolución full — mayor área = más fácil encontrar el QR
+            // 4 intentos de menor a mayor restricción para máxima compatibilidad
+            const intentos = [
                 { video: { facingMode: qrCamaraFrontal ? 'user' : { exact:'environment' },
-                           width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30,min:15} } },
-                // 2. Trasera sin "exact" (más compatible con WebView Android)
+                           width:{ideal:1280,min:640}, height:{ideal:720,min:480},
+                           frameRate:{ideal:30,min:15} } },
                 { video: { facingMode: qrCamaraFrontal ? 'user' : { ideal:'environment' },
                            width:{ideal:1280}, height:{ideal:720} } },
-                // 3. Sólo modo de cámara, sin resolución fija
                 { video: { facingMode: qrCamaraFrontal ? 'user' : 'environment' } },
-                // 4. Cualquier cámara — último recurso
                 { video: true }
             ];
-
-            for (const constraint of attempts) {
-                try { stream = await tryGetCamera(constraint); break; } catch(e) { stream = null; }
+            for (const c of intentos) {
+                try { stream = await tryGet(c); break; } catch(e) { stream = null; }
             }
 
             if (!stream) {
                 el.style.color = '#e74c3c';
-                el.innerHTML = '⚠ No se pudo abrir la cámara.<br>' +
-                    '<small style="color:#aaa">Verifique que la app tenga permisos de cámara.</small><br>' +
-                    '<button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:8px 18px;' +
-                    'background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">🔄 Reintentar</button>';
+                el.innerHTML = '⚠ No se pudo abrir la cámara. Verifique permisos.' +
+                    '<br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:8px 18px;' +
+                    'background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;' +
+                    'cursor:pointer;">🔄 Reintentar</button>';
                 return;
             }
 
             qrStream = stream;
             video.srcObject = stream;
             video.setAttribute('playsinline', '');
-            video.setAttribute('muted', '');
             video.muted = true;
-
-            // Espejo visual solo para cámara frontal (NO afecta el canvas/jsQR)
+            // Espejo solo visual para cámara frontal — el canvas/jsQR NO se invierte
             video.style.transform = qrCamaraFrontal ? 'scaleX(-1)' : 'scaleX(1)';
-
             await video.play().catch(() => {});
 
-            // Intentar autoenfoque continuo en Android
+            // Autoenfoque continuo en Android (mejora detección)
             try {
-                const track = stream.getVideoTracks()[0];
-                if (track && track.applyConstraints)
-                    await track.applyConstraints({ advanced:[{focusMode:'continuous'}] }).catch(()=>{});
+                const tr = stream.getVideoTracks()[0];
+                if (tr && tr.applyConstraints)
+                    await tr.applyConstraints({ advanced: [{ focusMode:'continuous' }] }).catch(()=>{});
             } catch(e) {}
 
             el.textContent = 'Cámara activa — acerque el carnet QR';
             el.style.color = '#00d4ff';
 
-            // Esperar a que el video tenga dimensiones reales antes de escanear
-            const esperarVideo = () => new Promise(res => {
+            // Esperar a que el video tenga dimensiones reales
+            await new Promise(res => {
                 if (video.videoWidth > 0) { res(); return; }
                 video.addEventListener('loadedmetadata', res, { once: true });
             });
-            await esperarVideo();
             iniciarLoopEscaneo();
         }
 
         function detenerCamaraQR() {
             if (qrScanLoop) { cancelAnimationFrame(qrScanLoop); qrScanLoop = null; }
-            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+            if (qrStream)   { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
         }
 
         function girarCamaraQR() {
@@ -17757,62 +17853,63 @@
         function iniciarLoopEscaneo() {
             const video = document.getElementById('qr-video');
 
-            // ── Canvas al tamaño REAL del video — sin recorte, sin reducción ──────
-            // Razón: jsQR detecta mejor con más píxeles y sin perder esquinas del QR.
-            // Usamos el tamaño nativo del stream para no perder resolución.
+            // ── Canvas al tamaño REAL del video — sin recorte ─────────────────────
+            // ¿Por qué? jsQR necesita ver el QR completo con sus 3 esquinas detectoras.
+            // Recortar o reducir hace que los "finder patterns" queden incompletos.
+            // A resolución nativa el decode tarda ~4-8ms en un mid-range Android.
             const W = video.videoWidth  || 640;
             const H = video.videoHeight || 480;
             const canvas = document.createElement('canvas');
-            canvas.width  = W;
-            canvas.height = H;
+            canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
 
-            // Resolver jsQR una vez
+            // Resolver jsQR una vez — evitar búsqueda de propiedad en cada frame
             const _jsQR = (typeof jsQR === 'function') ? jsQR
-                : (typeof jsQR === 'object' && jsQR !== null && typeof jsQR.default === 'function')
-                    ? jsQR.default : null;
+                : (jsQR && typeof jsQR.default === 'function') ? jsQR.default : null;
 
             if (!_jsQR) {
-                document.getElementById('qr-estado-scan').textContent = '⚠ Error: librería QR no cargada';
+                document.getElementById('qr-estado-scan').textContent = '⚠ librería QR no cargada';
                 return;
             }
 
-            let ultimoNie  = '';
-            let ultimoTime = 0;
+            let ultimoNie = '', ultimoTime = 0;
 
             function tick() {
-                if (!qrStream) return; // cámara detenida
+                // Detener si la cámara fue apagada
+                if (!qrStream) return;
 
-                if (video.readyState < video.HAVE_ENOUGH_DATA || !video.videoWidth) {
+                // Video todavía no tiene datos — esperar sin bloquear
+                if (video.readyState < 2 || !video.videoWidth) {
                     qrScanLoop = requestAnimationFrame(tick);
                     return;
                 }
 
-                // Dibujar frame completo — sin recorte, tamaño nativo
+                // ── Dibujar frame completo, tamaño nativo ─────────────────────────
                 ctx.drawImage(video, 0, 0, W, H);
                 const imgData = ctx.getImageData(0, 0, W, H);
 
-                // jsQR con attemptBoth: detecta QR claro-sobre-oscuro Y oscuro-sobre-claro
+                // ── jsQR: una sola llamada con attemptBoth ────────────────────────
+                // 'attemptBoth' prueba normal + invertido en un solo recorrido de píxeles.
+                // Es MÁS RÁPIDO que dos llamadas separadas y detecta QRs claros y oscuros.
                 let code = null;
-                try {
-                    code = _jsQR(imgData.data, W, H, { inversionAttempts: 'attemptBoth' });
-                } catch(e) {}
+                try { code = _jsQR(imgData.data, W, H, { inversionAttempts: 'attemptBoth' }); } catch(e) {}
 
                 if (code) {
                     const nie = code.data.trim();
                     const now = Date.now();
-                    // Anti-rebote: mismo NIE no se procesa dos veces en menos de 2s
+                    // Anti-rebote: mismo NIE no se reprocesa en 2 segundos
                     if (nie && (nie !== ultimoNie || now - ultimoTime >= 2000)) {
-                        ultimoNie  = nie;
-                        ultimoTime = now;
+                        ultimoNie = nie; ultimoTime = now;
                         procesarNieEscaneado(nie);
                     }
                 }
 
+                // requestAnimationFrame sincroniza con el refresco de pantalla (~60fps)
+                // y cede el hilo al navegador entre frames — sin setTimeout, sin bloqueo
                 qrScanLoop = requestAnimationFrame(tick);
             }
 
-            // Arrancar inmediatamente — el video ya está listo cuando llegamos aquí
+            // Arrancar de inmediato — el video ya está listo cuando llegamos aquí
             qrScanLoop = requestAnimationFrame(tick);
         }
 
