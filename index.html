@@ -1009,11 +1009,38 @@
     <div id="fallback-loading"
         style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#fff; color:#333; font-family:Arial, sans-serif; z-index:100000; padding:20px; text-align:center;">
         <div>
-            <div style="font-size:24px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
-            <div style="font-size:14px; color:#555;">Conectando con el servidor. Si demora más de 10 segundos, es
-                posible que no haya conexión a internet.</div>
+            <div style="font-size:48px; margin-bottom:16px;">⏳</div>
+            <div style="font-size:22px; font-weight:bold; margin-bottom:10px;">Cargando aplicación...</div>
+            <div style="font-size:14px; color:#555; max-width:380px;">Conectando con el servidor. Si demora más de 15 segundos, es posible que no haya conexión a internet.</div>
+            <div style="margin-top:20px;">
+                <div style="width:200px;height:4px;background:#E5E7EB;border-radius:4px;margin:0 auto;overflow:hidden;">
+                    <div id="loading-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0C447C,#27ae60);border-radius:4px;transition:width 0.3s;"></div>
+                </div>
+            </div>
+            <div id="loading-tip" style="margin-top:14px;font-size:12px;color:#888;">Iniciando conexión segura...</div>
         </div>
     </div>
+    <script>
+    // Animar barra de carga y quitar pantalla si JS falla en cargar
+    (function(){
+        var pct=0, tips=['Iniciando conexión segura...','Verificando estado del servidor...','Cargando datos...','Casi listo...'];
+        var t=setInterval(function(){
+            pct=Math.min(pct+Math.random()*8+2,90);
+            var b=document.getElementById('loading-bar');
+            var tip=document.getElementById('loading-tip');
+            if(b) b.style.width=pct+'%';
+            if(tip&&pct<90) tip.textContent=tips[Math.floor(pct/25)]||tips[3];
+        },300);
+        // Si tras 15 segundos sigue la pantalla, ocultarla y mostrar aviso
+        setTimeout(function(){
+            clearInterval(t);
+            var f=document.getElementById('fallback-loading');
+            if(f&&f.style.display!=='none'){
+                f.innerHTML='<div style="text-align:center;"><div style="font-size:48px;">⚠️</div><h2 style="color:#C0392B;margin:12px 0 8px;">Sin conexión</h2><p style="color:#555;max-width:340px;margin:0 auto 16px;">No se pudo conectar con el servidor. El sistema funcionará en modo offline.</p><button onclick="document.getElementById(\"fallback-loading\").remove();" style="padding:12px 28px;background:#0C447C;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;">Continuar sin conexión</button></div>';
+            }
+        },15000);
+    })();
+    </script>
 
     <div id="pantalla-mantenimiento">
         <span style="font-size: 100px; cursor: pointer; user-select: none;" ondblclick="toggleMantenimiento()"
@@ -3536,10 +3563,19 @@
                 return;
             }
 
-            // Materia: usar la almacenada o default sin prompt
+            // Materia: usar la almacenada, si no hay → solicitar
             let materia = '';
             try { materia = localStorage.getItem('materia_' + docente) || ''; } catch(e){}
-            if (!materia) materia = 'Lenguaje y Literatura';
+            if (!materia) {
+                materia = (prompt('📚 Ingresa la materia/asignatura a cargo de ' + docente + ':') || '').trim();
+                if (!materia) {
+                    btn.disabled = false;
+                    btn.innerHTML = '📊 Exportar a Excel (.xls)';
+                    alert('⚠ Se necesita la materia para generar el Excel.');
+                    return;
+                }
+                try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
+            }
 
             const btn = document.getElementById('btn-exportar-notas');
             btn.disabled = true;
@@ -18237,13 +18273,13 @@
 '@media print{.noprint{display:none!important;}body{padding:10px;}}' +
 '</style></head><body>' +
 '<div class="hdr">' +
-'  <img src="'+logo3+'" class="hdr-logo" alt="INMU" onerror="this.style.display='none'">' +
+'  <img src="'+logo3+'" class="hdr-logo" alt="INMU" onerror="this.style.display=\'none\'">' +
 '  <div class="hdr-center">' +
 '    <h1>Instituto Nacional de Mercedes Umaña</h1>' +
 '    <h2>Dirección Nacional de Educación — El Salvador</h2>' +
 '    <h3>MINEDUCYT | Código: 11-2530</h3>' +
 '  </div>' +
-'  <img src="'+logo2+'" class="hdr-logo" alt="Logo MINED" onerror="this.style.display='none'">' +
+'  <img src="'+logo2+'" class="hdr-logo" alt="Logo MINED" onerror="this.style.display=\'none\'">' +
 '</div>' +
 '<div style="text-align:center;margin-bottom:18px;"><span class="badge">'+esc(data.tipo)+'</span></div>' +
 '<div class="meta">' +
