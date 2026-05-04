@@ -1508,7 +1508,7 @@
         <div id="view-pdf-reportes" class="view-section">
             <div class="panel">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-                    <h2 style="color:var(--blue-800); font-size:16px; margin:0;">📂 Reportes PDF Guardados</h2>
+                    <h2 style="color:var(--blue-800); font-size:16px; margin:0;">📂 Reportes PDF y Excel Guardados</h2>
                     <button onclick="cambiarVista('docente')"
                         style="padding:8px 14px; background:var(--blue-600); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px;">←
                         Volver</button>
@@ -3708,6 +3708,7 @@
                     const wbout = XLSX.write(wb, { bookType: 'xls', type: 'base64' });
                     const carpetaNotas = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Notas_Excel/' + gradoLimpio;
                     AndroidPDF.guardarBase64(wbout, nombreArch, carpetaNotas);
+                    try { registrarPDFGuardado(nombreArch, carpetaNotas, grado, 'excel'); } catch(e) {}
                 } else {
                     // Web: download normal
                     XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary' });
@@ -4615,7 +4616,7 @@
             const container = document.getElementById('pdf-lista-container');
 
             if (!listaPDFsFiltrada || listaPDFsFiltrada.length === 0) {
-                container.innerHTML = '<div class="pdf-empty">📭 No se encontraron reportes PDF.<br><small style="color:#aaa;">Los PDFs guardados aparecerán aquí ordenados por fecha.</small></div>';
+                container.innerHTML = '<div class="pdf-empty">📭 No se encontraron reportes PDF o Excel.<br><small style="color:#aaa;">Los PDF y Excel guardados aparecerán aquí ordenados por fecha.</small></div>';
                 return;
             }
 
@@ -17740,7 +17741,288 @@
                 html += '</div>';
             });
 
-            html += '</div></body></html>';
+            html += '</div>
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   PARCHE COPILOT 2026-05-04
+   - Cámara trasera: prioriza cámara principal, evita gran angular/ultra-wide.
+   - QR: mejora lectura con mayor resolución, centro + contraste.
+   - Informes: guarda PDF directo en Android, sin menú de impresión, y cierra app.
+   - Reportes: lista PDF + Excel, respeta extensión .pdf/.xls/.xlsx.
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  function _ext(nombre){ return (String(nombre||'').split('.').pop()||'').toLowerCase(); }
+  function _esExcel(nombre){ return ['xls','xlsx','xlsm','csv'].includes(_ext(nombre)); }
+  function _esPDF(nombre){ return _ext(nombre)==='pdf'; }
+  function _mime(nombre){
+    const e=_ext(nombre);
+    if(e==='pdf') return 'application/pdf';
+    if(e==='xls') return 'application/vnd.ms-excel';
+    if(e==='xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if(e==='csv') return 'text/csv';
+    return 'application/octet-stream';
+  }
+  function _carpetaBase(){ return (typeof carpetaPDFUri !== 'undefined' && carpetaPDFUri) ? carpetaPDFUri : 'Asistencia'; }
+  function _cerrarAppDespues(ms){
+    setTimeout(function(){
+      try { if (window.AndroidStorage && typeof AndroidStorage.cerrarApp === 'function') return AndroidStorage.cerrarApp(); } catch(e){}
+      try { if (window.AndroidPDF && typeof AndroidPDF.cerrarApp === 'function') return AndroidPDF.cerrarApp(); } catch(e){}
+      try { if (navigator.app && typeof navigator.app.exitApp === 'function') return navigator.app.exitApp(); } catch(e){}
+      try { if (window.Android && typeof Android.exitApp === 'function') return Android.exitApp(); } catch(e){}
+    }, ms || 900);
+  }
+
+  window._normalizarArchivoReporte = function(arc){
+    const nombre = arc.nombre || arc.name || arc.fileName || 'archivo';
+    const tipo = _esExcel(nombre) ? 'excel' : (_esPDF(nombre) ? 'pdf' : 'archivo');
+    return {
+      nombre,
+      uri: arc.uri || arc.url || arc.path || '',
+      fecha: arc.fecha || arc.lastModified || arc.modificado || new Date().toISOString(),
+      grado: arc.grado || (typeof extraerGradoDeNombre === 'function' ? extraerGradoDeNombre(nombre) : ''),
+      tipo,
+      mime: arc.mime || _mime(nombre)
+    };
+  };
+
+  // Visor/listado PDF + Excel
+  window.cargarListaPDFs = function(){
+    const registros = (typeof obtenerRegistrosPDF === 'function' ? obtenerRegistrosPDF() : []);
+    window.listaPDFs = registros.map(window._normalizarArchivoReporte)
+      .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+      .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    window.listaPDFsFiltrada = [...window.listaPDFs];
+    if (typeof renderizarListaPDFs === 'function') renderizarListaPDFs();
+
+    if (typeof AndroidPDF !== 'undefined') {
+      // Nuevo método recomendado para la APK: listar todo lo visible para reportes.
+      if (typeof AndroidPDF.listarReportes === 'function') AndroidPDF.listarReportes(_carpetaBase());
+      else if (typeof AndroidPDF.listarArchivos === 'function') AndroidPDF.listarArchivos(_carpetaBase(), 'pdf,xls,xlsx,csv');
+      else if (typeof AndroidPDF.listarPDFs === 'function') AndroidPDF.listarPDFs(_carpetaBase());
+    }
+  };
+
+  window.onListaPDFsRecibida = function(jsonStr){
+    try{
+      const arr = JSON.parse(jsonStr || '[]');
+      const mapa = new Map();
+      arr.map(window._normalizarArchivoReporte)
+        .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+        .forEach(a => mapa.set(a.nombre, a));
+      (window.listaPDFs || []).forEach(loc => {
+        const a = window._normalizarArchivoReporte(loc);
+        if (!(_esPDF(a.nombre) || _esExcel(a.nombre))) return;
+        mapa.set(a.nombre, mapa.has(a.nombre) ? {...a, ...mapa.get(a.nombre), uri: mapa.get(a.nombre).uri || a.uri} : a);
+      });
+      window.listaPDFs = Array.from(mapa.values()).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+      window.listaPDFsFiltrada = [...window.listaPDFs];
+      renderizarListaPDFs();
+    }catch(e){ console.error('Error lista reportes:', e); }
+  };
+  // Alias por si Kotlin llama con otro nombre
+  window.onListaArchivosRecibida = window.onListaPDFsRecibida;
+  window.onListaReportesRecibida = window.onListaPDFsRecibida;
+
+  window.renderizarListaPDFs = function(){
+    const container = document.getElementById('pdf-lista-container');
+    if(!container) return;
+    const lista = window.listaPDFsFiltrada || [];
+    if(!lista.length){
+      container.innerHTML = '<div class="pdf-empty">📭 No se encontraron reportes PDF o Excel.<br><small style="color:#aaa;">Los archivos guardados aparecerán aquí ordenados por fecha.</small></div>';
+      return;
+    }
+    container.innerHTML = lista.map((item, idx) => {
+      const tipo = _esExcel(item.nombre) ? 'excel' : 'pdf';
+      const icon = tipo === 'excel' ? '📊' : '📄';
+      const metaTipo = tipo === 'excel' ? 'Excel' : 'PDF';
+      const fechaTxt = (typeof formatearFechaCorta === 'function') ? formatearFechaCorta(item.fecha) : (item.fecha || '');
+      const nombreSeguro = String(item.nombre||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="pdf-item" onclick="abrirArchivoReporte(${idx})">
+        <div class="pdf-item-icon">${icon}</div>
+        <div class="pdf-item-info">
+          <div class="pdf-item-nombre">${nombreSeguro}</div>
+          <div class="pdf-item-meta">${metaTipo} • ${item.grado || 'Sin grado'} • ${item.mime || _mime(item.nombre)}</div>
+        </div>
+        <div class="pdf-item-fecha">${fechaTxt}</div>
+      </div>`;
+    }).join('');
+  };
+
+  window.abrirArchivoReporte = function(idx){
+    const item = (window.listaPDFsFiltrada || [])[idx];
+    if(!item) return;
+    if(_esPDF(item.nombre)){
+      if (typeof abrirVisorPDF === 'function') return abrirVisorPDF(item.uri || item.url || '', item.nombre);
+    }
+    // Excel: no cambiar extensión, abrir con visor nativo si existe.
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirArchivo === 'function') return AndroidPDF.abrirArchivo(item.uri || '', item.nombre, item.mime || _mime(item.nombre)); } catch(e){}
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirExcel === 'function') return AndroidPDF.abrirExcel(item.uri || '', item.nombre); } catch(e){}
+    try { if (item.uri) return window.open(item.uri, '_blank'); } catch(e){}
+    alert('No se pudo abrir el Excel. Verifique que la APK tenga método AndroidPDF.abrirArchivo o que el archivo exista.');
+  };
+
+  // Cámara principal trasera + escaneo QR mejorado
+  async function _elegirCamaraTraseraPrincipal(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      const bad = /(ultra|wide|gran|0\.5|0,5|macro|depth|profundidad)/i;
+      const good = /(back|rear|environment|trasera|posterior|main|principal|camera 0|cámara 0)/i;
+      let cand = cams.find(d => good.test(d.label) && !bad.test(d.label));
+      if(!cand) cand = cams.find(d => /(back|rear|environment|trasera|posterior)/i.test(d.label));
+      if(!cand && cams.length > 1) cand = cams[cams.length-1];
+      return cand && cand.deviceId;
+    }catch(e){ return null; }
+  }
+
+  window.iniciarCamaraQR = async function(){
+    const video = document.getElementById('qr-video');
+    if (window.qrStream) { try { qrStream.getTracks().forEach(t => t.stop()); } catch(e){} window.qrStream = null; }
+    if (window.qrScanLoop) { try { cancelAnimationFrame(qrScanLoop); } catch(e){} window.qrScanLoop = null; }
+    const el = document.getElementById('qr-estado-scan');
+    if(el){ el.textContent='Iniciando cámara principal...'; el.style.color='#f39c12'; }
+    const frontal = !!window.qrCamaraFrontal;
+    const deviceId = frontal ? null : await _elegirCamaraTraseraPrincipal();
+    const base = { width:{ideal:1920,min:640}, height:{ideal:1080,min:480}, frameRate:{ideal:30,min:15} };
+    const intentos = [];
+    if(deviceId && !frontal) intentos.push({ video:{ deviceId:{ exact:deviceId }, ...base, focusMode:'continuous' } });
+    intentos.push({ video:{ facingMode:{ exact: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode:{ ideal: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode: frontal ? 'user':'environment', width:{ideal:1280}, height:{ideal:720} } });
+    intentos.push({ video:true });
+    let stream=null;
+    for(const c of intentos){ try{ stream = await navigator.mediaDevices.getUserMedia(c); if(stream) break; }catch(e){} }
+    if(!stream){
+      if(el){ el.style.color='#e74c3c'; el.innerHTML='⚠ No se pudo abrir la cámara. Verifique permisos.<br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:10px 20px;background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">🔄 Reintentar</button>'; }
+      return;
+    }
+    window.qrStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline',''); video.muted = true;
+    video.style.transform = frontal ? 'scaleX(-1)' : 'scaleX(1)';
+    await video.play().catch(()=>{});
+    try{
+      const tr = stream.getVideoTracks()[0];
+      const caps = tr.getCapabilities ? tr.getCapabilities() : {};
+      const adv = [];
+      if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({focusMode:'continuous'});
+      if (caps.zoom) adv.push({zoom: Math.max(caps.zoom.min || 1, Math.min(caps.zoom.max || 1, 1.0))});
+      if (adv.length && tr.applyConstraints) tr.applyConstraints({advanced: adv}).catch(()=>{});
+    }catch(e){}
+    if(el){ el.textContent = frontal ? 'Cámara frontal activa — acerque el carnet QR' : 'Cámara trasera principal activa — acerque el carnet QR'; el.style.color='#00d4ff'; }
+    const start = () => { if(video.videoWidth > 0) iniciarLoopEscaneo(); else video.addEventListener('loadedmetadata', iniciarLoopEscaneo, {once:true}); };
+    if(video.readyState >= 1) start(); else video.addEventListener('loadeddata', start, {once:true});
+  };
+
+  window.girarCamaraQR = function(){
+    window.qrCamaraFrontal = !window.qrCamaraFrontal;
+    const btn = document.querySelector('.qr-btn-cam');
+    if(btn) btn.textContent = window.qrCamaraFrontal ? '🔄 Cámara trasera principal' : '🔄 Cámara frontal';
+    iniciarCamaraQR();
+  };
+
+  window.iniciarLoopEscaneo = function(){
+    const video = document.getElementById('qr-video');
+    const _jsQR = typeof jsQR === 'function' ? jsQR : (jsQR && typeof jsQR.default === 'function' ? jsQR.default : null);
+    if(!_jsQR){ const el=document.getElementById('qr-estado-scan'); if(el) el.textContent='⚠ Error interno: jsQR no disponible'; return; }
+    let ultimoNie='', ultimoTime=0, contador=0;
+    function procesarCanvas(canvas, ctx){
+      let img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      let code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      if(code) return code;
+      const d = img.data;
+      for(let i=0;i<d.length;i+=4){
+        const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114);
+        const v = Math.max(0, Math.min(255, (g-128)*1.55 + 128));
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      return code;
+    }
+    function tick(){
+      if(!window.qrStream) return;
+      if(video.readyState < 2 || !video.videoWidth){ window.qrScanLoop=requestAnimationFrame(tick); return; }
+      contador++;
+      const fullW = video.videoWidth, fullH = video.videoHeight;
+      const maxW = 960;
+      const scale = Math.min(1, maxW/fullW);
+      const W = Math.max(320, Math.floor(fullW*scale)), H = Math.max(240, Math.floor(fullH*scale));
+      const canvas = document.createElement('canvas'); canvas.width=W; canvas.height=H;
+      const ctx = canvas.getContext('2d', {willReadFrequently:true, alpha:false});
+      ctx.drawImage(video,0,0,W,H);
+      let code = procesarCanvas(canvas, ctx);
+      if(!code){
+        const side = Math.floor(Math.min(W,H)*0.82);
+        const sx = Math.floor((W-side)/2), sy = Math.floor((H-side)/2);
+        const c2 = document.createElement('canvas'); c2.width=side; c2.height=side;
+        const x2 = c2.getContext('2d', {willReadFrequently:true, alpha:false});
+        x2.drawImage(canvas, sx, sy, side, side, 0, 0, side, side);
+        code = procesarCanvas(c2, x2);
+      }
+      if(code && code.data){
+        const ahora = Date.now();
+        const data = String(code.data||'').trim();
+        if(!(data === ultimoNie && (ahora-ultimoTime)<1500)){
+          ultimoNie = data; ultimoTime = ahora;
+          if (typeof procesarQRLeido === 'function') procesarQRLeido(data);
+          else if (typeof registrarAsistenciaQR === 'function') registrarAsistenciaQR(data);
+        }
+      }
+      window.qrScanLoop = requestAnimationFrame(tick);
+    }
+    tick();
+  };
+
+  // Informes: guardar directo, sin print/save dialog en Android, y cerrar app.
+  window.generarPDFInforme = async function(){
+    const tipo = window._infTipoActual || 'Informe General';
+    const fecha = (document.getElementById('fecha-informe')||{}).value || '';
+    const docente = ((document.getElementById('docente-informe')||{}).value||'').trim();
+    const grado = (document.getElementById('grado-informe')||{}).value || '';
+    const seccion = (document.getElementById('seccion-informe')||{}).value || '';
+    const asunto = ((document.getElementById('asunto-informe')||{}).value||'').trim();
+    const contenido = ((document.getElementById('contenido-informe')||{}).value||'').trim();
+    const alumnos = window.informeAlumnosSeleccionados || [];
+    if(!docente){ alert('El nombre del docente es obligatorio.'); return; }
+    if(!contenido && !asunto){ alert('Complete el asunto o descripción del informe.'); return; }
+    if(['Acta de Estudiantes','Citatorio de Padres'].includes(tipo) && !alumnos.length){ alert('Agregue al menos un estudiante para este tipo de documento.'); return; }
+    const informe = {tipo, fecha, docente, grado, seccion, asunto, contenido, alumnos};
+    const htmlInf = (typeof _generarHTMLInformeCompleto === 'function') ? _generarHTMLInformeCompleto(informe) : '<div>'+contenido+'</div>';
+    const tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText='position:absolute;left:-9999px;top:0;width:800px;background:white;';
+    tmpDiv.innerHTML = htmlInf;
+    document.body.appendChild(tmpDiv);
+    const limpio = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    const nombreArchivo = `${limpio(tipo)}_${(fecha||new Date().toISOString().slice(0,10)).replace(/-/g,'')}_${limpio(docente).substring(0,18)}.pdf`;
+    const opt = { margin:[10,10,10,10], filename:nombreArchivo, image:{type:'jpeg',quality:0.95}, html2canvas:{scale:2,useCORS:true,logging:false}, jsPDF:{unit:'mm',format:'letter',orientation:'portrait'} };
+    try{
+      if(typeof AndroidPDF !== 'undefined'){
+        const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
+        const reader = new FileReader();
+        reader.onloadend = function(){
+          const base64 = String(reader.result||'').split(',')[1] || '';
+          const carpetaInformes = _carpetaBase() + '/Informes';
+          try { AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInformes); } catch(e){ alert('Error guardando PDF: '+e); }
+          try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, carpetaInformes, grado, 'pdf'); } catch(e){}
+          try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+          try { if (typeof mostrarNotificacion === 'function') mostrarNotificacion('✅ Informe guardado en ' + carpetaInformes + '. Cerrando app...', 'success'); } catch(e){}
+          _cerrarAppDespues(1200);
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // En web se descarga; en APK nunca se usa html2pdf.save(), evitando menú contextual.
+        await html2pdf().set(opt).from(tmpDiv).save();
+        try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, '', grado, 'pdf'); } catch(e){}
+        try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+      }
+      try { if (typeof cargarHistorialInformes === 'function') cargarHistorialInformes(); } catch(e){}
+    }catch(e){ alert('Error al generar PDF: ' + (e.message || e)); }
+    finally{ tmpDiv.remove(); }
+  };
+})();
+</script>
+
+</body></html>';
             const w = window.open('', '_blank');
             if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 800); }
             else { alert('Active las ventanas emergentes para imprimir.'); }
@@ -18378,7 +18660,288 @@ alumnosHTML +
 '</div>' +
 '<div class="footer">Instituto Nacional de Mercedes Umaña — '+esc(fechaF)+' | Generado: '+new Date().toLocaleString('es-SV')+'</div>' +
 '<div class="noprint"><button onclick="window.print()" style="margin-top:12px;padding:11px 30px;background:#0C447C;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold;">🖨️ Imprimir / Guardar como PDF</button></div>' +
-'</body></html>';
+'
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   PARCHE COPILOT 2026-05-04
+   - Cámara trasera: prioriza cámara principal, evita gran angular/ultra-wide.
+   - QR: mejora lectura con mayor resolución, centro + contraste.
+   - Informes: guarda PDF directo en Android, sin menú de impresión, y cierra app.
+   - Reportes: lista PDF + Excel, respeta extensión .pdf/.xls/.xlsx.
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  function _ext(nombre){ return (String(nombre||'').split('.').pop()||'').toLowerCase(); }
+  function _esExcel(nombre){ return ['xls','xlsx','xlsm','csv'].includes(_ext(nombre)); }
+  function _esPDF(nombre){ return _ext(nombre)==='pdf'; }
+  function _mime(nombre){
+    const e=_ext(nombre);
+    if(e==='pdf') return 'application/pdf';
+    if(e==='xls') return 'application/vnd.ms-excel';
+    if(e==='xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if(e==='csv') return 'text/csv';
+    return 'application/octet-stream';
+  }
+  function _carpetaBase(){ return (typeof carpetaPDFUri !== 'undefined' && carpetaPDFUri) ? carpetaPDFUri : 'Asistencia'; }
+  function _cerrarAppDespues(ms){
+    setTimeout(function(){
+      try { if (window.AndroidStorage && typeof AndroidStorage.cerrarApp === 'function') return AndroidStorage.cerrarApp(); } catch(e){}
+      try { if (window.AndroidPDF && typeof AndroidPDF.cerrarApp === 'function') return AndroidPDF.cerrarApp(); } catch(e){}
+      try { if (navigator.app && typeof navigator.app.exitApp === 'function') return navigator.app.exitApp(); } catch(e){}
+      try { if (window.Android && typeof Android.exitApp === 'function') return Android.exitApp(); } catch(e){}
+    }, ms || 900);
+  }
+
+  window._normalizarArchivoReporte = function(arc){
+    const nombre = arc.nombre || arc.name || arc.fileName || 'archivo';
+    const tipo = _esExcel(nombre) ? 'excel' : (_esPDF(nombre) ? 'pdf' : 'archivo');
+    return {
+      nombre,
+      uri: arc.uri || arc.url || arc.path || '',
+      fecha: arc.fecha || arc.lastModified || arc.modificado || new Date().toISOString(),
+      grado: arc.grado || (typeof extraerGradoDeNombre === 'function' ? extraerGradoDeNombre(nombre) : ''),
+      tipo,
+      mime: arc.mime || _mime(nombre)
+    };
+  };
+
+  // Visor/listado PDF + Excel
+  window.cargarListaPDFs = function(){
+    const registros = (typeof obtenerRegistrosPDF === 'function' ? obtenerRegistrosPDF() : []);
+    window.listaPDFs = registros.map(window._normalizarArchivoReporte)
+      .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+      .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    window.listaPDFsFiltrada = [...window.listaPDFs];
+    if (typeof renderizarListaPDFs === 'function') renderizarListaPDFs();
+
+    if (typeof AndroidPDF !== 'undefined') {
+      // Nuevo método recomendado para la APK: listar todo lo visible para reportes.
+      if (typeof AndroidPDF.listarReportes === 'function') AndroidPDF.listarReportes(_carpetaBase());
+      else if (typeof AndroidPDF.listarArchivos === 'function') AndroidPDF.listarArchivos(_carpetaBase(), 'pdf,xls,xlsx,csv');
+      else if (typeof AndroidPDF.listarPDFs === 'function') AndroidPDF.listarPDFs(_carpetaBase());
+    }
+  };
+
+  window.onListaPDFsRecibida = function(jsonStr){
+    try{
+      const arr = JSON.parse(jsonStr || '[]');
+      const mapa = new Map();
+      arr.map(window._normalizarArchivoReporte)
+        .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+        .forEach(a => mapa.set(a.nombre, a));
+      (window.listaPDFs || []).forEach(loc => {
+        const a = window._normalizarArchivoReporte(loc);
+        if (!(_esPDF(a.nombre) || _esExcel(a.nombre))) return;
+        mapa.set(a.nombre, mapa.has(a.nombre) ? {...a, ...mapa.get(a.nombre), uri: mapa.get(a.nombre).uri || a.uri} : a);
+      });
+      window.listaPDFs = Array.from(mapa.values()).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+      window.listaPDFsFiltrada = [...window.listaPDFs];
+      renderizarListaPDFs();
+    }catch(e){ console.error('Error lista reportes:', e); }
+  };
+  // Alias por si Kotlin llama con otro nombre
+  window.onListaArchivosRecibida = window.onListaPDFsRecibida;
+  window.onListaReportesRecibida = window.onListaPDFsRecibida;
+
+  window.renderizarListaPDFs = function(){
+    const container = document.getElementById('pdf-lista-container');
+    if(!container) return;
+    const lista = window.listaPDFsFiltrada || [];
+    if(!lista.length){
+      container.innerHTML = '<div class="pdf-empty">📭 No se encontraron reportes PDF o Excel.<br><small style="color:#aaa;">Los archivos guardados aparecerán aquí ordenados por fecha.</small></div>';
+      return;
+    }
+    container.innerHTML = lista.map((item, idx) => {
+      const tipo = _esExcel(item.nombre) ? 'excel' : 'pdf';
+      const icon = tipo === 'excel' ? '📊' : '📄';
+      const metaTipo = tipo === 'excel' ? 'Excel' : 'PDF';
+      const fechaTxt = (typeof formatearFechaCorta === 'function') ? formatearFechaCorta(item.fecha) : (item.fecha || '');
+      const nombreSeguro = String(item.nombre||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="pdf-item" onclick="abrirArchivoReporte(${idx})">
+        <div class="pdf-item-icon">${icon}</div>
+        <div class="pdf-item-info">
+          <div class="pdf-item-nombre">${nombreSeguro}</div>
+          <div class="pdf-item-meta">${metaTipo} • ${item.grado || 'Sin grado'} • ${item.mime || _mime(item.nombre)}</div>
+        </div>
+        <div class="pdf-item-fecha">${fechaTxt}</div>
+      </div>`;
+    }).join('');
+  };
+
+  window.abrirArchivoReporte = function(idx){
+    const item = (window.listaPDFsFiltrada || [])[idx];
+    if(!item) return;
+    if(_esPDF(item.nombre)){
+      if (typeof abrirVisorPDF === 'function') return abrirVisorPDF(item.uri || item.url || '', item.nombre);
+    }
+    // Excel: no cambiar extensión, abrir con visor nativo si existe.
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirArchivo === 'function') return AndroidPDF.abrirArchivo(item.uri || '', item.nombre, item.mime || _mime(item.nombre)); } catch(e){}
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirExcel === 'function') return AndroidPDF.abrirExcel(item.uri || '', item.nombre); } catch(e){}
+    try { if (item.uri) return window.open(item.uri, '_blank'); } catch(e){}
+    alert('No se pudo abrir el Excel. Verifique que la APK tenga método AndroidPDF.abrirArchivo o que el archivo exista.');
+  };
+
+  // Cámara principal trasera + escaneo QR mejorado
+  async function _elegirCamaraTraseraPrincipal(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      const bad = /(ultra|wide|gran|0\.5|0,5|macro|depth|profundidad)/i;
+      const good = /(back|rear|environment|trasera|posterior|main|principal|camera 0|cámara 0)/i;
+      let cand = cams.find(d => good.test(d.label) && !bad.test(d.label));
+      if(!cand) cand = cams.find(d => /(back|rear|environment|trasera|posterior)/i.test(d.label));
+      if(!cand && cams.length > 1) cand = cams[cams.length-1];
+      return cand && cand.deviceId;
+    }catch(e){ return null; }
+  }
+
+  window.iniciarCamaraQR = async function(){
+    const video = document.getElementById('qr-video');
+    if (window.qrStream) { try { qrStream.getTracks().forEach(t => t.stop()); } catch(e){} window.qrStream = null; }
+    if (window.qrScanLoop) { try { cancelAnimationFrame(qrScanLoop); } catch(e){} window.qrScanLoop = null; }
+    const el = document.getElementById('qr-estado-scan');
+    if(el){ el.textContent='Iniciando cámara principal...'; el.style.color='#f39c12'; }
+    const frontal = !!window.qrCamaraFrontal;
+    const deviceId = frontal ? null : await _elegirCamaraTraseraPrincipal();
+    const base = { width:{ideal:1920,min:640}, height:{ideal:1080,min:480}, frameRate:{ideal:30,min:15} };
+    const intentos = [];
+    if(deviceId && !frontal) intentos.push({ video:{ deviceId:{ exact:deviceId }, ...base, focusMode:'continuous' } });
+    intentos.push({ video:{ facingMode:{ exact: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode:{ ideal: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode: frontal ? 'user':'environment', width:{ideal:1280}, height:{ideal:720} } });
+    intentos.push({ video:true });
+    let stream=null;
+    for(const c of intentos){ try{ stream = await navigator.mediaDevices.getUserMedia(c); if(stream) break; }catch(e){} }
+    if(!stream){
+      if(el){ el.style.color='#e74c3c'; el.innerHTML='⚠ No se pudo abrir la cámara. Verifique permisos.<br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:10px 20px;background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">🔄 Reintentar</button>'; }
+      return;
+    }
+    window.qrStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline',''); video.muted = true;
+    video.style.transform = frontal ? 'scaleX(-1)' : 'scaleX(1)';
+    await video.play().catch(()=>{});
+    try{
+      const tr = stream.getVideoTracks()[0];
+      const caps = tr.getCapabilities ? tr.getCapabilities() : {};
+      const adv = [];
+      if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({focusMode:'continuous'});
+      if (caps.zoom) adv.push({zoom: Math.max(caps.zoom.min || 1, Math.min(caps.zoom.max || 1, 1.0))});
+      if (adv.length && tr.applyConstraints) tr.applyConstraints({advanced: adv}).catch(()=>{});
+    }catch(e){}
+    if(el){ el.textContent = frontal ? 'Cámara frontal activa — acerque el carnet QR' : 'Cámara trasera principal activa — acerque el carnet QR'; el.style.color='#00d4ff'; }
+    const start = () => { if(video.videoWidth > 0) iniciarLoopEscaneo(); else video.addEventListener('loadedmetadata', iniciarLoopEscaneo, {once:true}); };
+    if(video.readyState >= 1) start(); else video.addEventListener('loadeddata', start, {once:true});
+  };
+
+  window.girarCamaraQR = function(){
+    window.qrCamaraFrontal = !window.qrCamaraFrontal;
+    const btn = document.querySelector('.qr-btn-cam');
+    if(btn) btn.textContent = window.qrCamaraFrontal ? '🔄 Cámara trasera principal' : '🔄 Cámara frontal';
+    iniciarCamaraQR();
+  };
+
+  window.iniciarLoopEscaneo = function(){
+    const video = document.getElementById('qr-video');
+    const _jsQR = typeof jsQR === 'function' ? jsQR : (jsQR && typeof jsQR.default === 'function' ? jsQR.default : null);
+    if(!_jsQR){ const el=document.getElementById('qr-estado-scan'); if(el) el.textContent='⚠ Error interno: jsQR no disponible'; return; }
+    let ultimoNie='', ultimoTime=0, contador=0;
+    function procesarCanvas(canvas, ctx){
+      let img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      let code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      if(code) return code;
+      const d = img.data;
+      for(let i=0;i<d.length;i+=4){
+        const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114);
+        const v = Math.max(0, Math.min(255, (g-128)*1.55 + 128));
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      return code;
+    }
+    function tick(){
+      if(!window.qrStream) return;
+      if(video.readyState < 2 || !video.videoWidth){ window.qrScanLoop=requestAnimationFrame(tick); return; }
+      contador++;
+      const fullW = video.videoWidth, fullH = video.videoHeight;
+      const maxW = 960;
+      const scale = Math.min(1, maxW/fullW);
+      const W = Math.max(320, Math.floor(fullW*scale)), H = Math.max(240, Math.floor(fullH*scale));
+      const canvas = document.createElement('canvas'); canvas.width=W; canvas.height=H;
+      const ctx = canvas.getContext('2d', {willReadFrequently:true, alpha:false});
+      ctx.drawImage(video,0,0,W,H);
+      let code = procesarCanvas(canvas, ctx);
+      if(!code){
+        const side = Math.floor(Math.min(W,H)*0.82);
+        const sx = Math.floor((W-side)/2), sy = Math.floor((H-side)/2);
+        const c2 = document.createElement('canvas'); c2.width=side; c2.height=side;
+        const x2 = c2.getContext('2d', {willReadFrequently:true, alpha:false});
+        x2.drawImage(canvas, sx, sy, side, side, 0, 0, side, side);
+        code = procesarCanvas(c2, x2);
+      }
+      if(code && code.data){
+        const ahora = Date.now();
+        const data = String(code.data||'').trim();
+        if(!(data === ultimoNie && (ahora-ultimoTime)<1500)){
+          ultimoNie = data; ultimoTime = ahora;
+          if (typeof procesarQRLeido === 'function') procesarQRLeido(data);
+          else if (typeof registrarAsistenciaQR === 'function') registrarAsistenciaQR(data);
+        }
+      }
+      window.qrScanLoop = requestAnimationFrame(tick);
+    }
+    tick();
+  };
+
+  // Informes: guardar directo, sin print/save dialog en Android, y cerrar app.
+  window.generarPDFInforme = async function(){
+    const tipo = window._infTipoActual || 'Informe General';
+    const fecha = (document.getElementById('fecha-informe')||{}).value || '';
+    const docente = ((document.getElementById('docente-informe')||{}).value||'').trim();
+    const grado = (document.getElementById('grado-informe')||{}).value || '';
+    const seccion = (document.getElementById('seccion-informe')||{}).value || '';
+    const asunto = ((document.getElementById('asunto-informe')||{}).value||'').trim();
+    const contenido = ((document.getElementById('contenido-informe')||{}).value||'').trim();
+    const alumnos = window.informeAlumnosSeleccionados || [];
+    if(!docente){ alert('El nombre del docente es obligatorio.'); return; }
+    if(!contenido && !asunto){ alert('Complete el asunto o descripción del informe.'); return; }
+    if(['Acta de Estudiantes','Citatorio de Padres'].includes(tipo) && !alumnos.length){ alert('Agregue al menos un estudiante para este tipo de documento.'); return; }
+    const informe = {tipo, fecha, docente, grado, seccion, asunto, contenido, alumnos};
+    const htmlInf = (typeof _generarHTMLInformeCompleto === 'function') ? _generarHTMLInformeCompleto(informe) : '<div>'+contenido+'</div>';
+    const tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText='position:absolute;left:-9999px;top:0;width:800px;background:white;';
+    tmpDiv.innerHTML = htmlInf;
+    document.body.appendChild(tmpDiv);
+    const limpio = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    const nombreArchivo = `${limpio(tipo)}_${(fecha||new Date().toISOString().slice(0,10)).replace(/-/g,'')}_${limpio(docente).substring(0,18)}.pdf`;
+    const opt = { margin:[10,10,10,10], filename:nombreArchivo, image:{type:'jpeg',quality:0.95}, html2canvas:{scale:2,useCORS:true,logging:false}, jsPDF:{unit:'mm',format:'letter',orientation:'portrait'} };
+    try{
+      if(typeof AndroidPDF !== 'undefined'){
+        const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
+        const reader = new FileReader();
+        reader.onloadend = function(){
+          const base64 = String(reader.result||'').split(',')[1] || '';
+          const carpetaInformes = _carpetaBase() + '/Informes';
+          try { AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInformes); } catch(e){ alert('Error guardando PDF: '+e); }
+          try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, carpetaInformes, grado, 'pdf'); } catch(e){}
+          try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+          try { if (typeof mostrarNotificacion === 'function') mostrarNotificacion('✅ Informe guardado en ' + carpetaInformes + '. Cerrando app...', 'success'); } catch(e){}
+          _cerrarAppDespues(1200);
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // En web se descarga; en APK nunca se usa html2pdf.save(), evitando menú contextual.
+        await html2pdf().set(opt).from(tmpDiv).save();
+        try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, '', grado, 'pdf'); } catch(e){}
+        try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+      }
+      try { if (typeof cargarHistorialInformes === 'function') cargarHistorialInformes(); } catch(e){}
+    }catch(e){ alert('Error al generar PDF: ' + (e.message || e)); }
+    finally{ tmpDiv.remove(); }
+  };
+})();
+</script>
+
+</body></html>';
         }
 
         function generarHTMLInformeParaPDF(data) { return _generarHTMLInformeCompleto(data); }
@@ -18897,6 +19460,287 @@ alumnosHTML +
         animation:parpadeo-guardar 1.1s ease-in-out infinite !important;
       }
     </style>
+
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   PARCHE COPILOT 2026-05-04
+   - Cámara trasera: prioriza cámara principal, evita gran angular/ultra-wide.
+   - QR: mejora lectura con mayor resolución, centro + contraste.
+   - Informes: guarda PDF directo en Android, sin menú de impresión, y cierra app.
+   - Reportes: lista PDF + Excel, respeta extensión .pdf/.xls/.xlsx.
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  function _ext(nombre){ return (String(nombre||'').split('.').pop()||'').toLowerCase(); }
+  function _esExcel(nombre){ return ['xls','xlsx','xlsm','csv'].includes(_ext(nombre)); }
+  function _esPDF(nombre){ return _ext(nombre)==='pdf'; }
+  function _mime(nombre){
+    const e=_ext(nombre);
+    if(e==='pdf') return 'application/pdf';
+    if(e==='xls') return 'application/vnd.ms-excel';
+    if(e==='xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if(e==='csv') return 'text/csv';
+    return 'application/octet-stream';
+  }
+  function _carpetaBase(){ return (typeof carpetaPDFUri !== 'undefined' && carpetaPDFUri) ? carpetaPDFUri : 'Asistencia'; }
+  function _cerrarAppDespues(ms){
+    setTimeout(function(){
+      try { if (window.AndroidStorage && typeof AndroidStorage.cerrarApp === 'function') return AndroidStorage.cerrarApp(); } catch(e){}
+      try { if (window.AndroidPDF && typeof AndroidPDF.cerrarApp === 'function') return AndroidPDF.cerrarApp(); } catch(e){}
+      try { if (navigator.app && typeof navigator.app.exitApp === 'function') return navigator.app.exitApp(); } catch(e){}
+      try { if (window.Android && typeof Android.exitApp === 'function') return Android.exitApp(); } catch(e){}
+    }, ms || 900);
+  }
+
+  window._normalizarArchivoReporte = function(arc){
+    const nombre = arc.nombre || arc.name || arc.fileName || 'archivo';
+    const tipo = _esExcel(nombre) ? 'excel' : (_esPDF(nombre) ? 'pdf' : 'archivo');
+    return {
+      nombre,
+      uri: arc.uri || arc.url || arc.path || '',
+      fecha: arc.fecha || arc.lastModified || arc.modificado || new Date().toISOString(),
+      grado: arc.grado || (typeof extraerGradoDeNombre === 'function' ? extraerGradoDeNombre(nombre) : ''),
+      tipo,
+      mime: arc.mime || _mime(nombre)
+    };
+  };
+
+  // Visor/listado PDF + Excel
+  window.cargarListaPDFs = function(){
+    const registros = (typeof obtenerRegistrosPDF === 'function' ? obtenerRegistrosPDF() : []);
+    window.listaPDFs = registros.map(window._normalizarArchivoReporte)
+      .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+      .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    window.listaPDFsFiltrada = [...window.listaPDFs];
+    if (typeof renderizarListaPDFs === 'function') renderizarListaPDFs();
+
+    if (typeof AndroidPDF !== 'undefined') {
+      // Nuevo método recomendado para la APK: listar todo lo visible para reportes.
+      if (typeof AndroidPDF.listarReportes === 'function') AndroidPDF.listarReportes(_carpetaBase());
+      else if (typeof AndroidPDF.listarArchivos === 'function') AndroidPDF.listarArchivos(_carpetaBase(), 'pdf,xls,xlsx,csv');
+      else if (typeof AndroidPDF.listarPDFs === 'function') AndroidPDF.listarPDFs(_carpetaBase());
+    }
+  };
+
+  window.onListaPDFsRecibida = function(jsonStr){
+    try{
+      const arr = JSON.parse(jsonStr || '[]');
+      const mapa = new Map();
+      arr.map(window._normalizarArchivoReporte)
+        .filter(a => _esPDF(a.nombre) || _esExcel(a.nombre))
+        .forEach(a => mapa.set(a.nombre, a));
+      (window.listaPDFs || []).forEach(loc => {
+        const a = window._normalizarArchivoReporte(loc);
+        if (!(_esPDF(a.nombre) || _esExcel(a.nombre))) return;
+        mapa.set(a.nombre, mapa.has(a.nombre) ? {...a, ...mapa.get(a.nombre), uri: mapa.get(a.nombre).uri || a.uri} : a);
+      });
+      window.listaPDFs = Array.from(mapa.values()).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+      window.listaPDFsFiltrada = [...window.listaPDFs];
+      renderizarListaPDFs();
+    }catch(e){ console.error('Error lista reportes:', e); }
+  };
+  // Alias por si Kotlin llama con otro nombre
+  window.onListaArchivosRecibida = window.onListaPDFsRecibida;
+  window.onListaReportesRecibida = window.onListaPDFsRecibida;
+
+  window.renderizarListaPDFs = function(){
+    const container = document.getElementById('pdf-lista-container');
+    if(!container) return;
+    const lista = window.listaPDFsFiltrada || [];
+    if(!lista.length){
+      container.innerHTML = '<div class="pdf-empty">📭 No se encontraron reportes PDF o Excel.<br><small style="color:#aaa;">Los archivos guardados aparecerán aquí ordenados por fecha.</small></div>';
+      return;
+    }
+    container.innerHTML = lista.map((item, idx) => {
+      const tipo = _esExcel(item.nombre) ? 'excel' : 'pdf';
+      const icon = tipo === 'excel' ? '📊' : '📄';
+      const metaTipo = tipo === 'excel' ? 'Excel' : 'PDF';
+      const fechaTxt = (typeof formatearFechaCorta === 'function') ? formatearFechaCorta(item.fecha) : (item.fecha || '');
+      const nombreSeguro = String(item.nombre||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="pdf-item" onclick="abrirArchivoReporte(${idx})">
+        <div class="pdf-item-icon">${icon}</div>
+        <div class="pdf-item-info">
+          <div class="pdf-item-nombre">${nombreSeguro}</div>
+          <div class="pdf-item-meta">${metaTipo} • ${item.grado || 'Sin grado'} • ${item.mime || _mime(item.nombre)}</div>
+        </div>
+        <div class="pdf-item-fecha">${fechaTxt}</div>
+      </div>`;
+    }).join('');
+  };
+
+  window.abrirArchivoReporte = function(idx){
+    const item = (window.listaPDFsFiltrada || [])[idx];
+    if(!item) return;
+    if(_esPDF(item.nombre)){
+      if (typeof abrirVisorPDF === 'function') return abrirVisorPDF(item.uri || item.url || '', item.nombre);
+    }
+    // Excel: no cambiar extensión, abrir con visor nativo si existe.
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirArchivo === 'function') return AndroidPDF.abrirArchivo(item.uri || '', item.nombre, item.mime || _mime(item.nombre)); } catch(e){}
+    try { if (window.AndroidPDF && typeof AndroidPDF.abrirExcel === 'function') return AndroidPDF.abrirExcel(item.uri || '', item.nombre); } catch(e){}
+    try { if (item.uri) return window.open(item.uri, '_blank'); } catch(e){}
+    alert('No se pudo abrir el Excel. Verifique que la APK tenga método AndroidPDF.abrirArchivo o que el archivo exista.');
+  };
+
+  // Cámara principal trasera + escaneo QR mejorado
+  async function _elegirCamaraTraseraPrincipal(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      const bad = /(ultra|wide|gran|0\.5|0,5|macro|depth|profundidad)/i;
+      const good = /(back|rear|environment|trasera|posterior|main|principal|camera 0|cámara 0)/i;
+      let cand = cams.find(d => good.test(d.label) && !bad.test(d.label));
+      if(!cand) cand = cams.find(d => /(back|rear|environment|trasera|posterior)/i.test(d.label));
+      if(!cand && cams.length > 1) cand = cams[cams.length-1];
+      return cand && cand.deviceId;
+    }catch(e){ return null; }
+  }
+
+  window.iniciarCamaraQR = async function(){
+    const video = document.getElementById('qr-video');
+    if (window.qrStream) { try { qrStream.getTracks().forEach(t => t.stop()); } catch(e){} window.qrStream = null; }
+    if (window.qrScanLoop) { try { cancelAnimationFrame(qrScanLoop); } catch(e){} window.qrScanLoop = null; }
+    const el = document.getElementById('qr-estado-scan');
+    if(el){ el.textContent='Iniciando cámara principal...'; el.style.color='#f39c12'; }
+    const frontal = !!window.qrCamaraFrontal;
+    const deviceId = frontal ? null : await _elegirCamaraTraseraPrincipal();
+    const base = { width:{ideal:1920,min:640}, height:{ideal:1080,min:480}, frameRate:{ideal:30,min:15} };
+    const intentos = [];
+    if(deviceId && !frontal) intentos.push({ video:{ deviceId:{ exact:deviceId }, ...base, focusMode:'continuous' } });
+    intentos.push({ video:{ facingMode:{ exact: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode:{ ideal: frontal ? 'user':'environment' }, ...base } });
+    intentos.push({ video:{ facingMode: frontal ? 'user':'environment', width:{ideal:1280}, height:{ideal:720} } });
+    intentos.push({ video:true });
+    let stream=null;
+    for(const c of intentos){ try{ stream = await navigator.mediaDevices.getUserMedia(c); if(stream) break; }catch(e){} }
+    if(!stream){
+      if(el){ el.style.color='#e74c3c'; el.innerHTML='⚠ No se pudo abrir la cámara. Verifique permisos.<br><button onclick="iniciarCamaraQR()" style="margin-top:8px;padding:10px 20px;background:#f39c12;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px;">🔄 Reintentar</button>'; }
+      return;
+    }
+    window.qrStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline',''); video.muted = true;
+    video.style.transform = frontal ? 'scaleX(-1)' : 'scaleX(1)';
+    await video.play().catch(()=>{});
+    try{
+      const tr = stream.getVideoTracks()[0];
+      const caps = tr.getCapabilities ? tr.getCapabilities() : {};
+      const adv = [];
+      if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({focusMode:'continuous'});
+      if (caps.zoom) adv.push({zoom: Math.max(caps.zoom.min || 1, Math.min(caps.zoom.max || 1, 1.0))});
+      if (adv.length && tr.applyConstraints) tr.applyConstraints({advanced: adv}).catch(()=>{});
+    }catch(e){}
+    if(el){ el.textContent = frontal ? 'Cámara frontal activa — acerque el carnet QR' : 'Cámara trasera principal activa — acerque el carnet QR'; el.style.color='#00d4ff'; }
+    const start = () => { if(video.videoWidth > 0) iniciarLoopEscaneo(); else video.addEventListener('loadedmetadata', iniciarLoopEscaneo, {once:true}); };
+    if(video.readyState >= 1) start(); else video.addEventListener('loadeddata', start, {once:true});
+  };
+
+  window.girarCamaraQR = function(){
+    window.qrCamaraFrontal = !window.qrCamaraFrontal;
+    const btn = document.querySelector('.qr-btn-cam');
+    if(btn) btn.textContent = window.qrCamaraFrontal ? '🔄 Cámara trasera principal' : '🔄 Cámara frontal';
+    iniciarCamaraQR();
+  };
+
+  window.iniciarLoopEscaneo = function(){
+    const video = document.getElementById('qr-video');
+    const _jsQR = typeof jsQR === 'function' ? jsQR : (jsQR && typeof jsQR.default === 'function' ? jsQR.default : null);
+    if(!_jsQR){ const el=document.getElementById('qr-estado-scan'); if(el) el.textContent='⚠ Error interno: jsQR no disponible'; return; }
+    let ultimoNie='', ultimoTime=0, contador=0;
+    function procesarCanvas(canvas, ctx){
+      let img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      let code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      if(code) return code;
+      const d = img.data;
+      for(let i=0;i<d.length;i+=4){
+        const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114);
+        const v = Math.max(0, Math.min(255, (g-128)*1.55 + 128));
+        d[i]=d[i+1]=d[i+2]=v;
+      }
+      code = _jsQR(img.data, img.width, img.height, { inversionAttempts:'attemptBoth' });
+      return code;
+    }
+    function tick(){
+      if(!window.qrStream) return;
+      if(video.readyState < 2 || !video.videoWidth){ window.qrScanLoop=requestAnimationFrame(tick); return; }
+      contador++;
+      const fullW = video.videoWidth, fullH = video.videoHeight;
+      const maxW = 960;
+      const scale = Math.min(1, maxW/fullW);
+      const W = Math.max(320, Math.floor(fullW*scale)), H = Math.max(240, Math.floor(fullH*scale));
+      const canvas = document.createElement('canvas'); canvas.width=W; canvas.height=H;
+      const ctx = canvas.getContext('2d', {willReadFrequently:true, alpha:false});
+      ctx.drawImage(video,0,0,W,H);
+      let code = procesarCanvas(canvas, ctx);
+      if(!code){
+        const side = Math.floor(Math.min(W,H)*0.82);
+        const sx = Math.floor((W-side)/2), sy = Math.floor((H-side)/2);
+        const c2 = document.createElement('canvas'); c2.width=side; c2.height=side;
+        const x2 = c2.getContext('2d', {willReadFrequently:true, alpha:false});
+        x2.drawImage(canvas, sx, sy, side, side, 0, 0, side, side);
+        code = procesarCanvas(c2, x2);
+      }
+      if(code && code.data){
+        const ahora = Date.now();
+        const data = String(code.data||'').trim();
+        if(!(data === ultimoNie && (ahora-ultimoTime)<1500)){
+          ultimoNie = data; ultimoTime = ahora;
+          if (typeof procesarQRLeido === 'function') procesarQRLeido(data);
+          else if (typeof registrarAsistenciaQR === 'function') registrarAsistenciaQR(data);
+        }
+      }
+      window.qrScanLoop = requestAnimationFrame(tick);
+    }
+    tick();
+  };
+
+  // Informes: guardar directo, sin print/save dialog en Android, y cerrar app.
+  window.generarPDFInforme = async function(){
+    const tipo = window._infTipoActual || 'Informe General';
+    const fecha = (document.getElementById('fecha-informe')||{}).value || '';
+    const docente = ((document.getElementById('docente-informe')||{}).value||'').trim();
+    const grado = (document.getElementById('grado-informe')||{}).value || '';
+    const seccion = (document.getElementById('seccion-informe')||{}).value || '';
+    const asunto = ((document.getElementById('asunto-informe')||{}).value||'').trim();
+    const contenido = ((document.getElementById('contenido-informe')||{}).value||'').trim();
+    const alumnos = window.informeAlumnosSeleccionados || [];
+    if(!docente){ alert('El nombre del docente es obligatorio.'); return; }
+    if(!contenido && !asunto){ alert('Complete el asunto o descripción del informe.'); return; }
+    if(['Acta de Estudiantes','Citatorio de Padres'].includes(tipo) && !alumnos.length){ alert('Agregue al menos un estudiante para este tipo de documento.'); return; }
+    const informe = {tipo, fecha, docente, grado, seccion, asunto, contenido, alumnos};
+    const htmlInf = (typeof _generarHTMLInformeCompleto === 'function') ? _generarHTMLInformeCompleto(informe) : '<div>'+contenido+'</div>';
+    const tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText='position:absolute;left:-9999px;top:0;width:800px;background:white;';
+    tmpDiv.innerHTML = htmlInf;
+    document.body.appendChild(tmpDiv);
+    const limpio = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    const nombreArchivo = `${limpio(tipo)}_${(fecha||new Date().toISOString().slice(0,10)).replace(/-/g,'')}_${limpio(docente).substring(0,18)}.pdf`;
+    const opt = { margin:[10,10,10,10], filename:nombreArchivo, image:{type:'jpeg',quality:0.95}, html2canvas:{scale:2,useCORS:true,logging:false}, jsPDF:{unit:'mm',format:'letter',orientation:'portrait'} };
+    try{
+      if(typeof AndroidPDF !== 'undefined'){
+        const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
+        const reader = new FileReader();
+        reader.onloadend = function(){
+          const base64 = String(reader.result||'').split(',')[1] || '';
+          const carpetaInformes = _carpetaBase() + '/Informes';
+          try { AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInformes); } catch(e){ alert('Error guardando PDF: '+e); }
+          try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, carpetaInformes, grado, 'pdf'); } catch(e){}
+          try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+          try { if (typeof mostrarNotificacion === 'function') mostrarNotificacion('✅ Informe guardado en ' + carpetaInformes + '. Cerrando app...', 'success'); } catch(e){}
+          _cerrarAppDespues(1200);
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        // En web se descarga; en APK nunca se usa html2pdf.save(), evitando menú contextual.
+        await html2pdf().set(opt).from(tmpDiv).save();
+        try { if (typeof registrarPDFGuardado === 'function') registrarPDFGuardado(nombreArchivo, '', grado, 'pdf'); } catch(e){}
+        try { if (typeof guardarInformeEnNube === 'function') guardarInformeEnNube(informe); } catch(e){}
+      }
+      try { if (typeof cargarHistorialInformes === 'function') cargarHistorialInformes(); } catch(e){}
+    }catch(e){ alert('Error al generar PDF: ' + (e.message || e)); }
+    finally{ tmpDiv.remove(); }
+  };
+})();
+</script>
 
 </body>
 
