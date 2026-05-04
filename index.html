@@ -3862,84 +3862,208 @@
         // EXPORTAR NOTAS A XLS — Usa la plantilla oficial exacta
         // ════════════════════════════════════════════════════════════
         async function exportarNotasXLSX() {
+            if (typeof XLSX === 'undefined') {
+                alert('⚠ La librería Excel no cargó. Verifica tu conexión a internet.');
+                return;
+            }
+
             const grado   = document.getElementById('grado-select')?.value || '';
             const seccion = (document.getElementById('seccion-select')?.value || '').replace(/"/g,'');
             const docente = document.getElementById('docente-nombre')?.value?.trim() || '';
             const anio    = new Date().getFullYear();
 
-            if (!grado || !seccion) { alert('⚠ Selecciona un Grado y Sección antes de exportar.'); return; }
-            if (!docente) { alert('⚠ Ingresa el nombre del docente responsable.'); return; }
+            if (!grado || !seccion) {
+                alert('⚠ Selecciona un Grado y Sección antes de exportar.');
+                return;
+            }
+            if (!docente) {
+                alert('⚠ Ingresa el nombre del docente responsable.');
+                return;
+            }
 
-            const btn = document.getElementById('btn-exportar-notas');
-
-            // Materia (guardada en localStorage por docente)
+            // Materia: usar la almacenada o default sin prompt
             let materia = '';
             try { materia = localStorage.getItem('materia_' + docente) || ''; } catch(e){}
             if (!materia) {
                 materia = (prompt('📚 ¿Cuál es la materia/asignatura de ' + docente + '?') || '').trim();
-                if (!materia) return;
+                if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)'; return; }
                 try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
             }
 
+            const btn = document.getElementById('btn-exportar-notas');
             btn.disabled = true;
-            btn.innerHTML = '⏳ Generando Excel desde plantilla...';
+            btn.innerHTML = '⏳ Generando Excel...';
 
             try {
-                // ── Construir lista de alumnos con sus notas ─────────────
-                const alumnos = (alumnosFiltrados || []).map((alumno) => {
-                    const nd = notasData[String(alumno.nie)] || {};
-                    return {
-                        nie:    alumno.nie    || '',
-                        nombre: alumno.nombre || '',
-                        sexo:   alumno.sexo   || '',
-                        p1: nd.p1 || { a1:'', a2:'', a3:'', prom:'' },
-                        p2: nd.p2 || { a1:'', a2:'', a3:'', prom:'' },
-                        p3: nd.p3 || { a1:'', a2:'', a3:'', prom:'' },
-                        p4: nd.p4 || { a1:'', a2:'', a3:'', prom:'' }
+                // Buscar plantilla base para este grado
+                const key = grado + '|' + seccion;
+                const b64 = PLANTILLAS_XLS_B64[key] || PLANTILLAS_XLS_B64[Object.keys(PLANTILLAS_XLS_B64)[0]];
+
+                // Decodificar base64 a ArrayBuffer
+                const binStr  = atob(b64);
+                const bytes   = new Uint8Array(binStr.length);
+                for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+                // Leer con SheetJS (soporta .xls nativo)
+                const wb = XLSX.read(bytes, { type: 'array', cellStyles: true, bookSST: true });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+
+                // ── Actualizar celdas variables ──
+                // H5 = grado + sección + año
+                ws['H5'] = { v: `${grado} "${seccion}" ${anio}`, t:'s' };
+                // Q5 = materia
+                ws['Q5'] = { v: materia, t:'s' };
+                // X5 = profesor
+                ws['X5'] = { v: `Profesor: ${docente}`, t:'s' };
+
+                // ── Escribir alumnos a partir de fila 10 con sus notas ──
+                const alumnos = alumnosFiltrados || [];
+
+                // Colores de relleno para promedios (colores HTML sin #)
+                const COLOR_VERDE   = 'FF92D050'; // verde suave (aprobado >=6)
+                const COLOR_AMARILLO= 'FFFFF2CC'; // amarillo (riesgo 5-5.9)
+                const COLOR_ROJO    = 'FFFFC7CE'; // rojo (reprobado <5)
+
+                // Helper: borde fino en todas las aristas
+                const bordeDelgado = {
+                    top:    { style: 'thin', color: { rgb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { rgb: 'FF000000' } },
+                    left:   { style: 'thin', color: { rgb: 'FF000000' } },
+                    right:  { style: 'thin', color: { rgb: 'FF000000' } }
+                };
+
+                // Helper para aplicar estilo con borde a una celda
+                const aplicarBorde = (addr) => {
+                    if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+                    if (!ws[addr].s) ws[addr].s = {};
+                    ws[addr].s.border = bordeDelgado;
+                };
+
+                // Helper número entero con borde
+                const setI = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    const n = Math.round(parseFloat(val) || 0);
+                    ws[col+r] = { v: n, t: 'n', z: '0', s: { border: bordeDelgado } };
+                };
+
+                // Helper número decimal con borde
+                const setN = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    ws[col+r] = { v: parseFloat(val) || 0, t: 'n', z: '0.00', s: { border: bordeDelgado } };
+                };
+
+                // Helper string con borde
+                const setS = (col, val, r) => {
+                    ws[col+r] = { v: String(val || ''), t: 's', s: { border: bordeDelgado } };
+                };
+
+                // Helper promedio coloreado (entero) con borde
+                const setProm = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    const n = Math.round(parseFloat(val) || 0);
+                    let bgColor = COLOR_VERDE;
+                    if (n < 50) bgColor = COLOR_ROJO;
+                    else if (n < 60) bgColor = COLOR_AMARILLO;
+                    ws[col+r] = {
+                        v: n, t: 'n', z: '0',
+                        s: {
+                            border: bordeDelgado,
+                            fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
+                            font: { bold: true }
+                        }
                     };
+                };
+
+                alumnos.forEach((alumno, idx) => {
+                    const r = 10 + idx;
+
+                    setI('A', idx + 1, r);
+                    setS('B', String(alumno.nie || ''), r);
+                    setS('C', alumno.nombre || '', r);
+                    setS('D', alumno.sexo || '', r);
+
+                    // Notas del sistema (si existen)
+                    const nd = notasData[String(alumno.nie)] || {};
+                    const p1 = nd.p1 || {}; const p2 = nd.p2 || {};
+                    const p3 = nd.p3 || {}; const p4 = nd.p4 || {};
+
+                    // Período 1: E=act1 raw, F=act1×0.35, G=act2 raw, H=act2×0.35, I=act3 raw, J=act3×0.30, K=promedio
+                    setN('E', p1.a1, r); setN('F', p1.a1 !== '' ? (parseFloat(p1.a1)||0)*0.35 : '', r);
+                    setN('G', p1.a2, r); setN('H', p1.a2 !== '' ? (parseFloat(p1.a2)||0)*0.35 : '', r);
+                    setN('I', p1.a3, r); setN('J', p1.a3 !== '' ? (parseFloat(p1.a3)||0)*0.30 : '', r);
+                    setProm('K', p1.prom, r);
+
+                    // Período 2: L,M,N,O,P,Q,R
+                    setN('L', p2.a1, r); setN('M', p2.a1 !== '' ? (parseFloat(p2.a1)||0)*0.35 : '', r);
+                    setN('N', p2.a2, r); setN('O', p2.a2 !== '' ? (parseFloat(p2.a2)||0)*0.35 : '', r);
+                    setN('P', p2.a3, r); setN('Q', p2.a3 !== '' ? (parseFloat(p2.a3)||0)*0.30 : '', r);
+                    setProm('R', p2.prom, r);
+
+                    // Período 3: S,T,U,V,W,X,Y
+                    setN('S', p3.a1, r); setN('T', p3.a1 !== '' ? (parseFloat(p3.a1)||0)*0.35 : '', r);
+                    setN('U', p3.a2, r); setN('V', p3.a2 !== '' ? (parseFloat(p3.a2)||0)*0.35 : '', r);
+                    setN('W', p3.a3, r); setN('X', p3.a3 !== '' ? (parseFloat(p3.a3)||0)*0.30 : '', r);
+                    setProm('Y', p3.prom, r);
+
+                    // Período 4: Z,AA,AB,AC,AD,AE,AF
+                    setN('Z', p4.a1, r); setN('AA', p4.a1 !== '' ? (parseFloat(p4.a1)||0)*0.35 : '', r);
+                    setN('AB', p4.a2, r); setN('AC', p4.a2 !== '' ? (parseFloat(p4.a2)||0)*0.35 : '', r);
+                    setN('AD', p4.a3, r); setN('AE', p4.a3 !== '' ? (parseFloat(p4.a3)||0)*0.30 : '', r);
+                    setProm('AF', p4.prom, r);
+
+                    // Promedios institucional y final (coloreados, enteros)
+                    const proms = [p1.prom, p2.prom, p3.prom, p4.prom]
+                        .filter(p => p !== '' && p !== null && p !== undefined)
+                        .map(p => parseFloat(p) || 0);
+                    if (proms.length) {
+                        const promInst = proms.reduce((a,b)=>a+b,0) / 4;
+                        setProm('AG', promInst, r);
+                        setProm('AH', promInst, r);
+                        setProm('AJ', promInst, r);
+                    } else {
+                        aplicarBorde('AG'+r); aplicarBorde('AH'+r); aplicarBorde('AJ'+r);
+                    }
                 });
 
-                // ── Llamar al servidor (Apps Script) ─────────────────────
-                const resp = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        tipo_post: 'exportar_desde_plantilla',
-                        grado, seccion, materia, docente, anio,
-                        alumnos
-                    })
-                });
+                // Actualizar el rango de la hoja
+                const totalRows = 9 + alumnos.length + 10;
+                ws['!ref'] = `A1:AK${totalRows}`;
 
-                const resultado = await resp.json();
+                // ── Descargar el archivo ──
+                const secLimpia    = seccion.replace(/[^a-zA-Z0-9]/g,'_');
+                const gradoLimpio  = grado.replace(/[°\s"]/g,'_').replace(/__+/g,'_').replace(/^_|_$/g,'');
+                const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xlsx`;
 
-                if (!resultado.exito) {
-                    throw new Error(resultado.error || 'Error desconocido en el servidor');
+                // ── Ancho de columnas (wch = caracteres — SheetJS xlsx lo respeta) ──
+                ws['!cols'] = [];
+                for (let ci = 0; ci < 38; ci++) {
+                    if      (ci === 0) ws['!cols'][ci] = { wch: 4.11 };   // A: Nº
+                    else if (ci === 1) ws['!cols'][ci] = { wch: 9.55 };   // B: NIE
+                    else if (ci === 2) ws['!cols'][ci] = { wch: 36.33 };  // C: Nombre
+                    else if (ci === 3) ws['!cols'][ci] = { wch: 3.89 };   // D: Sexo
+                    else               ws['!cols'][ci] = { wch: 5.30 };   // E–AK: notas ← 5.30 chars exacto
                 }
 
-                // ── Abrir/descargar el archivo generado en Drive ──────────
                 if (typeof AndroidPDF !== 'undefined') {
-                    // Android: abrir URL en el navegador externo
-                    AndroidPDF.abrirUrl(resultado.url);
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64', cellStyles: true });
+                    const carpetaNotas = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Notas_Excel/' + gradoLimpio;
+                    AndroidPDF.guardarBase64(wbout, nombreArch, carpetaNotas);
                 } else {
-                    // Web: abrir en nueva pestaña
-                    window.open(resultado.url, '_blank');
+                    XLSX.writeFile(wb, nombreArch, { bookType: 'xlsx', type: 'binary', cellStyles: true });
                 }
 
                 if (typeof mostrarNotificacion === 'function')
-                    mostrarNotificacion('✅ Excel generado: ' + resultado.nombre, 'success');
-
+                    mostrarNotificacion('✓ Notas exportadas: ' + nombreArch, 'success');
             } catch(err) {
                 console.error('Error exportarNotasXLSX:', err);
-                alert('❌ Error al generar el Excel: ' + err.message);
+                alert('❌ Error al generar el archivo: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)';
             }
         }
 
-        function crearHojaPlantilla() { /* deprecated */ }
-
-
-
+        function crearHojaPlantilla() { /* deprecated — usa exportarNotasXLSX */ }
 
 
         async function generarPDF() {
