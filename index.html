@@ -3703,7 +3703,15 @@
                 const gradoLimpio  = grado.replace(/[°\s"]/g,'_').replace(/__+/g,'_').replace(/^_|_$/g,'');
                 const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xls`;
 
-                XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary' });
+                if (typeof AndroidPDF !== 'undefined') {
+                    // Android: convertir a base64 y guardar en Notas_Excel/[grado]/
+                    const wbout = XLSX.write(wb, { bookType: 'xls', type: 'base64' });
+                    const carpetaNotas = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Notas_Excel/' + gradoLimpio;
+                    AndroidPDF.guardarBase64(wbout, nombreArch, carpetaNotas);
+                } else {
+                    // Web: download normal
+                    XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary' });
+                }
 
                 if (typeof mostrarNotificacion === 'function')
                     mostrarNotificacion('✓ Plantilla de notas descargada: ' + nombreArch, 'success');
@@ -3843,8 +3851,11 @@
                     const reader = new FileReader();
                     reader.onloadend = function () {
                         const base64 = reader.result.split(',')[1];
-                        registrarPDFGuardado(nombreArchivo, carpetaPDFUri || '', grado, '');
-                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaPDFUri || '');
+                        // Clasificar: Reportes_Asistencia/[grado]/
+                        const gradoLimpio = grado.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'Sin_Grado';
+                        const carpetaReportes = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Reportes_Asistencia/' + gradoLimpio;
+                        registrarPDFGuardado(nombreArchivo, carpetaReportes, grado, '');
+                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaReportes);
                     };
                     reader.readAsDataURL(pdfBlob);
                 } else {
@@ -17810,11 +17821,13 @@
         function iniciarLoopEscaneo() {
             const video = document.getElementById('qr-video');
 
-            // ─── Tamaño del canvas = tamaño real del stream ────────────────────
-            // NO recortamos, NO reducimos. jsQR necesita ver los 3 "finder patterns"
-            // del QR completos. Con 640×480 nativos cada tick tarda ~5ms en Android.
-            const W = video.videoWidth  || 640;
-            const H = video.videoHeight || 480;
+            // ── OPTIMIZACIÓN: usar resolución reducida para jsQR (más rápido)
+            // 640×480 → 480×360 mantiene aspect ratio y los 3 finder patterns visibles
+            const W_orig = video.videoWidth  || 640;
+            const H_orig = video.videoHeight || 480;
+            const scale = 0.75;  // 75% del tamaño original = procesar 56% menos pixels
+            const W = Math.floor(W_orig * scale);
+            const H = Math.floor(H_orig * scale);
             const canvas = document.createElement('canvas');
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
@@ -17830,6 +17843,7 @@
             }
 
             let ultimoNie = '', ultimoTime = 0;
+            let frameSkip = 0;  // skip counter para procesar cada N frames
 
             function tick() {
                 // Cámara apagada → detener limpiamente
@@ -17841,16 +17855,32 @@
                     return;
                 }
 
-                // ── Capturar frame completo, resolución nativa ─────────────────
+                // ── OPTIMIZACIÓN: procesar 1 de cada 2 frames (30fps en lugar de 60fps)
+                frameSkip++;
+                if (frameSkip % 2 !== 0) {
+                    qrScanLoop = requestAnimationFrame(tick);
+                    return;
+                }
+
+                // ── Capturar frame reducido ─────────────────────────────────
                 ctx.drawImage(video, 0, 0, W, H);
 
+                // ── OPTIMIZACIÓN: aumentar contraste antes de decodificar ───
+                // Esto ayuda enormemente con QR de baja calidad o mal iluminados
+                const img = ctx.getImageData(0, 0, W, H);
+                const d = img.data;
+                const contrast = 1.3;  // 30% más contraste
+                const factor = (259 * (contrast + 1)) / (259 - contrast);
+                for (let i = 0; i < d.length; i += 4) {
+                    d[i]   = Math.min(255, Math.max(0, factor * (d[i]   - 128) + 128));  // R
+                    d[i+1] = Math.min(255, Math.max(0, factor * (d[i+1] - 128) + 128));  // G
+                    d[i+2] = Math.min(255, Math.max(0, factor * (d[i+2] - 128) + 128));  // B
+                }
+
                 // ── Decodificar QR ─────────────────────────────────────────────
-                // 'attemptBoth': detecta QR oscuro-sobre-claro Y claro-sobre-oscuro
-                // en una sola pasada de píxeles. Más rápido que dos llamadas separadas.
                 let code = null;
                 try {
-                    const img = ctx.getImageData(0, 0, W, H);
-                    code = _jsQR(img.data, W, H, { inversionAttempts: 'attemptBoth' });
+                    code = _jsQR(d, W, H, { inversionAttempts: 'attemptBoth' });
                 } catch(e) {}
 
                 if (code) {
@@ -17862,8 +17892,7 @@
                     }
                 }
 
-                // requestAnimationFrame: el navegador llama tick() cada frame disponible
-                // (~60fps). Entre llamadas cede el hilo para pintar la UI sin bloquear.
+                // requestAnimationFrame: ~30fps efectivos (cada 2 frames)
                 qrScanLoop = requestAnimationFrame(tick);
             }
 
@@ -18223,7 +18252,7 @@
             return true;
         }
 
-        function generarPDFInforme() {
+        async function generarPDFInforme() {
             const tipo    = window._infTipoActual || (document.getElementById('tipo-documento-informe')||{}).value || 'Informe General';
             const fecha   = (document.getElementById('fecha-informe')||{}).value || '';
             const docente = ((document.getElementById('docente-informe')||{}).value||'').trim();
@@ -18240,14 +18269,46 @@
                 return;
             }
             const informe = { tipo, fecha, docente, grado, seccion, asunto, contenido, alumnos };
+            
+            // Generar PDF directamente sin window.open (para que funcione en app Android)
             const html = _generarHTMLInformeCompleto(informe);
-            const w = window.open('','_blank','width=950,height=720');
-            if (!w) { alert('Activa las ventanas emergentes para generar el PDF.'); return; }
-            w.document.open(); w.document.write(html); w.document.close();
-            w.onload = function(){ setTimeout(function(){ w.print(); }, 600); };
-            guardarInformeEnNube(informe);
-            mostrarNotificacion('✅ Informe listo. Usa el diálogo de impresión para guardar como PDF.', 'success');
-            cargarHistorialInformes();
+            const tmpDiv = document.createElement('div');
+            tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
+            tmpDiv.innerHTML = html;
+            document.body.appendChild(tmpDiv);
+            
+            const nombreArchivo = tipo.replace(/[^a-zA-Z0-9]+/g,'_') + '_' + (fecha||'').replace(/-/g,'') + '_' + docente.substring(0,15).replace(/[^a-zA-Z0-9]+/g,'_') + '.pdf';
+            const opt = {
+                margin: [10,10,10,10], filename: nombreArchivo,
+                image: {type:'jpeg',quality:0.95},
+                html2canvas: {scale:2,useCORS:true,logging:false},
+                jsPDF: {unit:'mm',format:'letter',orientation:'portrait'}
+            };
+            
+            try {
+                if (typeof AndroidPDF !== 'undefined') {
+                    // Android: guardar en carpeta Informes/
+                    const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        const base64 = reader.result.split(',')[1];
+                        const carpetaInformes = carpetaPDFUri ? carpetaPDFUri + '/Informes' : 'Informes';
+                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInformes);
+                        registrarPDFGuardado(nombreArchivo, carpetaInformes, grado, '');
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    // Web: download directo
+                    await html2pdf().set(opt).from(tmpDiv).save();
+                }
+                guardarInformeEnNube(informe);
+                mostrarNotificacion('✅ Informe generado correctamente.', 'success');
+                cargarHistorialInformes();
+            } catch(e) {
+                alert('Error al generar PDF: ' + (e.message||e));
+            } finally {
+                tmpDiv.remove();
+            }
         }
 
         function _generarHTMLInformeCompleto(data) {
@@ -18372,24 +18433,49 @@ alumnosHTML +
             if (panel.style.display === 'block') cargarHistorialInformes();
         }
 
-        function verDetalleInforme(index) {
+        async function verDetalleInforme(index) {
             const item = window.informeHistorial[index];
             if (!item) return;
-            const html = _generarHTMLInformeCompleto(item);
-            const w = window.open('','_blank','width=950,height=720');
-            if (!w) { alert('Activa las ventanas emergentes.'); return; }
-            w.document.open(); w.document.write(html); w.document.close();
-            w.onload = function(){ setTimeout(function(){ w.print(); }, 600); };
+            // Usar la misma función que descargar
+            await descargarInformeHistorial(index);
         }
 
-        function descargarInformeHistorial(index) {
+        async function descargarInformeHistorial(index) {
             const d = (window.informeHistorial||[])[index];
             if (!d) return;
             const html = _generarHTMLInformeCompleto(d);
-            const w = window.open('','_blank','width=950,height=720');
-            if (!w) { alert('Activa las ventanas emergentes.'); return; }
-            w.document.open(); w.document.write(html); w.document.close();
-            w.onload = function(){ setTimeout(function(){ w.print(); }, 600); };
+            const tmpDiv = document.createElement('div');
+            tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
+            tmpDiv.innerHTML = html;
+            document.body.appendChild(tmpDiv);
+            
+            const nombreArchivo = (d.tipo||'Informe').replace(/[^a-zA-Z0-9]+/g,'_') + '_' + (d.fecha||'').replace(/-/g,'') + '.pdf';
+            const opt = {
+                margin: [10,10,10,10], filename: nombreArchivo,
+                image: {type:'jpeg',quality:0.95},
+                html2canvas: {scale:2,useCORS:true,logging:false},
+                jsPDF: {unit:'mm',format:'letter',orientation:'portrait'}
+            };
+            
+            try {
+                if (typeof AndroidPDF !== 'undefined') {
+                    const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        const base64 = reader.result.split(',')[1];
+                        const gradoLimpio = (d.grado||'').replace(/[^a-zA-Z0-9]+/g,'_') || 'General';
+                        const carpeta = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Informes/' + gradoLimpio;
+                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpeta);
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    await html2pdf().set(opt).from(tmpDiv).save();
+                }
+            } catch(e) {
+                alert('Error: ' + (e.message||e));
+            } finally {
+                tmpDiv.remove();
+            }
         }
 
         async function generarPDFDesdeQR() {
