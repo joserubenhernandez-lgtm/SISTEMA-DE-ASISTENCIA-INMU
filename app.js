@@ -1,7 +1,16 @@
-// =========================================================
-// Sistema INMU - JavaScript extraído automáticamente
-// Archivo generado desde index.html
-// =========================================================
+// === PARCHE DE ARRANQUE SEGURO GitHub Pages ===
+// Este bloque se ejecuta al cargar el DOM y evita que la pantalla "Cargando aplicación" quede pegada.
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    const fallback = document.getElementById('fallback-loading');
+    if (fallback) fallback.remove();
+    console.log('✅ Arranque seguro: pantalla de carga retirada');
+  } catch (e) {
+    console.warn('Arranque seguro no pudo retirar loading:', e);
+  }
+});
+
+// Sistema INMU - app.js extraído y corregido
 
 // Crear imágenes placeholder si faltan archivos
         (function() {
@@ -22,7 +31,7 @@
             window._logoPlaceholder = crear_placeholder('logo');
         })();
 
-// ---- bloque de script extraído ----
+// ---- bloque extraído ----
 (function(){
             window._infTipoActual = 'Informe General';
             var TIPOS_CON_ALUMNOS = ['Acta de Estudiantes','Citatorio de Padres','Constancia de Conducta'];
@@ -52,7 +61,7 @@
             };
           })();
 
-// ---- bloque de script extraído ----
+// ---- bloque extraído ----
 // Autocompletar docente responsable si se selecciona Dirección
                                 document.getElementById('grado-select').addEventListener('change', function () {
                                     if (this.value === 'Dirección') {
@@ -16708,7 +16717,7 @@ alumnosHTML +
   };
 })();
 
-// ---- bloque de script extraído ----
+// ---- bloque extraído ----
 /* ════════════════════════════════════════════════════════════════════════
    PARCHE COPILOT 2026-05-04
    - Cámara trasera: prioriza cámara principal, evita gran angular/ultra-wide.

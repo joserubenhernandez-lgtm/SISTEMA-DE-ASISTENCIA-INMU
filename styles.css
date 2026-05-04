@@ -1,7 +1,4 @@
-/* =========================================================
-   Sistema INMU - estilos extraídos automáticamente
-   Archivo generado desde index.html
-   ========================================================= */
+/* Sistema INMU - styles.css extraído */
 
 :root {
             --blue-800: #0C447C;
@@ -988,12 +985,12 @@
             border-radius: 10px;
         }
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 .inf-tipo-card:hover { border-color:#2563eb !important; box-shadow:0 2px 10px rgba(37,99,235,.2); transform:translateY(-2px); }
             .inf-tipo-activo { border-color:#2563eb !important; background:#eff6ff !important; }
             #inf-tab-btn-crear, #inf-tab-btn-historial { font-family:inherit; }
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 .btn-resumen {
                             font-size: 20px;
                             padding: 14px 28px;
@@ -1034,13 +1031,13 @@
                             transform: scale(0.97);
                         }
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 body { font-family: Arial, sans-serif; margin: 20px; }
                   h1 { color: #0C447C; text-align: center; }
                   .reporte { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; }
                   .totales { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 ';
             html += 'body{font-family:Arial,sans-serif;margin:10px;background:white;}';
             html += '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}';
@@ -1051,7 +1048,7 @@ body { font-family: Arial, sans-serif; margin: 20px; }
             html += '@media print{body{margin:0;}.grid{gap:5px;}}';
             html += '
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 ' +
 '*{box-sizing:border-box;margin:0;padding:0;}' +
 'body{font-family:Arial,sans-serif;padding:28px 36px;color:#1e293b;font-size:13px;background:#fff;max-width:800px;margin:0 auto;}' +
@@ -1079,7 +1076,7 @@ body { font-family: Arial, sans-serif; margin: 20px; }
 '@media print{.noprint{display:none!important;}body{padding:10px;}}' +
 '
 
-/* ---- bloque de estilos extraído ---- */
+/* ---- bloque extraído ---- */
 .btn-periodo-sel {
         padding:6px 16px;border:2px solid #2563EB;border-radius:20px;
         background:white;color:#2563EB;font-weight:bold;font-size:13px;
