@@ -417,7 +417,7 @@
 
         .student-row {
             display: grid;
-            grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px;
+            grid-template-columns: 40px 2fr 1fr 1fr 1fr 90px 100px;
             gap: 10px;
             padding: 12px 15px;
             border-bottom: 1px solid var(--gray-100);
@@ -438,7 +438,21 @@
             background-color: rgba(226, 75, 74, 0.12);
         }
 
-        .permiso-btn {
+        /* ── Badges de asistencia diaria ── */
+        .asist-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; white-space: nowrap;
+            transition: all .25s;
+        }
+        .asist-presente  { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+        .asist-ausente   { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+        .asist-permiso   { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+        .asist-sin-datos { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; font-size:13px; }
+        body.dark .asist-presente  { background:#052e16; color:#4ade80; border-color:#166534; }
+        body.dark .asist-ausente   { background:#2c0a0a; color:#f87171; border-color:#991b1b; }
+        body.dark .asist-permiso   { background:#422006; color:#fbbf24; border-color:#92400e; }
+        body.dark .asist-sin-datos { background:#1e293b; color:#64748b; border-color:#334155; }
             display: inline-flex;
             justify-content: center;
             align-items: center;
@@ -1410,6 +1424,9 @@
                         <button onclick="seleccionarArchivoLocal()"
                             style="background:none; border:none; color:var(--green-600); cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px;">📂
                             Local</button>
+                        <button id="btn-sync-asist-diaria" onclick="sincronizarAsistenciaDiaria()"
+                            style="background:linear-gradient(135deg,#0C447C,#1D6FA8);border:none;color:#fff;cursor:pointer;font-size:12px;font-weight:700;margin-left:10px;padding:6px 13px;border-radius:8px;box-shadow:0 2px 8px rgba(12,68,124,0.25);transition:opacity .2s;"
+                            title="Sincroniza quién marcó asistencia hoy desde index2.html">📡 Sincronizar Asistencia Diaria</button>
                         <!-- CONTROLES DE LISTADO DE ALUMNOS -->
                         <div id="controles-lista-alumnos" style="margin-top:10px; display:none; gap:8px; flex-wrap:wrap; align-items:center;">
                             <button id="btn-toggle-lista" class="btn-action" onclick="toggleLista()">
@@ -3268,7 +3285,7 @@
             let html = `<div class="student-row student-header">
           <div class="checkbox-wrapper">✓</div>
           <div>Nombre del Estudiante</div>
-          <div>Sexo</div><div>NIE</div><div>Teléfono</div><div>Permiso</div>
+          <div>Sexo</div><div>NIE</div><div>Teléfono</div><div style="text-align:center;">Asistencia</div><div>Permiso</div>
       </div>`;
 
             alumnosVisibles.forEach((alumno, i) => {
@@ -3281,6 +3298,7 @@
               <div><span class="badge ${alumno.sexo.toLowerCase()}">${alumno.sexo}</span></div>
               <div style="font-size: 13px;">${alumno.nie}</div>
               <div style="font-size: 13px;">${alumno.telefono || 'N/A'}</div>
+              <div style="text-align:center;"><span id="asist-badge-${indexReal}" class="asist-badge asist-sin-datos" title="Sin datos de asistencia hoy">—</span></div>
               <button class="permiso-btn" onclick="mostrarModalPermiso(${indexReal}); event.stopPropagation();">Permiso</button>
           </div>`;
             });
@@ -3481,6 +3499,95 @@
                 });
 
                 AndroidStorage.set(key, JSON.stringify(estados));
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // SINCRONIZAR ASISTENCIA DIARIA (index2.html → tabla docente)
+        // ══════════════════════════════════════════════════════
+        async function sincronizarAsistenciaDiaria() {
+            const grado   = (document.getElementById('grado-select')   || {}).value || '';
+            const seccion = (document.getElementById('seccion-select') || {}).value || '';
+            const btn = document.getElementById('btn-sync-asist-diaria');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Consultando...'; }
+
+            // Resetear todos los badges a "cargando"
+            document.querySelectorAll('.asist-badge').forEach(b => {
+                b.className = 'asist-badge asist-sin-datos';
+                b.textContent = '…';
+                b.title = 'Consultando...';
+            });
+
+            try {
+                const url = `${SCRIPT_URL}?tipo=asistencia_diaria_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`;
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 10000);
+                const res  = await fetch(url, { signal: ctrl.signal });
+                clearTimeout(tid);
+                const mapa = await res.json(); // { "NIE": { estado, hora }, ... }
+
+                let cPresente = 0, cAusente = 0, cPermiso = 0, cSin = 0;
+
+                alumnosFiltrados.forEach((alumno, idx) => {
+                    const badge = document.getElementById(`asist-badge-${idx}`);
+                    if (!badge) return;
+                    const nie = (alumno.nie || '').toString().trim();
+                    const reg = mapa[nie];
+                    if (reg) {
+                        const est = (reg.estado || 'presente').toLowerCase();
+                        if (est === 'presente') {
+                            badge.className = 'asist-badge asist-presente';
+                            badge.textContent = '✅ Marcó';
+                            badge.title = `Marcó asistencia a las ${reg.hora}`;
+                            cPresente++;
+                        } else if (est === 'permiso') {
+                            badge.className = 'asist-badge asist-permiso';
+                            badge.textContent = '⚠ Permiso';
+                            badge.title = `Registrado con permiso a las ${reg.hora}`;
+                            cPermiso++;
+                        } else {
+                            badge.className = 'asist-badge asist-ausente';
+                            badge.textContent = '❌ Ausente';
+                            badge.title = `Registrado como ausente a las ${reg.hora}`;
+                            cAusente++;
+                        }
+                    } else {
+                        badge.className = 'asist-badge asist-sin-datos';
+                        badge.textContent = '— No marcó';
+                        badge.title = 'No ha marcado asistencia hoy desde el portal de alumnos';
+                        cSin++;
+                    }
+                });
+
+                const total = alumnosFiltrados.length;
+                mostrarNotificacion(
+                    `📡 Sincronizado: ✅ ${cPresente} marcaron · ❌ ${cAusente} ausentes · ⚠ ${cPermiso} permisos · — ${cSin} sin marcar (${total} total)`,
+                    'success', 6000
+                );
+            } catch(err) {
+                // Fallback: intentar con caché localStorage
+                const hoy = new Date().toLocaleDateString('es-SV');
+                let cLocal = 0;
+                alumnosFiltrados.forEach((alumno, idx) => {
+                    const badge = document.getElementById(`asist-badge-${idx}`);
+                    if (!badge) return;
+                    const nie  = (alumno.nie || '').toString().trim();
+                    const key  = `asist_${nie}_${hoy.replace(/\//g,'_')}`;
+                    const data = (() => { try { return JSON.parse(localStorage.getItem(key)||'null'); } catch(_){return null;} })();
+                    if (data) {
+                        badge.className  = 'asist-badge asist-presente';
+                        badge.textContent = '✅ Marcó (local)';
+                        badge.title = `Caché local – ${data.hora || ''}`;
+                        cLocal++;
+                    } else {
+                        badge.className  = 'asist-badge asist-sin-datos';
+                        badge.textContent = '— No marcó';
+                        badge.title = 'Sin datos';
+                    }
+                });
+                mostrarNotificacion(`⚠ Sin conexión — se usó caché local. ${cLocal} marcaron.`, 'info', 5000);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '📡 Sincronizar Asistencia Diaria'; }
             }
         }
 
