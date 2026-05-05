@@ -27,7 +27,235 @@
             --gray-100: #D3D1C7;
             --gray-50: #F0F2F5;
             --amber-600: #BA7517;
+            /* Tokens semánticos — modo claro */
+            --bg-app: #F0F2F5;
+            --bg-panel: #ffffff;
+            --bg-panel2: #f8fafc;
+            --bg-input: #ffffff;
+            --bg-table-head: #0C447C;
+            --bg-table-row-alt: #f1f5f9;
+            --text-primary: #2C2C2A;
+            --text-secondary: #5F5E5A;
+            --text-muted: #94a3b8;
+            --border-color: #D3D1C7;
+            --shadow-color: rgba(0,0,0,0.08);
+            --header-bg: #0C447C;
+            --header-text: #ffffff;
+            --btn-dark-bg: #1e293b;
+            --btn-dark-text: #f8fafc;
         }
+
+        /* ═══ MODO OSCURO — cobertura completa con alto contraste ══════ */
+        body.dark {
+            --bg-app:           #0d1117;
+            --bg-panel:         #161b22;
+            --bg-panel2:        #0d1117;
+            --bg-input:         #21262d;
+            --bg-table-head:    #0a2a52;
+            --bg-table-row-alt: #1a2433;
+            --text-primary:     #f0f6fc;
+            --text-secondary:   #c9d1d9;
+            --text-muted:       #8b949e;
+            --border-color:     #30363d;
+            --shadow-color:     rgba(0,0,0,0.6);
+            --header-bg:        #090f1a;
+            --header-text:      #f0f6fc;
+            --blue-50:          #0d2742;
+            --green-50:         #0b2a1c;
+            --red-50:           #2c0f0f;
+            --gray-50:          #161b22;
+            --gray-100:         #30363d;
+            --gray-600:         #c9d1d9;
+            --gray-900:         #f0f6fc;
+            --amber-600:        #fbbf24;
+        }
+
+        /* ─── Base ─── */
+        body { background-color: var(--bg-app) !important; color: var(--text-primary) !important; }
+
+        /* ─── Header ─── */
+        body.dark .header { background-color: var(--header-bg) !important; }
+        body.dark .header h1,
+        body.dark .header p,
+        body.dark .header-titles h1,
+        body.dark .header-titles p { color: #f0f6fc !important; }
+
+        /* ─── Paneles y contenedores ─── */
+        body.dark .panel { background: var(--bg-panel) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; box-shadow: 0 2px 8px var(--shadow-color) !important; }
+        body.dark .container { background: transparent !important; }
+        body.dark .filters { background: transparent !important; }
+        body.dark .modal { background: var(--bg-panel) !important; color: var(--text-primary) !important; border: 1px solid var(--border-color) !important; }
+        body.dark .modal-content { background: var(--bg-panel) !important; color: var(--text-primary) !important; }
+        body.dark #modal-qr-autonoma { background: #090f1a !important; color: var(--text-primary) !important; }
+        body.dark .modal-overlay { background: rgba(0,0,0,0.75) !important; }
+
+        /* ─── Textos y etiquetas ─── */
+        body.dark label { color: var(--text-secondary) !important; }
+        body.dark h1, body.dark h2, body.dark h3, body.dark h4, body.dark h5 { color: var(--text-primary) !important; }
+        body.dark p { color: var(--text-secondary) !important; }
+        body.dark span:not(.badge):not(.badge-presente):not(.fila-status):not(.nota-badge):not([class*="badge"]) { color: inherit; }
+
+        /* ─── Inputs, selects, textareas ─── */
+        body.dark input,
+        body.dark select,
+        body.dark textarea {
+            background: var(--bg-input) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+        body.dark input::placeholder,
+        body.dark textarea::placeholder { color: var(--text-muted) !important; }
+        body.dark input[type="checkbox"] { accent-color: #58a6ff; }
+
+        /* ─── Botones genéricos sin color de marca ─── */
+        body.dark .btn-action { background: var(--bg-input) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+        body.dark button:not([class*="btn-nav"]):not([class*="btn-generate"]):not([class*="btn-logout"]):not([class*="btn-ver"]):not([class*="btn-qr"]):not([class*="permiso-btn"]):not([class*="qr-btn"]):not(#btn-dark-mode):not([style*="background:#"]):not([style*="background: #"]) {
+            background: var(--bg-input) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        /* ─── Tablas ─── */
+        body.dark table { background: var(--bg-panel) !important; }
+        body.dark table thead tr { background: var(--bg-table-head) !important; }
+        body.dark table thead th { color: #f0f6fc !important; }
+        body.dark table tbody tr:nth-child(even) { background: var(--bg-table-row-alt) !important; }
+        body.dark table tbody tr:nth-child(odd)  { background: var(--bg-panel) !important; }
+        body.dark table tbody td { color: var(--text-primary) !important; }
+        body.dark th, body.dark td { border-color: var(--border-color) !important; }
+        body.dark .student-header { background: var(--bg-table-head) !important; color: #f0f6fc !important; }
+        body.dark .student-row { border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+        body.dark .student-row:hover { background: #1a2d47 !important; }
+        body.dark .student-row.permiso { background: rgba(243,156,18,0.18) !important; }
+        body.dark .student-row.ausente { background: rgba(220,38,38,0.18) !important; }
+        body.dark .sub-table th,
+        body.dark .sub-table td { border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+
+        /* ─── Lista y paginación ─── */
+        body.dark .student-list { border-color: var(--border-color) !important; }
+        body.dark #info-pagina { color: var(--text-secondary) !important; }
+
+        /* ─── Badges género ─── */
+        body.dark .badge.m { background: #0d2742 !important; color: #93c5fd !important; }
+        body.dark .badge.f { background: #2d0b1a !important; color: #f9a8d4 !important; }
+
+        /* ─── PDF items ─── */
+        body.dark .pdf-item { background: var(--bg-panel) !important; border-color: var(--border-color) !important; }
+        body.dark .pdf-item:hover { background: #1a2d47 !important; }
+        body.dark .pdf-item-nombre { color: #58a6ff !important; }
+        body.dark .pdf-item-meta  { color: var(--text-secondary) !important; }
+        body.dark .pdf-item-fecha { color: #fbbf24 !important; }
+        body.dark .pdf-empty      { color: var(--text-muted) !important; }
+        body.dark .pdf-search-bar input,
+        body.dark .pdf-search-bar select { background: var(--bg-input) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+
+        /* ─── Tabs ─── */
+        body.dark .tab-nav,
+        body.dark .tab-btn,
+        body.dark [id*="tab-btn"] { background: var(--bg-panel2) !important; color: var(--text-secondary) !important; border-color: var(--border-color) !important; }
+        body.dark [style*="border-bottom:3px solid #2563eb"] { color: #58a6ff !important; }
+        body.dark [style*="color:#2563eb"] { color: #58a6ff !important; }
+        body.dark [style*="color:#64748b"] { color: var(--text-secondary) !important; }
+
+        /* ─── Módulo de informes ─── */
+        body.dark [style*="background:#f8fafc"],
+        body.dark [style*="background: #f8fafc"],
+        body.dark [style*="background:#fff"],
+        body.dark [style*="background: #fff"],
+        body.dark [style*="background:white"],
+        body.dark [style*="background: white"] {
+            background: var(--bg-panel) !important;
+            color: var(--text-primary) !important;
+        }
+        body.dark [style*="background:#eff6ff"] { background: #0d2742 !important; }
+        body.dark [style*="color:#1e293b"],
+        body.dark [style*="color: #1e293b"] { color: var(--text-primary) !important; }
+        body.dark [style*="color:#1a3a5c"] { color: #93c5fd !important; }
+        body.dark [style*="color:#4d5b6b"],
+        body.dark [style*="color: #4d5b6b"] { color: var(--text-secondary) !important; }
+        body.dark [style*="color:#555"],
+        body.dark [style*="color: #555"] { color: var(--text-secondary) !important; }
+        body.dark [style*="color:#333"],
+        body.dark [style*="color: #333"] { color: var(--text-primary) !important; }
+        body.dark [style*="border:1px solid #e2e8f0"],
+        body.dark [style*="border: 1px solid #e2e8f0"],
+        body.dark [style*="border:1px solid #cbd5e1"],
+        body.dark [style*="border:1.5px solid #cbd5e1"] { border-color: var(--border-color) !important; }
+        body.dark [style*="background:#dcfce7"] { background: #052e16 !important; }
+        body.dark [style*="color:#166534"]       { color: #4ade80 !important; }
+        body.dark [style*="background:#fee2e2"] { background: #2c0a0a !important; }
+        body.dark [style*="color:#991b1b"]       { color: #f87171 !important; }
+
+        /* ─── Botón limpiar / misc ─── */
+        body.dark [style*="background:#f5f5f5"] { background: var(--bg-input) !important; color: var(--text-primary) !important; }
+        body.dark [style*="color:#0C447C"]:not(button):not(.qr-nombre) { color: #58a6ff !important; }
+        body.dark [style*="color:#185FA5"] { color: #58a6ff !important; }
+        body.dark [style*="color:#333"] { color: var(--text-primary) !important; }
+        body.dark [style*="color:#5F5E5A"]:not(button) { color: var(--text-secondary) !important; }
+
+        /* ─── Notas ─── */
+        body.dark .nota-input { background: var(--bg-input) !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+        body.dark .notas-stat-card { background: var(--bg-panel) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+        body.dark .notas-stat-card > div { color: var(--text-secondary) !important; }
+        body.dark .notas-stat-card > span { color: var(--text-primary) !important; }
+        body.dark .notas-toolbar { background: var(--bg-panel) !important; border-color: var(--border-color) !important; }
+
+        /* ─── QR ─── */
+        body.dark .qr-card { background: var(--bg-panel) !important; border-color: #30363d !important; color: var(--text-primary) !important; }
+        body.dark .qr-nombre { color: #58a6ff !important; }
+        body.dark .qr-nie-label { color: var(--text-secondary) !important; }
+        body.dark .qr-escaneado-item { background: rgba(46,204,113,0.12) !important; border-color: rgba(46,204,113,0.25) !important; }
+        body.dark .qr-escaneado-nombre { color: #f0f6fc !important; }
+        body.dark [style*="color:#aaa"],
+        body.dark [style*="color: #aaa"] { color: var(--text-secondary) !important; }
+        body.dark [style*="color:#ccc"],
+        body.dark [style*="color: #ccc"] { color: var(--text-secondary) !important; }
+        body.dark [style*="color:#eee"],
+        body.dark [style*="color: #eee"] { color: var(--text-primary) !important; }
+
+        /* ─── DI modal ─── */
+        body.dark #di-resultados { background: var(--bg-input) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+        body.dark #di-modal-titulo { color: #58a6ff !important; }
+
+        /* ─── Sugerencias ─── */
+        body.dark #alumnos-informe-sugerencias { background: var(--bg-panel) !important; border-color: var(--border-color) !important; }
+
+        /* ─── Pantalla de carga (splash) ─── */
+        body.dark #splash-screen,
+        body.dark [style*="background:#fff; color:#333"],
+        body.dark [style*="background:#fff;color:#333"] { background: var(--bg-app) !important; color: var(--text-primary) !important; }
+
+        /* ─── Resumen del día y alertas ─── */
+        body.dark .alert,
+        body.dark .info-box { background: var(--bg-panel) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+
+        /* ─── Scroll ─── */
+        body.dark ::-webkit-scrollbar-track { background: var(--bg-app) !important; }
+        body.dark ::-webkit-scrollbar-thumb { background: #30363d !important; border-radius: 4px; }
+
+        /* Botón modo oscuro */
+        #btn-dark-mode {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            z-index: 9999;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            color: #f8fafc;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            transition: background 0.25s, color 0.25s, transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #btn-dark-mode:hover { transform: scale(1.1); }
+        body.dark #btn-dark-mode { background: #f1f5f9; color: #0f172a; }
 
         * {
             box-sizing: border-box;
@@ -1261,7 +1489,7 @@
                     <!-- ══ BOTÓN EXPORTAR NOTAS XLSX ══ -->
                     <button id="btn-exportar-notas" onclick="exportarNotasXLSX()"
                         style="width:100%;padding:14px;background:linear-gradient(135deg,#1D6A38,#27ae60);color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:10px;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px;">
-                        📊 Exportar Notas a Excel (.xls)
+                        📊 Exportar Notas a Excel (.xlsx)
                     </button>
 
                     <!-- ══ BOTÓN VER NOTAS POR PERIODO ══ -->
@@ -1368,6 +1596,11 @@
                       style="background:#fff;border:2px solid #cbd5e1;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .15s;">
                       <div style="font-size:1.6rem;margin-bottom:5px;">👨‍👩‍👧</div>
                       <div style="font-size:11px;font-weight:700;color:#1e293b;line-height:1.3;">Citatorio de Padres</div>
+                    </div>
+                    <div class="inf-tipo-card" onclick="infSelTipo('Expediente del Alumno',this)"
+                      style="background:#fff;border:2px solid #0C447C;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .15s;">
+                      <div style="font-size:1.6rem;margin-bottom:5px;">📁</div>
+                      <div style="font-size:11px;font-weight:700;color:#0C447C;line-height:1.3;">Expediente Alumno</div>
                     </div>
                   </div>
                 </div>
@@ -1649,6 +1882,41 @@
                             </div>
                             <button id="btn-toggle-login" onclick="cambiarEstadoLogin()"
                                 style="padding: 10px 15px; border-radius: 8px; background: var(--gray-100); color: white; font-weight: bold; border: none; cursor: pointer;">⏳</button>
+                        </div>
+
+                        <!-- Horario de asistencia -->
+                        <div style="background:white;padding:15px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gray-100);">
+                            <label style="color:var(--gray-900);font-size:14px;display:block;margin-bottom:8px;">⏰ Horario de marcado de asistencia</label>
+                            <p style="font-size:11px;color:var(--gray-600);margin-bottom:10px;">Fuera de este rango, el sistema marcará automáticamente como ausente.</p>
+                            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                                <div>
+                                    <label style="font-size:11px;color:var(--gray-600);">Desde:</label>
+                                    <input type="time" id="config-hora-inicio" value="06:30"
+                                        style="padding:8px;border:1px solid var(--gray-100);border-radius:6px;font-size:13px;"
+                                        onchange="guardarHorarioConfig()">
+                                </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--gray-600);">Hasta:</label>
+                                    <input type="time" id="config-hora-fin" value="08:00"
+                                        style="padding:8px;border:1px solid var(--gray-100);border-radius:6px;font-size:13px;"
+                                        onchange="guardarHorarioConfig()">
+                                </div>
+                                <button onclick="guardarHorarioConfig()"
+                                    style="padding:8px 14px;background:var(--blue-600);color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Guardar</button>
+                            </div>
+                            <p id="config-horario-status" style="font-size:11px;color:var(--green-600);margin-top:6px;"></p>
+                        </div>
+
+                        <!-- Modo alumno -->
+                        <div style="background:white;padding:15px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <label style="color:var(--gray-900);font-size:14px;">🎒 Acceso de Alumnos</label>
+                                <p style="font-size:12px;color:var(--gray-600);margin:0;">Permite que alumnos marquen asistencia desde <strong>index2.html</strong>. Si se desactiva, solo docentes pueden usar el sistema.</p>
+                            </div>
+                            <button id="btn-toggle-alumno" onclick="toggleModoAlumno()"
+                                style="padding:10px 15px;border-radius:8px;background:var(--green-600);color:white;font-weight:bold;border:none;cursor:pointer;white-space:nowrap;margin-left:10px;">
+                                ✅ Activo
+                            </button>
                         </div>
 
                         <button onclick="accederLimpieza()"
@@ -2278,8 +2546,62 @@
             } catch (e) { }
         }
 
+        // =========================================================================
+        // MODO OSCURO — persiste en AndroidStorage y localStorage
+        // =========================================================================
+        function _darkStore(key, val) {
+            try {
+                if (typeof AndroidStorage !== 'undefined') AndroidStorage.set(key, val);
+                localStorage.setItem(key, val);
+            } catch(e) {}
+        }
+        function _darkRead(key) {
+            try {
+                if (typeof AndroidStorage !== 'undefined') {
+                    const v = AndroidStorage.get(key);
+                    if (v !== null && v !== undefined) return v;
+                }
+                return localStorage.getItem(key);
+            } catch(e) { return null; }
+        }
+
+        function aplicarTema(oscuro) {
+            const btn = document.getElementById('btn-dark-mode');
+            if (oscuro) {
+                document.body.classList.add('dark');
+                if (btn) btn.textContent = '☀️';
+                if (btn) btn.title = 'Cambiar a modo claro';
+            } else {
+                document.body.classList.remove('dark');
+                if (btn) btn.textContent = '🌙';
+                if (btn) btn.title = 'Cambiar a modo oscuro';
+            }
+        }
+
+        function toggleDarkMode() {
+            const esOscuro = document.body.classList.contains('dark');
+            const nuevoEstado = !esOscuro;
+            aplicarTema(nuevoEstado);
+            _darkStore('tema_oscuro', nuevoEstado ? '1' : '0');
+        }
+
+        function restaurarTema() {
+            const guardado = _darkRead('tema_oscuro');
+            // Si no hay preferencia guardada, usar preferencia del sistema
+            const prefiereOscuro = guardado !== null
+                ? guardado === '1'
+                : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            aplicarTema(prefiereOscuro);
+        }
+
+        // Restaurar tema inmediatamente (antes de pintar) para evitar flash
+        (function() { try { restaurarTema(); } catch(e) {} })();
+
         function restaurarSesionGuardada() {
             try {
+                // Restaurar tema (también en contexto de sesión guardada)
+                restaurarTema();
+
                 if (typeof AndroidStorage === 'undefined') return;
                 const usuario = AndroidStorage.get('sesion_usuario');
                 if (!usuario) return;
@@ -2388,7 +2710,53 @@
                 : (function(){ try { navigator.app.exitApp(); } catch(_){ history.back(); } })();
         }, false);
 
-                window.onload = async function () {
+        
+        function guardarHorarioConfig() {
+            const inicio = (document.getElementById('config-hora-inicio')||{}).value || '06:30';
+            const fin    = (document.getElementById('config-hora-fin')||{}).value || '08:00';
+            try { localStorage.setItem('horario_asistencia', JSON.stringify({ inicio, fin })); } catch(e){}
+            // Enviar a la nube también
+            try {
+                fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
+                    body: JSON.stringify({ tipo_post:'config_horario', hora_inicio: inicio, hora_fin: fin }) });
+            } catch(e){}
+            const s = document.getElementById('config-horario-status');
+            if (s) { s.textContent = '✅ Guardado: ' + inicio + ' – ' + fin; }
+        }
+
+        function cargarHorarioConfig() {
+            try {
+                const h = JSON.parse(localStorage.getItem('horario_asistencia')||'{}');
+                if (h.inicio && document.getElementById('config-hora-inicio'))
+                    document.getElementById('config-hora-inicio').value = h.inicio;
+                if (h.fin && document.getElementById('config-hora-fin'))
+                    document.getElementById('config-hora-fin').value = h.fin;
+            } catch(e){}
+        }
+
+        function toggleModoAlumno() {
+            const activo = localStorage.getItem('alumno_acceso') !== 'false';
+            const nuevoEstado = !activo;
+            localStorage.setItem('alumno_acceso', nuevoEstado ? 'true' : 'false');
+            const btn = document.getElementById('btn-toggle-alumno');
+            if (btn) {
+                btn.textContent = nuevoEstado ? '✅ Activo' : '🚫 Desactivado';
+                btn.style.background = nuevoEstado ? 'var(--green-600)' : 'var(--red-600)';
+            }
+            mostrarNotificacion(nuevoEstado ? '✅ Acceso de alumnos activado.' : '🚫 Acceso de alumnos desactivado.', 'success');
+        }
+
+        function iniciarConfigUI() {
+            cargarHorarioConfig();
+            const activo = localStorage.getItem('alumno_acceso') !== 'false';
+            const btn = document.getElementById('btn-toggle-alumno');
+            if (btn) {
+                btn.textContent = activo ? '✅ Activo' : '🚫 Desactivado';
+                btn.style.background = activo ? 'var(--green-600)' : 'var(--red-600)';
+            }
+        }
+
+        window.onload = async function () {
             // Quitar pantalla de carga inmediatamente — nunca debe bloquear
             const fallback = document.getElementById('fallback-loading');
             if (fallback) fallback.remove();
@@ -2674,6 +3042,7 @@
                 const btn = document.getElementById('btn-volver-asist');
                 if (btn) btn.style.display = 'block';
                 cargarReportesSub(false);
+                iniciarConfigUI();
             } else if (vista === 'pdf-reportes') {
                 const view = document.getElementById('view-pdf-reportes');
                 if (view) view.classList.add('view-active');
@@ -3604,7 +3973,7 @@
             try { materia = localStorage.getItem('materia_' + docente) || ''; } catch(e){}
             if (!materia) {
                 materia = (prompt('📚 ¿Cuál es la materia/asignatura de ' + docente + '?') || '').trim();
-                if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xls)'; return; }
+                if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)'; return; }
                 try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
             }
 
@@ -3623,7 +3992,7 @@
                 for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
 
                 // Leer con SheetJS (soporta .xls nativo)
-                const wb = XLSX.read(bytes, { type: 'array', cellStyles: true });
+                const wb = XLSX.read(bytes, { type: 'array', cellStyles: true, bookSST: true });
                 const ws = wb.Sheets[wb.SheetNames[0]];
 
                 // ── Actualizar celdas variables ──
@@ -3636,22 +4005,69 @@
 
                 // ── Escribir alumnos a partir de fila 10 con sus notas ──
                 const alumnos = alumnosFiltrados || [];
-                alumnos.forEach((alumno, idx) => {
-                    const r = 10 + idx;  // fila Excel (1-based)
-                    const setN = (col, val) => {
-                        const addr = col + r;
-                        if (val === '' || val === null || val === undefined) return;
-                        ws[addr] = { v: parseFloat(val) || 0, t: 'n', z: '0.00' };
-                    };
-                    const setS = (col, val) => {
-                        const addr = col + r;
-                        ws[addr] = { v: String(val || ''), t: 's' };
-                    };
 
-                    setN('A', idx + 1);
-                    setS('B', String(alumno.nie || ''));
-                    setS('C', alumno.nombre || '');
-                    setS('D', alumno.sexo || '');
+                // Colores de relleno para promedios (colores HTML sin #)
+                const COLOR_VERDE   = 'FF92D050'; // verde suave (aprobado >=6)
+                const COLOR_AMARILLO= 'FFFFF2CC'; // amarillo (riesgo 5-5.9)
+                const COLOR_ROJO    = 'FFFFC7CE'; // rojo (reprobado <5)
+
+                // Helper: borde fino en todas las aristas
+                const bordeDelgado = {
+                    top:    { style: 'thin', color: { rgb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { rgb: 'FF000000' } },
+                    left:   { style: 'thin', color: { rgb: 'FF000000' } },
+                    right:  { style: 'thin', color: { rgb: 'FF000000' } }
+                };
+
+                // Helper para aplicar estilo con borde a una celda
+                const aplicarBorde = (addr) => {
+                    if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+                    if (!ws[addr].s) ws[addr].s = {};
+                    ws[addr].s.border = bordeDelgado;
+                };
+
+                // Helper número entero con borde
+                const setI = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    const n = Math.round(parseFloat(val) || 0);
+                    ws[col+r] = { v: n, t: 'n', z: '0', s: { border: bordeDelgado } };
+                };
+
+                // Helper número decimal con borde
+                const setN = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    ws[col+r] = { v: parseFloat(val) || 0, t: 'n', z: '0.00', s: { border: bordeDelgado } };
+                };
+
+                // Helper string con borde
+                const setS = (col, val, r) => {
+                    ws[col+r] = { v: String(val || ''), t: 's', s: { border: bordeDelgado } };
+                };
+
+                // Helper promedio coloreado (entero) con borde
+                const setProm = (col, val, r) => {
+                    if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
+                    const n = Math.round(parseFloat(val) || 0);
+                    let bgColor = COLOR_VERDE;
+                    if (n < 50) bgColor = COLOR_ROJO;
+                    else if (n < 60) bgColor = COLOR_AMARILLO;
+                    ws[col+r] = {
+                        v: n, t: 'n', z: '0',
+                        s: {
+                            border: bordeDelgado,
+                            fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
+                            font: { bold: true }
+                        }
+                    };
+                };
+
+                alumnos.forEach((alumno, idx) => {
+                    const r = 10 + idx;
+
+                    setI('A', idx + 1, r);
+                    setS('B', String(alumno.nie || ''), r);
+                    setS('C', alumno.nombre || '', r);
+                    setS('D', alumno.sexo || '', r);
 
                     // Notas del sistema (si existen)
                     const nd = notasData[String(alumno.nie)] || {};
@@ -3659,38 +4075,40 @@
                     const p3 = nd.p3 || {}; const p4 = nd.p4 || {};
 
                     // Período 1: E=act1 raw, F=act1×0.35, G=act2 raw, H=act2×0.35, I=act3 raw, J=act3×0.30, K=promedio
-                    setN('E', p1.a1); setN('F', p1.a1 !== '' ? (parseFloat(p1.a1)||0)*0.35 : '');
-                    setN('G', p1.a2); setN('H', p1.a2 !== '' ? (parseFloat(p1.a2)||0)*0.35 : '');
-                    setN('I', p1.a3); setN('J', p1.a3 !== '' ? (parseFloat(p1.a3)||0)*0.30 : '');
-                    setN('K', p1.prom);
+                    setN('E', p1.a1, r); setN('F', p1.a1 !== '' ? (parseFloat(p1.a1)||0)*0.35 : '', r);
+                    setN('G', p1.a2, r); setN('H', p1.a2 !== '' ? (parseFloat(p1.a2)||0)*0.35 : '', r);
+                    setN('I', p1.a3, r); setN('J', p1.a3 !== '' ? (parseFloat(p1.a3)||0)*0.30 : '', r);
+                    setProm('K', p1.prom, r);
 
                     // Período 2: L,M,N,O,P,Q,R
-                    setN('L', p2.a1); setN('M', p2.a1 !== '' ? (parseFloat(p2.a1)||0)*0.35 : '');
-                    setN('N', p2.a2); setN('O', p2.a2 !== '' ? (parseFloat(p2.a2)||0)*0.35 : '');
-                    setN('P', p2.a3); setN('Q', p2.a3 !== '' ? (parseFloat(p2.a3)||0)*0.30 : '');
-                    setN('R', p2.prom);
+                    setN('L', p2.a1, r); setN('M', p2.a1 !== '' ? (parseFloat(p2.a1)||0)*0.35 : '', r);
+                    setN('N', p2.a2, r); setN('O', p2.a2 !== '' ? (parseFloat(p2.a2)||0)*0.35 : '', r);
+                    setN('P', p2.a3, r); setN('Q', p2.a3 !== '' ? (parseFloat(p2.a3)||0)*0.30 : '', r);
+                    setProm('R', p2.prom, r);
 
                     // Período 3: S,T,U,V,W,X,Y
-                    setN('S', p3.a1); setN('T', p3.a1 !== '' ? (parseFloat(p3.a1)||0)*0.35 : '');
-                    setN('U', p3.a2); setN('V', p3.a2 !== '' ? (parseFloat(p3.a2)||0)*0.35 : '');
-                    setN('W', p3.a3); setN('X', p3.a3 !== '' ? (parseFloat(p3.a3)||0)*0.30 : '');
-                    setN('Y', p3.prom);
+                    setN('S', p3.a1, r); setN('T', p3.a1 !== '' ? (parseFloat(p3.a1)||0)*0.35 : '', r);
+                    setN('U', p3.a2, r); setN('V', p3.a2 !== '' ? (parseFloat(p3.a2)||0)*0.35 : '', r);
+                    setN('W', p3.a3, r); setN('X', p3.a3 !== '' ? (parseFloat(p3.a3)||0)*0.30 : '', r);
+                    setProm('Y', p3.prom, r);
 
                     // Período 4: Z,AA,AB,AC,AD,AE,AF
-                    setN('Z', p4.a1); setN('AA', p4.a1 !== '' ? (parseFloat(p4.a1)||0)*0.35 : '');
-                    setN('AB', p4.a2); setN('AC', p4.a2 !== '' ? (parseFloat(p4.a2)||0)*0.35 : '');
-                    setN('AD', p4.a3); setN('AE', p4.a3 !== '' ? (parseFloat(p4.a3)||0)*0.30 : '');
-                    setN('AF', p4.prom);
+                    setN('Z', p4.a1, r); setN('AA', p4.a1 !== '' ? (parseFloat(p4.a1)||0)*0.35 : '', r);
+                    setN('AB', p4.a2, r); setN('AC', p4.a2 !== '' ? (parseFloat(p4.a2)||0)*0.35 : '', r);
+                    setN('AD', p4.a3, r); setN('AE', p4.a3 !== '' ? (parseFloat(p4.a3)||0)*0.30 : '', r);
+                    setProm('AF', p4.prom, r);
 
-                    // Promedios institucional y final
+                    // Promedios institucional y final (coloreados, enteros)
                     const proms = [p1.prom, p2.prom, p3.prom, p4.prom]
                         .filter(p => p !== '' && p !== null && p !== undefined)
                         .map(p => parseFloat(p) || 0);
                     if (proms.length) {
                         const promInst = proms.reduce((a,b)=>a+b,0) / 4;
-                        setN('AG', promInst);
-                        setN('AH', Math.round(promInst * 10) / 10);
-                        setN('AJ', Math.round(promInst * 10) / 10);
+                        setProm('AG', promInst, r);
+                        setProm('AH', promInst, r);
+                        setProm('AJ', promInst, r);
+                    } else {
+                        aplicarBorde('AG'+r); aplicarBorde('AH'+r); aplicarBorde('AJ'+r);
                     }
                 });
 
@@ -3701,26 +4119,34 @@
                 // ── Descargar el archivo ──
                 const secLimpia    = seccion.replace(/[^a-zA-Z0-9]/g,'_');
                 const gradoLimpio  = grado.replace(/[°\s"]/g,'_').replace(/__+/g,'_').replace(/^_|_$/g,'');
-                const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xls`;
+                const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xlsx`;
+
+                // ── Ancho de columnas (wch = caracteres — SheetJS xlsx lo respeta) ──
+                ws['!cols'] = [];
+                for (let ci = 0; ci < 38; ci++) {
+                    if      (ci === 0) ws['!cols'][ci] = { wch: 4.11 };   // A: Nº
+                    else if (ci === 1) ws['!cols'][ci] = { wch: 9.55 };   // B: NIE
+                    else if (ci === 2) ws['!cols'][ci] = { wch: 36.33 };  // C: Nombre
+                    else if (ci === 3) ws['!cols'][ci] = { wch: 3.89 };   // D: Sexo
+                    else               ws['!cols'][ci] = { wch: 5.30 };   // E–AK: notas ← 5.30 chars exacto
+                }
 
                 if (typeof AndroidPDF !== 'undefined') {
-                    // Android: convertir a base64 y guardar en Notas_Excel/[grado]/
-                    const wbout = XLSX.write(wb, { bookType: 'xls', type: 'base64' });
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64', cellStyles: true });
                     const carpetaNotas = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Notas_Excel/' + gradoLimpio;
                     AndroidPDF.guardarBase64(wbout, nombreArch, carpetaNotas);
                 } else {
-                    // Web: download normal
-                    XLSX.writeFile(wb, nombreArch, { bookType: 'xls', type: 'binary' });
+                    XLSX.writeFile(wb, nombreArch, { bookType: 'xlsx', type: 'binary', cellStyles: true });
                 }
 
                 if (typeof mostrarNotificacion === 'function')
-                    mostrarNotificacion('✓ Plantilla de notas descargada: ' + nombreArch, 'success');
+                    mostrarNotificacion('✓ Notas exportadas: ' + nombreArch, 'success');
             } catch(err) {
                 console.error('Error exportarNotasXLSX:', err);
                 alert('❌ Error al generar el archivo: ' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '📊 Exportar Notas a Excel (.xls)';
+                btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)';
             }
         }
 
@@ -3811,13 +4237,18 @@
                 }).catch(e => console.log('Error enviando observación:', e));
             }
 
-            // Obtener estudiantes en peligro
+            // Obtener estudiantes en peligro (no bloquea la generación del PDF)
             let estudiantesPeligro = [];
             let reprobados = [];
             try {
-                const responsePeligro = await fetch(`${SCRIPT_URL}?tipo=estudiantes_peligro&grado=${grado}&seccion=${seccion}`);
-                estudiantesPeligro = await responsePeligro.json();
-                // Separar en reprobados (>=30) y en peligro (28-29)
+                const peligroPromise = fetch(`${SCRIPT_URL}?tipo=estudiantes_peligro&grado=${grado}&seccion=${seccion}`)
+                    .then(r => r.json()).catch(() => []);
+                // Esperar máximo 1.5 segundos, luego continuar sin ese dato
+                const result = await Promise.race([
+                    peligroPromise,
+                    new Promise(resolve => setTimeout(() => resolve([]), 1500))
+                ]);
+                estudiantesPeligro = result || [];
                 reprobados = estudiantesPeligro.filter(e => e.conteo >= 30);
                 const enPeligro = estudiantesPeligro.filter(e => e.conteo >= 28 && e.conteo < 30);
                 estudiantesPeligro = [...reprobados, ...enPeligro];
@@ -3833,13 +4264,13 @@
             const containerHTML = document.getElementById('pdf-content');
             containerHTML.innerHTML = pdfHtml;
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 150));
 
             const opt = {
                 margin: 15,
                 filename: nombreArchivo,
-                image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: { scale: 1.5, useCORS: true, allowTaint: true, logging: false, imageTimeout: 15000, removeContainer: false },
+                image: { type: 'jpeg', quality: 0.88 },
+                html2canvas: { scale: 1.2, useCORS: true, allowTaint: true, logging: false, imageTimeout: 8000, removeContainer: false },
                 jsPDF: { unit: 'mm', format: 'letter', orientation: orientacion },
                 pagebreak: { mode: ['css', 'legacy'] }
             };
@@ -17536,6 +17967,7 @@
 
         let qrCamaraFrontal = false;
         let qrStream = null;
+        let qrMainCameraId = null;  // deviceId de la cámara principal trasera (no gran angular)
         let qrScanLoop = null;
         let qrEscaneados = new Set();
         let qrEstados = {};
@@ -17747,6 +18179,31 @@
         }
 
         // ── ESCÁNER QR ────────────────────────────────────────────────────────────
+        // Selecciona la cámara trasera principal (mayor resolución, no gran angular)
+        async function obtenerIdCamaraPrincipal() {
+            if (qrMainCameraId) return qrMainCameraId;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoCams = devices.filter(d => d.kind === 'videoinput');
+                // Filtrar traseras: etiquetas que NO digan "front" ni "user" ni "wide"
+                const traseras = videoCams.filter(d => {
+                    const lbl = (d.label || '').toLowerCase();
+                    return !lbl.includes('front') && !lbl.includes('user') &&
+                           !lbl.includes('wide') && !lbl.includes('gran') && !lbl.includes('ultra');
+                });
+                // Preferir la que mencione "main", "back 0", "camera2", o simplemente la primera trasera
+                const principal = traseras.find(d => {
+                    const lbl = (d.label || '').toLowerCase();
+                    return lbl.includes('main') || lbl.includes('back (0)') || lbl.includes('camera2 0');
+                }) || traseras[0] || null;
+                if (principal && principal.deviceId) {
+                    qrMainCameraId = principal.deviceId;
+                    return qrMainCameraId;
+                }
+            } catch(e) {}
+            return null;
+        }
+
         async function iniciarCamaraQR() {
             const video = document.getElementById('qr-video');
             if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
@@ -17758,12 +18215,31 @@
 
             // 4 intentos en orden — del más restrictivo al más genérico
             const modoVideo = qrCamaraFrontal ? 'user' : 'environment';
-            const intentos = [
-                { video: { facingMode: { exact: modoVideo }, width:{ideal:1280,min:640}, height:{ideal:720,min:480}, frameRate:{ideal:30,min:15} } },
-                { video: { facingMode: { ideal: modoVideo }, width:{ideal:1280}, height:{ideal:720} } },
-                { video: { facingMode: modoVideo } },
-                { video: true }
-            ];
+            // Para cámara trasera: intentar primero con deviceId de cámara principal
+            let intentos;
+            if (!qrCamaraFrontal) {
+                const mainId = await obtenerIdCamaraPrincipal();
+                intentos = mainId ? [
+                    { video: { deviceId: { exact: mainId }, width:{ideal:1920,min:1280}, height:{ideal:1080,min:720}, frameRate:{ideal:30} } },
+                    { video: { deviceId: { ideal: mainId }, width:{ideal:1280}, height:{ideal:720} } },
+                    { video: { facingMode: { exact: 'environment' }, width:{ideal:1920,min:1280}, height:{ideal:1080,min:720}, frameRate:{ideal:30} } },
+                    { video: { facingMode: { ideal: 'environment' }, width:{ideal:1280}, height:{ideal:720} } },
+                    { video: { facingMode: 'environment' } },
+                    { video: true }
+                ] : [
+                    { video: { facingMode: { exact: 'environment' }, width:{ideal:1920,min:1280}, height:{ideal:1080,min:720}, frameRate:{ideal:30} } },
+                    { video: { facingMode: { ideal: 'environment' }, width:{ideal:1280}, height:{ideal:720} } },
+                    { video: { facingMode: 'environment' } },
+                    { video: true }
+                ];
+            } else {
+                intentos = [
+                    { video: { facingMode: { exact: 'user' }, width:{ideal:1280,min:640}, height:{ideal:720,min:480} } },
+                    { video: { facingMode: { ideal: 'user' }, width:{ideal:1280}, height:{ideal:720} } },
+                    { video: { facingMode: 'user' } },
+                    { video: true }
+                ];
+            }
 
             let stream = null;
             for (const c of intentos) {
@@ -17821,18 +18297,25 @@
         function iniciarLoopEscaneo() {
             const video = document.getElementById('qr-video');
 
-            // ── OPTIMIZACIÓN: usar resolución reducida para jsQR (más rápido)
-            // 640×480 → 480×360 mantiene aspect ratio y los 3 finder patterns visibles
-            const W_orig = video.videoWidth  || 640;
-            const H_orig = video.videoHeight || 480;
-            const scale = 0.75;  // 75% del tamaño original = procesar 56% menos pixels
+            // Usar resolución completa para mejor detección de QR
+            const W_orig = video.videoWidth  || 1280;
+            const H_orig = video.videoHeight || 720;
+
+            // Canvas principal: resolución reducida al 50% para velocidad
+            const scale = 0.5;
             const W = Math.floor(W_orig * scale);
             const H = Math.floor(H_orig * scale);
             const canvas = document.createElement('canvas');
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
 
-            // Obtener función jsQR (UMD puede exportarla como default o directa)
+            // Canvas secundario a mayor resolución (75%) para QR difíciles
+            const W2 = Math.floor(W_orig * 0.75);
+            const H2 = Math.floor(H_orig * 0.75);
+            const canvas2 = document.createElement('canvas');
+            canvas2.width = W2; canvas2.height = H2;
+            const ctx2 = canvas2.getContext('2d', { willReadFrequently: true, alpha: false });
+
             const _jsQR = typeof jsQR === 'function' ? jsQR
                         : (jsQR && typeof jsQR.default === 'function') ? jsQR.default
                         : null;
@@ -17843,45 +18326,44 @@
             }
 
             let ultimoNie = '', ultimoTime = 0;
-            let frameSkip = 0;  // skip counter para procesar cada N frames
+            let frameCount = 0;
+
+            function aplicarFiltros(imgData) {
+                const d = imgData.data;
+                // Contraste aumentado (60%) + umbralización adaptativa
+                const contrast = 1.6;
+                const factor = (259 * (contrast + 1)) / (259 - contrast);
+                for (let i = 0; i < d.length; i += 4) {
+                    // Convertir a escala de grises primero (mejora lectura)
+                    const gray = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+                    const enhanced = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+                    d[i] = d[i+1] = d[i+2] = enhanced;
+                }
+                return imgData;
+            }
 
             function tick() {
-                // Cámara apagada → detener limpiamente
                 if (!qrStream) return;
 
-                // Video sin datos aún → ceder hilo y reintentar
                 if (video.readyState < 2 || !video.videoWidth) {
                     qrScanLoop = requestAnimationFrame(tick);
                     return;
                 }
 
-                // ── OPTIMIZACIÓN: procesar 1 de cada 2 frames (30fps en lugar de 60fps)
-                frameSkip++;
-                if (frameSkip % 2 !== 0) {
-                    qrScanLoop = requestAnimationFrame(tick);
-                    return;
-                }
+                frameCount++;
 
-                // ── Capturar frame reducido ─────────────────────────────────
+                // ── Intento rápido: 50% resolución, cada frame ──────────────
                 ctx.drawImage(video, 0, 0, W, H);
-
-                // ── OPTIMIZACIÓN: aumentar contraste antes de decodificar ───
-                // Esto ayuda enormemente con QR de baja calidad o mal iluminados
-                const img = ctx.getImageData(0, 0, W, H);
-                const d = img.data;
-                const contrast = 1.3;  // 30% más contraste
-                const factor = (259 * (contrast + 1)) / (259 - contrast);
-                for (let i = 0; i < d.length; i += 4) {
-                    d[i]   = Math.min(255, Math.max(0, factor * (d[i]   - 128) + 128));  // R
-                    d[i+1] = Math.min(255, Math.max(0, factor * (d[i+1] - 128) + 128));  // G
-                    d[i+2] = Math.min(255, Math.max(0, factor * (d[i+2] - 128) + 128));  // B
-                }
-
-                // ── Decodificar QR ─────────────────────────────────────────────
+                const img = aplicarFiltros(ctx.getImageData(0, 0, W, H));
                 let code = null;
-                try {
-                    code = _jsQR(d, W, H, { inversionAttempts: 'attemptBoth' });
-                } catch(e) {}
+                try { code = _jsQR(img.data, W, H, { inversionAttempts: 'attemptBoth' }); } catch(e) {}
+
+                // ── Intento lento: 75% resolución, cada 3 frames si falló ───
+                if (!code && frameCount % 3 === 0) {
+                    ctx2.drawImage(video, 0, 0, W2, H2);
+                    const img2 = aplicarFiltros(ctx2.getImageData(0, 0, W2, H2));
+                    try { code = _jsQR(img2.data, W2, H2, { inversionAttempts: 'dontInvert' }); } catch(e) {}
+                }
 
                 if (code) {
                     const nie = (code.data || '').trim();
@@ -17892,11 +18374,9 @@
                     }
                 }
 
-                // requestAnimationFrame: ~30fps efectivos (cada 2 frames)
                 qrScanLoop = requestAnimationFrame(tick);
             }
 
-            // Arrancar de inmediato — el video ya está listo aquí
             qrScanLoop = requestAnimationFrame(tick);
         }
 
@@ -18252,6 +18732,76 @@
             return true;
         }
 
+
+        // ─── Genera PDF de un informe usando iframe (solución al bug de hoja en blanco) ───
+        // El problema con tmpDiv.innerHTML = fullDoc es que el <style> dentro del <head>
+        // no aplica cuando el <head> está dentro de un <div>. 
+        // Con iframe + srcdoc el browser renderiza el documento completo correctamente.
+        async function _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado) {
+            return new Promise(async (resolve, reject) => {
+                // Crear iframe invisible
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
+                iframe.setAttribute('sandbox', 'allow-same-origin');
+                document.body.appendChild(iframe);
+
+                // Escribir el documento completo en el iframe
+                const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iDoc.open();
+                iDoc.write(htmlDoc);
+                iDoc.close();
+
+                // Esperar a que cargue completamente (imágenes, fuentes)
+                await new Promise(res => {
+                    if (iframe.contentDocument.readyState === 'complete') { res(); return; }
+                    iframe.addEventListener('load', res, { once: true });
+                    setTimeout(res, 1500); // fallback por si no dispara load
+                });
+                await new Promise(res => setTimeout(res, 300)); // pausa extra para render
+
+                const opt = {
+                    margin: [8, 8, 8, 8],
+                    filename: nombreArchivo,
+                    image: { type: 'jpeg', quality: 0.97 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        scrollX: 0, scrollY: 0
+                    },
+                    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+
+                try {
+                    const target = iDoc.body;
+                    if (typeof AndroidPDF !== 'undefined') {
+                        const blob = await html2pdf().set(opt).from(target).outputPdf('blob');
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const base64 = reader.result.split(',')[1];
+                            const gradoLimpio = (grado||'General').replace(/[^a-zA-Z0-9]+/g,'_');
+                            const carpetaInf = (carpetaPDFUri ? carpetaPDFUri+'/' : '') + 'Informes/' + gradoLimpio;
+                            AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInf);
+                            registrarPDFGuardado(nombreArchivo, carpetaInf, grado||'', '', 'informe');
+                            iframe.remove();
+                            resolve();
+                        };
+                        reader.readAsDataURL(blob);
+                    } else {
+                        await html2pdf().set(opt).from(target).save();
+                        registrarPDFGuardado(nombreArchivo, '', grado||'', '', 'informe');
+                        iframe.remove();
+                        resolve();
+                    }
+                } catch(e) {
+                    iframe.remove();
+                    reject(e);
+                }
+            });
+        }
+
         async function generarPDFInforme() {
             const tipo    = window._infTipoActual || (document.getElementById('tipo-documento-informe')||{}).value || 'Informe General';
             const fecha   = (document.getElementById('fecha-informe')||{}).value || '';
@@ -18261,6 +18811,8 @@
             const asunto  = ((document.getElementById('asunto-informe')||{}).value||'').trim();
             const contenido = ((document.getElementById('contenido-informe')||{}).value||'').trim();
             const alumnos   = window.informeAlumnosSeleccionados || [];
+
+            if (tipo === 'Expediente del Alumno') { await generarExpedienteAlumno(); return; }
             if (!docente) { alert('El nombre del docente es obligatorio.'); return; }
             if (!contenido && !asunto) { alert('Complete el asunto o descripción del informe.'); return; }
             const TIPOS_CON_ALUMNOS = ['Acta de Estudiantes','Citatorio de Padres'];
@@ -18268,46 +18820,24 @@
                 alert('Agregue al menos un estudiante para este tipo de documento.');
                 return;
             }
+
             const informe = { tipo, fecha, docente, grado, seccion, asunto, contenido, alumnos };
-            
-            // Generar PDF directamente sin window.open (para que funcione en app Android)
-            const html = _generarHTMLInformeCompleto(informe);
-            const tmpDiv = document.createElement('div');
-            tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
-            tmpDiv.innerHTML = html;
-            document.body.appendChild(tmpDiv);
-            
-            const nombreArchivo = tipo.replace(/[^a-zA-Z0-9]+/g,'_') + '_' + (fecha||'').replace(/-/g,'') + '_' + docente.substring(0,15).replace(/[^a-zA-Z0-9]+/g,'_') + '.pdf';
-            const opt = {
-                margin: [10,10,10,10], filename: nombreArchivo,
-                image: {type:'jpeg',quality:0.95},
-                html2canvas: {scale:2,useCORS:true,logging:false},
-                jsPDF: {unit:'mm',format:'letter',orientation:'portrait'}
-            };
-            
+            const htmlDoc = _generarHTMLInformeCompleto(informe);
+            const nombreArchivo = tipo.replace(/[^a-zA-Z0-9]+/g,'_') + '_' +
+                (fecha||'').replace(/-/g,'') + '_' +
+                docente.substring(0,15).replace(/[^a-zA-Z0-9]+/g,'_') + '.pdf';
+
+            const btn = document.querySelector('[onclick="generarPDFInforme()"]');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
             try {
-                if (typeof AndroidPDF !== 'undefined') {
-                    // Android: guardar en carpeta Informes/
-                    const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
-                    const reader = new FileReader();
-                    reader.onloadend = function() {
-                        const base64 = reader.result.split(',')[1];
-                        const carpetaInformes = carpetaPDFUri ? carpetaPDFUri + '/Informes' : 'Informes';
-                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpetaInformes);
-                        registrarPDFGuardado(nombreArchivo, carpetaInformes, grado, '');
-                    };
-                    reader.readAsDataURL(blob);
-                } else {
-                    // Web: download directo
-                    await html2pdf().set(opt).from(tmpDiv).save();
-                }
+                await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado);
                 guardarInformeEnNube(informe);
-                mostrarNotificacion('✅ Informe generado correctamente.', 'success');
-                cargarHistorialInformes();
+                mostrarNotificacion('✅ Informe PDF generado correctamente.', 'success');
+                setTimeout(cargarHistorialInformes, 1500);
             } catch(e) {
                 alert('Error al generar PDF: ' + (e.message||e));
             } finally {
-                tmpDiv.remove();
+                if (btn) { btn.disabled = false; btn.textContent = '📥 Generar PDF del Informe'; }
             }
         }
 
@@ -18377,14 +18907,163 @@ alumnosHTML +
 '  <div class="firma"><div class="firma-l">Director/a<br><strong>Instituto Nacional<br>de Mercedes Umaña</strong></div></div>' +
 '</div>' +
 '<div class="footer">Instituto Nacional de Mercedes Umaña — '+esc(fechaF)+' | Generado: '+new Date().toLocaleString('es-SV')+'</div>' +
-'<div class="noprint"><button onclick="window.print()" style="margin-top:12px;padding:11px 30px;background:#0C447C;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold;">🖨️ Imprimir / Guardar como PDF</button></div>' +
 '</body></html>';
         }
 
         function generarHTMLInformeParaPDF(data) { return _generarHTMLInformeCompleto(data); }
 
+
+        // ─── Expediente Personal del Alumno ──────────────────────────────────────────
+        async function generarExpedienteAlumno() {
+            const alumnos = window.informeAlumnosSeleccionados || [];
+            if (!alumnos.length) {
+                alert('Agregue al menos un alumno para generar el expediente.');
+                return;
+            }
+            const fecha = (document.getElementById('fecha-informe')||{}).value || new Date().toISOString().slice(0,10);
+            const docente = ((document.getElementById('docente-informe')||{}).value||'').trim() || 'Dirección';
+
+            const btn = document.querySelector('[onclick="generarPDFInforme()"]');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando expediente...'; }
+
+            try {
+                for (const alumno of alumnos) {
+                    // Pedir datos completos a la nube
+                    const params = new URLSearchParams({
+                        tipo: 'detalle_alumno',
+                        nombre: alumno.nombre,
+                        nie: alumno.nie || '',
+                        sexo: alumno.sexo || '',
+                        grado: alumno.grado || '',
+                        seccion: alumno.seccion || '',
+                        fecha: new Date().toLocaleDateString('es-ES')
+                    });
+                    let detalles = { faltas_totales: 0, justificantes: [], permisos: [] };
+                    try {
+                        const res = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+                        detalles = await res.json();
+                    } catch(e) { /* Offline: usar lo que hay */ }
+
+                    const htmlDoc = _generarHTMLExpediente(alumno, detalles, fecha, docente);
+                    const nombreArchivo = 'Expediente_' +
+                        (alumno.nombre||'Alumno').replace(/[^a-zA-Z0-9]+/g,'_').substring(0,20) +
+                        '_' + fecha.replace(/-/g,'') + '.pdf';
+                    await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, alumno.grado||'');
+                }
+                mostrarNotificacion('✅ Expediente(s) generados correctamente.', 'success');
+            } catch(e) {
+                alert('Error generando expediente: ' + (e.message||e));
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '📥 Generar PDF del Informe'; }
+            }
+        }
+
+        function _generarHTMLExpediente(alumno, detalles, fecha, docente) {
+            function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            const faltas = Number(detalles.faltas_totales || detalles.conteo_ausencias || 0);
+            const permisos = Number(detalles.permisos || 0);
+            const justificantes = Array.isArray(detalles.justificantes) ? detalles.justificantes : [];
+            const histAsist = Array.isArray(detalles.historial) ? detalles.historial : [];
+            const fechaF = fecha ? new Date(fecha+'T12:00:00').toLocaleDateString('es-SV',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : '—';
+
+            let estadoColor = '#16a34a', estadoTxt = '✅ REGULAR';
+            if (faltas >= 30) { estadoColor='#dc2626'; estadoTxt='⛔ REPROBADO POR INASISTENCIAS'; }
+            else if (faltas >= 28) { estadoColor='#ca8a04'; estadoTxt='⚠️ EN RIESGO DE REPROBACIÓN'; }
+
+            const justHTML = justificantes.length
+                ? justificantes.map((j,i) => `<tr style="background:${i%2===0?'#f8fafc':'#fff'}">
+                    <td>${j.fecha ? new Date(j.fecha).toLocaleDateString('es-SV') : '—'}</td>
+                    <td>${esc(j.justificante||'Sin descripción')}</td>
+                  </tr>`).join('')
+                : '<tr><td colspan="2" style="text-align:center;color:#94a3b8;">Sin justificantes registrados</td></tr>';
+
+            const histHTML = histAsist.length
+                ? histAsist.slice(0,20).map((h,i) => `<tr style="background:${i%2===0?'#f8fafc':'#fff'}">
+                    <td>${h.fecha||'—'}</td>
+                    <td style="text-align:center;">${h.estado==='presente'?'<span style="color:#16a34a;font-weight:bold;">✓ Presente</span>':h.estado==='permiso'?'<span style="color:#ca8a04;font-weight:bold;">🔑 Permiso</span>':'<span style="color:#dc2626;font-weight:bold;">✗ Ausente</span>'}</td>
+                  </tr>`).join('')
+                : '<tr><td colspan="2" style="text-align:center;color:#94a3b8;">Sin historial disponible</td></tr>';
+
+            return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Expediente — ${esc(alumno.nombre)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5px;background:#fff;max-width:800px;margin:0 auto;}
+.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0C447C;padding-bottom:12px;margin-bottom:16px;gap:8px;}
+.hdr-logo{height:52px;object-fit:contain;}
+.hdr-center{text-align:center;flex:1;}
+.hdr-center h1{font-size:12px;color:#0C447C;text-transform:uppercase;font-weight:800;}
+.hdr-center h2{font-size:10px;color:#475569;margin-top:3px;}
+.badge{display:block;text-align:center;margin-bottom:14px;}
+.badge span{display:inline-block;background:#0C447C;color:#fff;padding:3px 18px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;}
+.perfil{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:12px;}
+.pi label{display:block;font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:2px;}
+.pi span{font-size:13px;color:#1e293b;font-weight:600;}
+.pi.full{grid-column:1/-1;}
+.estado-box{border-radius:8px;padding:10px 14px;margin-bottom:14px;text-align:center;font-weight:700;font-size:14px;color:${estadoColor};background:${estadoColor}22;border:2px solid ${estadoColor};}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.stat{text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:10px;}
+.stat-num{font-size:28px;font-weight:800;display:block;}
+.stat-lbl{font-size:10px;color:#64748b;text-transform:uppercase;}
+.sec{font-weight:700;color:#0C447C;margin:12px 0 6px;font-size:12px;border-left:3px solid #0C447C;padding-left:7px;}
+.tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px;}
+.tbl thead tr{background:#0C447C;color:#fff;}
+.tbl th,.tbl td{padding:6px 9px;border:1px solid #cbd5e1;}
+.firmas{display:flex;gap:50px;justify-content:center;margin-top:40px;}
+.firma{text-align:center;width:180px;}
+.firma-l{border-top:1.5px solid #0C447C;padding-top:6px;font-size:10.5px;color:#334155;line-height:1.5;}
+.footer{text-align:center;margin-top:18px;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:7px;}
+</style></head><body>
+<div class="hdr">
+  <img src="logo3.jpg" class="hdr-logo" alt="INMU" onerror="this.style.visibility='hidden'">
+  <div class="hdr-center">
+    <h1>Instituto Nacional de Mercedes Umaña</h1>
+    <h2>Dirección Nacional de Educación — El Salvador | MINEDUCYT | Código: 11-2530</h2>
+  </div>
+  <img src="logo2.svg" class="hdr-logo" alt="MINED" onerror="this.style.visibility='hidden'">
+</div>
+<div class="badge"><span>EXPEDIENTE PERSONAL DEL ESTUDIANTE</span></div>
+<div class="perfil">
+  <div class="pi full"><label>Nombre completo</label><span>${esc(alumno.nombre||'—')}</span></div>
+  <div class="pi"><label>NIE</label><span>${esc(alumno.nie||'—')}</span></div>
+  <div class="pi"><label>Sexo</label><span>${esc(alumno.sexo||'—')}</span></div>
+  <div class="pi"><label>Grado</label><span>${esc(alumno.grado||'—')}</span></div>
+  <div class="pi"><label>Sección</label><span>${esc(alumno.seccion||'—')}</span></div>
+  <div class="pi"><label>Teléfono</label><span>${esc(alumno.telefono||detalles.telefono||'—')}</span></div>
+  <div class="pi"><label>Fecha del expediente</label><span>${fechaF}</span></div>
+  <div class="pi"><label>Docente responsable</label><span>${esc(docente)}</span></div>
+</div>
+<div class="estado-box">${estadoTxt}</div>
+<div class="stats">
+  <div class="stat"><span class="stat-num" style="color:#dc2626;">${faltas}</span><span class="stat-lbl">Faltas/Ausencias</span></div>
+  <div class="stat"><span class="stat-num" style="color:#ca8a04;">${permisos}</span><span class="stat-lbl">Permisos</span></div>
+  <div class="stat"><span class="stat-num" style="color:#16a34a;">${justificantes.length}</span><span class="stat-lbl">Justificantes</span></div>
+</div>
+<div class="sec">📋 Historial reciente de asistencia</div>
+<table class="tbl"><thead><tr><th>Fecha</th><th style="text-align:center;">Estado</th></tr></thead><tbody>${histHTML}</tbody></table>
+<div class="sec">📝 Justificantes registrados</div>
+<table class="tbl"><thead><tr><th style="width:130px;">Fecha</th><th>Descripción</th></tr></thead><tbody>${justHTML}</tbody></table>
+<div class="firmas">
+  <div class="firma"><div class="firma-l">Docente<br><strong>${esc(docente)}</strong></div></div>
+  <div class="firma"><div class="firma-l">Director/a<br><strong>INMU</strong></div></div>
+</div>
+<div class="footer">Instituto Nacional de Mercedes Umaña — Generado: ${new Date().toLocaleString('es-SV')} | Expediente académico oficial</div>
+</body></html>`;
+        }
+
         function guardarInformeEnNube(data) {
             try {
+                // Guardar en localStorage como respaldo inmediato
+                let localHistorial = [];
+                try { localHistorial = JSON.parse(localStorage.getItem('informes_historial')||'[]'); } catch(e){}
+                const entry = { ...data, alumnos: data.alumnos||[], _ts: new Date().toISOString() };
+                localHistorial.unshift(entry);
+                if (localHistorial.length > 100) localHistorial = localHistorial.slice(0,100);
+                localStorage.setItem('informes_historial', JSON.stringify(localHistorial));
+                // Actualizar en memoria para renderizar de inmediato
+                window.informeHistorial = localHistorial;
+                renderHistorialInformes();
+                // Enviar a la nube (sin await — fire-and-forget)
                 fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo_post: 'guardar_informe', ...data }) });
             } catch (e) {
                 console.log('Error guardando informe:', e);
@@ -18394,14 +19073,35 @@ alumnosHTML +
         async function cargarHistorialInformes() {
             const cont = document.getElementById('historial-informes-list');
             if (!cont) return;
-            try {
-                const response = await fetch(`${SCRIPT_URL}?tipo=historial_informes`);
-                const data = await response.json();
-                window.informeHistorial = Array.isArray(data) ? data : [];
+            // Mostrar localStorage inmediatamente (sin esperar red)
+            let localH = [];
+            try { localH = JSON.parse(localStorage.getItem('informes_historial')||'[]'); } catch(e){}
+            if (localH.length) {
+                window.informeHistorial = localH;
                 renderHistorialInformes();
+            }
+            // Luego intentar fusionar con la nube
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 5000);
+                const response = await fetch(`${SCRIPT_URL}?tipo=historial_informes`, { signal: controller.signal });
+                const data = await response.json();
+                if (Array.isArray(data) && data.length) {
+                    // Fusionar: nube tiene prioridad, deduplicar por tipo+fecha+docente
+                    const combined = [...data];
+                    localH.forEach(loc => {
+                        const exists = combined.some(n => n.tipo===loc.tipo && n.fecha===loc.fecha && n.docente===loc.docente);
+                        if (!exists) combined.push(loc);
+                    });
+                    combined.sort((a,b) => (b._ts||b.fecha||'').localeCompare(a._ts||a.fecha||''));
+                    window.informeHistorial = combined;
+                    localStorage.setItem('informes_historial', JSON.stringify(combined.slice(0,100)));
+                    renderHistorialInformes();
+                }
             } catch (e) {
-                console.log('Error cargando historial:', e);
-                cont.innerHTML = '<div style="color:var(--gray-600); padding:10px;">Error cargando historial.</div>';
+                if (!localH.length) {
+                    cont.innerHTML = '<div style="color:var(--gray-600); padding:10px;">Sin conexión. No hay informes guardados localmente.</div>';
+                }
             }
         }
 
@@ -18436,45 +19136,34 @@ alumnosHTML +
         async function verDetalleInforme(index) {
             const item = window.informeHistorial[index];
             if (!item) return;
-            // Usar la misma función que descargar
-            await descargarInformeHistorial(index);
+            // Mostrar preview en una ventana nueva (solo web) o descargar (Android)
+            if (typeof AndroidPDF !== 'undefined') {
+                await descargarInformeHistorial(index);
+                return;
+            }
+            const htmlDoc = _generarHTMLInformeCompleto(item);
+            const ventana = window.open('', '_blank');
+            if (ventana) {
+                ventana.document.write(htmlDoc);
+                ventana.document.close();
+                setTimeout(() => ventana.print(), 800);
+            } else {
+                // Si el popup fue bloqueado, descargar directamente
+                await descargarInformeHistorial(index);
+            }
         }
 
         async function descargarInformeHistorial(index) {
             const d = (window.informeHistorial||[])[index];
             if (!d) return;
-            const html = _generarHTMLInformeCompleto(d);
-            const tmpDiv = document.createElement('div');
-            tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
-            tmpDiv.innerHTML = html;
-            document.body.appendChild(tmpDiv);
-            
-            const nombreArchivo = (d.tipo||'Informe').replace(/[^a-zA-Z0-9]+/g,'_') + '_' + (d.fecha||'').replace(/-/g,'') + '.pdf';
-            const opt = {
-                margin: [10,10,10,10], filename: nombreArchivo,
-                image: {type:'jpeg',quality:0.95},
-                html2canvas: {scale:2,useCORS:true,logging:false},
-                jsPDF: {unit:'mm',format:'letter',orientation:'portrait'}
-            };
-            
+            const htmlDoc = _generarHTMLInformeCompleto(d);
+            const nombreArchivo = (d.tipo||'Informe').replace(/[^a-zA-Z0-9]+/g,'_') +
+                '_' + (d.fecha||'').replace(/-/g,'') + '.pdf';
             try {
-                if (typeof AndroidPDF !== 'undefined') {
-                    const blob = await html2pdf().set(opt).from(tmpDiv).outputPdf('blob');
-                    const reader = new FileReader();
-                    reader.onloadend = function() {
-                        const base64 = reader.result.split(',')[1];
-                        const gradoLimpio = (d.grado||'').replace(/[^a-zA-Z0-9]+/g,'_') || 'General';
-                        const carpeta = (carpetaPDFUri ? carpetaPDFUri + '/' : '') + 'Informes/' + gradoLimpio;
-                        AndroidPDF.guardarBase64(base64, nombreArchivo, carpeta);
-                    };
-                    reader.readAsDataURL(blob);
-                } else {
-                    await html2pdf().set(opt).from(tmpDiv).save();
-                }
+                await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, d.grado||'');
+                mostrarNotificacion('✅ PDF descargado correctamente.', 'success');
             } catch(e) {
                 alert('Error: ' + (e.message||e));
-            } finally {
-                tmpDiv.remove();
             }
         }
 
@@ -18859,6 +19548,7 @@ alumnosHTML +
     </div>
 
     <style>
+      /* ── Botones de periodo ─────────────────────────── */
       .btn-periodo-sel {
         padding:6px 16px;border:2px solid #2563EB;border-radius:20px;
         background:white;color:#2563EB;font-weight:bold;font-size:13px;
@@ -18866,28 +19556,37 @@ alumnosHTML +
       }
       .btn-periodo-sel.activo { background:#2563EB;color:white; }
       .btn-periodo-sel:hover  { background:#1D4ED8;color:white; }
+
+      /* ── Tabla de notas ─────────────────────────────── */
       #tabla-notas-periodo th {
         background:#1A3A6E;color:white;padding:8px 6px;
         font-size:12px;text-align:center;white-space:nowrap;position:sticky;top:0;
       }
       #tabla-notas-periodo td {
-        padding:5px 4px;text-align:center;border-bottom:1px solid #CBD5E1;border-right:1px solid #E2E8F0;font-size:12px;
+        padding:5px 4px;text-align:center;
+        border-bottom:1px solid #CBD5E1;border-right:1px solid #E2E8F0;font-size:12px;
+        color:#1e293b;
       }
       #tabla-notas-periodo td:last-child { border-right:none; }
       #tabla-notas-periodo th { border-right:1px solid rgba(255,255,255,0.25); }
       #tabla-notas-periodo th:last-child { border-right:none; }
-      /* Separator after Act3 column */
       .sep-col-right { border-right:2px solid #94A3B8 !important; }
       #tabla-notas-periodo tr:nth-child(even) td { background:#F0F7FF; }
       #tabla-notas-periodo tr:hover td { background:#DBEAFE; }
+
+      /* ── Input de notas ─────────────────────────────── */
       .nota-input {
         width:52px;padding:4px;border:1px solid #CBD5E1;border-radius:5px;
         text-align:center;font-size:12px;font-weight:bold;
-        background:#FFFBEB;transition:border 0.2s;
+        background:#FFFBEB;color:#1e293b;transition:border 0.2s;
       }
       .nota-input:focus { outline:none;border-color:#2563EB;background:#EFF6FF; }
+
+      /* ── Columnas especiales ────────────────────────── */
       .col-promedio { background:#ECFDF5 !important;font-weight:bold;color:#065F46; }
-      .col-nombre { text-align:left !important;padding-left:10px !important;white-space:nowrap; }
+      .col-nombre   { text-align:left !important;padding-left:10px !important;white-space:nowrap; }
+
+      /* ── Animación guardar ──────────────────────────── */
       @keyframes parpadeo-guardar {
         0%   { background:linear-gradient(135deg,#1D9E75,#27ae60);box-shadow:0 0 0 0 rgba(39,174,96,0.7);color:white; }
         50%  { background:linear-gradient(135deg,#ffffff,#d4f5e3);box-shadow:0 0 14px 6px rgba(39,174,96,0.5);color:#1D6A38; }
@@ -18896,7 +19595,134 @@ alumnosHTML +
       .btn-guardar-parpadeando {
         animation:parpadeo-guardar 1.1s ease-in-out infinite !important;
       }
+
+      /* ══════════════════════════════════════════════════
+         MODO OSCURO — Modal de notas completo
+      ══════════════════════════════════════════════════ */
+
+      /* Contenedor principal del modal */
+      body.dark #modal-notas-periodo > div {
+        background:#161b22 !important;
+        box-shadow:0 8px 40px rgba(0,0,0,0.7) !important;
+      }
+
+      /* Barra de info (grado / sección / alumnos) */
+      body.dark #notas-modal-info {
+        background:#0d2742 !important;
+        color:#93c5fd !important;
+        border-bottom-color:#1e3a5f !important;
+      }
+
+      /* Barra de selección de periodo */
+      body.dark #modal-notas-periodo [style*="background:#F8FAFC"],
+      body.dark #modal-notas-periodo [style*="background: #F8FAFC"] {
+        background:#0d1117 !important;
+        border-bottom-color:#30363d !important;
+      }
+      body.dark [style*="color:#374151"] { color:#c9d1d9 !important; }
+      body.dark [style*="color:#6B7280"] { color:#8b949e !important; }
+
+      /* Botones de periodo en modo oscuro */
+      body.dark .btn-periodo-sel {
+        background:#21262d !important;
+        color:#58a6ff !important;
+        border-color:#58a6ff !important;
+      }
+      body.dark .btn-periodo-sel.activo {
+        background:#1f4d8c !important;
+        color:#e2f0ff !important;
+        border-color:#58a6ff !important;
+      }
+      body.dark .btn-periodo-sel:hover {
+        background:#1f4d8c !important;
+        color:#e2f0ff !important;
+      }
+
+      /* Cabecera de la tabla */
+      body.dark #tabla-notas-periodo th {
+        background:#0a2a52 !important;
+        color:#e2f0ff !important;
+        border-right-color:rgba(255,255,255,0.15) !important;
+      }
+
+      /* Celdas de datos */
+      body.dark #tabla-notas-periodo td {
+        background:#161b22 !important;
+        color:#c9d1d9 !important;
+        border-bottom-color:#30363d !important;
+        border-right-color:#21262d !important;
+      }
+      body.dark #tabla-notas-periodo tr:nth-child(even) td {
+        background:#1a2433 !important;
+      }
+      body.dark #tabla-notas-periodo tr:hover td {
+        background:#1e3a5f !important;
+      }
+      body.dark .sep-col-right {
+        border-right-color:#58a6ff !important;
+      }
+
+      /* Inputs de notas — VISIBLES sobre fondo oscuro */
+      body.dark .nota-input {
+        background:#fffbeb !important;   /* crema claro — alto contraste */
+        color:#1e293b !important;         /* texto casi negro */
+        border-color:#d97706 !important;  /* borde ámbar para destacar */
+      }
+      body.dark .nota-input:focus {
+        background:#fff !important;
+        border-color:#3b82f6 !important;
+        box-shadow:0 0 0 2px rgba(59,130,246,0.35) !important;
+      }
+      body.dark .nota-input::placeholder { color:#94a3b8 !important; }
+
+      /* Columna promedio */
+      body.dark .col-promedio {
+        background:#052e16 !important;
+        color:#4ade80 !important;
+      }
+
+      /* Números de fila, NIE, nombre, sexo */
+      body.dark #tabla-notas-periodo td.col-nombre { color:#f0f6fc !important; }
+
+      /* Fila de estado (pendiente / guardando / guardado) */
+      body.dark .fila-status { color:#f0f6fc !important; }
+
+      /* Barras inferiores del modal */
+      body.dark #notas-resumen-bar,
+      body.dark #modal-notas-periodo [style*="background:#F0F9FF"],
+      body.dark #modal-notas-periodo [style*="background: #F0F9FF"] {
+        background:#0d2742 !important;
+        border-top-color:#1e3a5f !important;
+        color:#c9d1d9 !important;
+      }
+      body.dark #modal-notas-periodo [style*="background:#F1F5F9"],
+      body.dark #modal-notas-periodo [style*="background: #F1F5F9"] {
+        background:#0d1117 !important;
+        border-top-color:#30363d !important;
+      }
+      body.dark #modal-notas-periodo [style*="background:#F8FAFC"] {
+        background:#0d1117 !important;
+        border-top-color:#30363d !important;
+      }
+
+      /* Textos de resumen */
+      body.dark #resumen-total    { color:#c9d1d9 !important; }
+      body.dark #resumen-aprobados { color:#4ade80 !important; }
+      body.dark #resumen-reprobados { color:#f87171 !important; }
+      body.dark #resumen-promedio  { color:#34d399 !important; }
+      body.dark [style*="color:#1A3A6E"] { color:#93c5fd !important; }
+      body.dark [style*="color:#16A34A"] { color:#4ade80 !important; }
+      body.dark [style*="color:#DC2626"]:not(button) { color:#f87171 !important; }
+      body.dark [style*="color:#1D6A38"] { color:#34d399 !important; }
+
+      /* Nota-badge colores */
+      body.dark .nota-aprobado   { background:#052e16 !important; color:#4ade80 !important; }
+      body.dark .nota-advertencia { background:#422006 !important; color:#fbbf24 !important; }
+      body.dark .nota-reprobado  { background:#2c0a0a !important; color:#f87171 !important; }
     </style>
+
+    <!-- ══ BOTÓN MODO OSCURO FLOTANTE ══ -->
+    <button id="btn-dark-mode" onclick="toggleDarkMode()" title="Cambiar tema claro/oscuro" aria-label="Modo oscuro">🌙</button>
 
 </body>
 
