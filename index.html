@@ -2718,7 +2718,7 @@
             // Enviar a la nube también
             try {
                 fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
-                    body: JSON.stringify({ tipo_post:'config_horario', hora_inicio: inicio, hora_fin: fin }) });
+                    body: JSON.stringify({ tipo_post:'configurar_horario', inicio: inicio, fin: fin }) });
             } catch(e){}
             const s = document.getElementById('config-horario-status');
             if (s) { s.textContent = '✅ Guardado: ' + inicio + ' – ' + fin; }
@@ -18846,67 +18846,177 @@
             const fechaF = data.fecha
                 ? new Date(data.fecha+'T12:00:00').toLocaleDateString('es-SV',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})
                 : '—';
+            const fechaCorta = data.fecha
+                ? new Date(data.fecha+'T12:00:00').toLocaleDateString('es-SV',{day:'2-digit',month:'2-digit',year:'numeric'})
+                : '—';
+
+            // Generar número de documento simulado
+            const numDoc = 'INMU-' + (data.fecha||'').replace(/-/g,'').slice(2) + '-' + Math.floor(Math.random()*900+100);
+
             const alumnosHTML = (Array.isArray(data.alumnos)&&data.alumnos.length)
-                ? '<div class="sec-title">👥 Estudiantes involucrados</div>' +
-                  '<table class="tbl"><thead><tr><th style="width:36px;text-align:center;">#</th><th>Nombre completo</th><th style="width:90px;text-align:center;">NIE</th><th style="width:55px;text-align:center;">Sexo</th></tr></thead><tbody>' +
+                ? '<div class="sec-header"><span class="sec-icon">👥</span>Estudiantes Involucrados</div>' +
+                  '<table class="tbl"><thead><tr><th style="width:38px;text-align:center;">#</th><th>Nombre Completo</th><th style="width:100px;text-align:center;">NIE</th><th style="width:60px;text-align:center;">Sexo</th></tr></thead><tbody>' +
                   data.alumnos.map(function(a,i){
-                    return '<tr style="background:'+(i%2===0?'#f8fafc':'#fff')+'"><td style="text-align:center;">'+(i+1)+'</td><td>'+esc(a.nombre)+'</td><td style="text-align:center;">'+esc(a.nie||'—')+'</td><td style="text-align:center;">'+esc(a.sexo||'—')+'</td></tr>';
+                    return '<tr class="'+(i%2===0?'row-even':'row-odd')+'"><td style="text-align:center;font-weight:700;color:#0C447C;">'+(i+1)+'</td><td style="font-weight:600;">'+esc(a.nombre)+'</td><td style="text-align:center;font-family:monospace;letter-spacing:.5px;">'+esc(a.nie||'—')+'</td><td style="text-align:center;">'+esc(a.sexo||'—')+'</td></tr>';
                   }).join('')+'</tbody></table>' : '';
 
-            // Logo paths relative to the page
             const logo3 = 'logo3.jpg';
             const logo2 = 'logo2.svg';
 
-            return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+esc(data.tipo)+' — INMU</title><style>' +
+            // Color de acento según tipo de documento
+            const tipoColors = {
+                'Informe General':        '#0C447C',
+                'Aviso Grado/Sección':    '#1D6FA8',
+                'Para Director':          '#7C3AED',
+                'Rendimiento Académico':  '#0F7355',
+                'Acta de Estudiantes':    '#B45309',
+                'Solicitud de Permiso':   '#0369A1',
+                'Constancia de Conducta': '#166534',
+                'Citatorio de Padres':    '#9A3412',
+                'Expediente Alumno':      '#374151'
+            };
+            const accentColor = tipoColors[data.tipo] || '#0C447C';
+            const accentLight = accentColor + '18';
+
+            return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+esc(data.tipo)+' — INMU</title>' +
+'<style>' +
+'@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");' +
 '*{box-sizing:border-box;margin:0;padding:0;}' +
-'body{font-family:Arial,sans-serif;padding:28px 36px;color:#1e293b;font-size:13px;background:#fff;max-width:800px;margin:0 auto;}' +
-'.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0C447C;padding-bottom:14px;margin-bottom:20px;gap:10px;}' +
-'.hdr-logo{height:58px;object-fit:contain;}' +
+'body{font-family:Inter,Arial,sans-serif;background:#f1f5f9;color:#1e293b;font-size:13px;padding:24px;}' +
+'.page{background:#fff;max-width:780px;margin:0 auto;border-radius:0;box-shadow:0 4px 32px rgba(0,0,0,0.13);overflow:hidden;}' +
+
+/* Banda superior de color */
+'.top-bar{height:6px;background:linear-gradient(90deg,'+accentColor+','+accentColor+'99,#e2e8f0);}' +
+
+/* Header */
+'.hdr{display:flex;align-items:center;justify-content:space-between;padding:22px 30px 18px;border-bottom:1px solid #e2e8f0;gap:16px;background:#fff;}' +
+'.hdr-logo{height:62px;width:62px;object-fit:contain;flex-shrink:0;}' +
 '.hdr-center{text-align:center;flex:1;}' +
-'.hdr-center h1{font-size:13.5px;color:#0C447C;text-transform:uppercase;font-weight:800;letter-spacing:.4px;}' +
-'.hdr-center h2{font-size:11px;color:#475569;margin-top:4px;font-weight:500;}' +
-'.hdr-center h3{font-size:10px;color:#64748b;margin-top:3px;}' +
-'.badge{display:inline-block;background:#0C447C;color:#fff;padding:4px 20px;border-radius:20px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;}' +
-'.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;}' +
-'.mi label{display:block;font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px;}' +
-'.mi span{font-size:13px;color:#1e293b;font-weight:600;}' +
-'.mi.full{grid-column:1/-1;}' +
-'.sec-title{font-weight:700;color:#0C447C;margin:14px 0 7px;font-size:13px;border-left:3px solid #0C447C;padding-left:8px;}' +
-'.box{border:1px solid #e2e8f0;border-radius:8px;padding:13px;min-height:70px;line-height:1.85;white-space:pre-wrap;font-size:13px;margin-bottom:14px;background:#fff;}' +
-'.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}' +
-'.tbl thead tr{background:#0C447C;color:#fff;}' +
-'.tbl th,.tbl td{padding:7px 10px;border:1px solid #cbd5e1;}' +
-'.firmas{display:flex;gap:60px;justify-content:center;margin-top:55px;}' +
-'.firma{text-align:center;width:200px;}' +
-'.firma-l{border-top:1.5px solid #0C447C;padding-top:7px;font-size:11px;color:#334155;line-height:1.6;}' +
-'.footer{text-align:center;margin-top:24px;font-size:9.5px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px;}' +
-'.noprint{text-align:center;margin-top:18px;}' +
-'@media print{.noprint{display:none!important;}body{padding:10px;}}' +
+'.hdr-inst{font-size:14.5px;color:'+accentColor+';font-weight:800;text-transform:uppercase;letter-spacing:.6px;line-height:1.3;}' +
+'.hdr-sub{font-size:10.5px;color:#64748b;margin-top:4px;font-weight:500;}' +
+'.hdr-code{font-size:9.5px;color:#94a3b8;margin-top:2px;letter-spacing:.4px;}' +
+
+/* Banda de tipo de documento */
+'.doc-type-bar{background:'+accentColor+';padding:10px 30px;display:flex;align-items:center;justify-content:space-between;}' +
+'.doc-type-label{color:#fff;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}' +
+'.doc-num{color:rgba(255,255,255,0.75);font-size:10px;font-family:monospace;letter-spacing:.5px;}' +
+
+/* Contenido interior */
+'.body{padding:24px 30px 28px;}' +
+
+/* Grilla de metadatos */
+'.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:22px;background:#f8fafc;}' +
+'.meta-cell{padding:10px 14px;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;}' +
+'.meta-cell:nth-child(2n){border-right:none;}' +
+'.meta-cell.full{grid-column:1/-1;border-right:none;}' +
+'.meta-cell:last-child,.meta-cell:nth-last-child(2):not(.full){border-bottom:none;}' +
+'.meta-cell:last-child{border-bottom:none;}' +
+'.meta-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}' +
+'.meta-val{font-size:13px;font-weight:600;color:#1e293b;}' +
+'.meta-val.highlight{color:'+accentColor+';font-weight:700;}' +
+
+/* Secciones */
+'.sec-header{display:flex;align-items:center;gap:8px;font-weight:700;color:'+accentColor+';font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid '+accentColor+'30;}' +
+'.sec-icon{font-size:14px;}' +
+
+/* Caja de contenido */
+'.content-box{background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid '+accentColor+';border-radius:0 8px 8px 0;padding:14px 16px;line-height:1.9;white-space:pre-wrap;font-size:13px;color:#334155;margin-bottom:20px;min-height:80px;}' +
+
+/* Tabla de alumnos */
+'.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;}' +
+'.tbl thead tr{background:'+accentColor+';color:#fff;}' +
+'.tbl th{padding:9px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:left;}' +
+'.tbl td{padding:8px 12px;border-bottom:1px solid #f1f5f9;}' +
+'.row-even{background:#f8fafc;}.row-odd{background:#fff;}' +
+'.tbl tbody tr:last-child td{border-bottom:none;}' +
+
+/* Firma */
+'.firmas-wrap{display:flex;gap:40px;justify-content:center;margin-top:40px;padding-top:0;}' +
+'.firma-box{text-align:center;flex:1;max-width:220px;}' +
+'.firma-space{height:44px;}' +
+'.firma-line{border-top:1.5px solid '+accentColor+';padding-top:8px;}' +
+'.firma-cargo{font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}' +
+'.firma-nombre{font-size:12px;font-weight:700;color:#1e293b;line-height:1.4;}' +
+'.firma-inst{font-size:10px;color:#64748b;margin-top:1px;}' +
+
+/* Sello visual */
+'.sello-area{display:flex;align-items:center;justify-content:center;margin-top:4px;}' +
+'.sello{width:64px;height:64px;border-radius:50%;border:2px dashed '+accentColor+'55;display:flex;align-items:center;justify-content:center;color:'+accentColor+'44;font-size:9px;text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.3;}' +
+
+/* Footer */
+'.footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 30px;display:flex;justify-content:space-between;align-items:center;}' +
+'.footer-left{font-size:9px;color:#94a3b8;line-height:1.6;}' +
+'.footer-right{font-size:9px;color:#94a3b8;text-align:right;line-height:1.6;}' +
+'.bottom-bar{height:4px;background:linear-gradient(90deg,'+accentColor+'44,'+accentColor+','+accentColor+'44);}' +
+'@media print{body{background:#fff;padding:0;}.page{box-shadow:none;}.noprint{display:none!important;}}' +
 '</style></head><body>' +
+
+'<div class="page">' +
+'<div class="top-bar"></div>' +
+
+/* Header con logos */
 '<div class="hdr">' +
 '  <img src="'+logo3+'" class="hdr-logo" alt="INMU" onerror="this.style.display=\'none\'">' +
 '  <div class="hdr-center">' +
-'    <h1>Instituto Nacional de Mercedes Umaña</h1>' +
-'    <h2>Dirección Nacional de Educación — El Salvador</h2>' +
-'    <h3>MINEDUCYT | Código: 11-2530</h3>' +
+'    <div class="hdr-inst">Instituto Nacional de Mercedes Umaña</div>' +
+'    <div class="hdr-sub">Dirección Nacional de Educación — El Salvador</div>' +
+'    <div class="hdr-code">MINEDUCYT &nbsp;|&nbsp; Código: 11-2530 &nbsp;|&nbsp; Depto. de Usulután</div>' +
 '  </div>' +
-'  <img src="'+logo2+'" class="hdr-logo" alt="Logo MINED" onerror="this.style.display=\'none\'">' +
+'  <img src="'+logo2+'" class="hdr-logo" alt="MINED" onerror="this.style.display=\'none\'">' +
 '</div>' +
-'<div style="text-align:center;margin-bottom:18px;"><span class="badge">'+esc(data.tipo)+'</span></div>' +
-'<div class="meta">' +
-'  <div class="mi"><label>Fecha</label><span>'+fechaF+'</span></div>' +
-'  <div class="mi"><label>Docente</label><span>'+esc(data.docente||'—')+'</span></div>' +
-(data.grado   ? '<div class="mi"><label>Grado</label><span>'+esc(data.grado)+'</span></div>' : '') +
-(data.seccion ? '<div class="mi"><label>Sección</label><span>'+esc(data.seccion)+'</span></div>' : '') +
-(data.asunto  ? '<div class="mi full"><label>Asunto</label><span>'+esc(data.asunto)+'</span></div>' : '') +
+
+/* Banda tipo de documento */
+'<div class="doc-type-bar">' +
+'  <span class="doc-type-label">'+esc(data.tipo)+'</span>' +
+'  <span class="doc-num">Ref: '+numDoc+'</span>' +
 '</div>' +
-(data.contenido ? '<div class="sec-title">Contenido</div><div class="box">'+esc(data.contenido)+'</div>' : '') +
+
+/* Cuerpo */
+'<div class="body">' +
+
+/* Metadatos */
+'<div class="meta-grid">' +
+'  <div class="meta-cell"><div class="meta-lbl">Fecha</div><div class="meta-val highlight">'+fechaF+'</div></div>' +
+'  <div class="meta-cell"><div class="meta-lbl">Docente</div><div class="meta-val">'+esc(data.docente||'—')+'</div></div>' +
+(data.grado   ? '<div class="meta-cell"><div class="meta-lbl">Grado</div><div class="meta-val">'+esc(data.grado)+'</div></div>' : '') +
+(data.seccion ? '<div class="meta-cell"><div class="meta-lbl">Sección</div><div class="meta-val">'+esc(data.seccion)+'</div></div>' : '') +
+(data.asunto  ? '<div class="meta-cell full"><div class="meta-lbl">Asunto</div><div class="meta-val">'+esc(data.asunto)+'</div></div>' : '') +
+'</div>' +
+
+/* Contenido */
+(data.contenido ? '<div class="sec-header"><span class="sec-icon">📝</span>Descripción / Contenido</div><div class="content-box">'+esc(data.contenido)+'</div>' : '') +
+
+/* Tabla alumnos */
 alumnosHTML +
-'<div class="firmas">' +
-'  <div class="firma"><div class="firma-l">Docente<br><strong>'+esc(data.docente||'')+'</strong></div></div>' +
-'  <div class="firma"><div class="firma-l">Director/a<br><strong>Instituto Nacional<br>de Mercedes Umaña</strong></div></div>' +
+
+/* Firmas */
+'<div class="firmas-wrap">' +
+'  <div class="firma-box">' +
+'    <div class="firma-space"></div>' +
+'    <div class="firma-line">' +
+'      <div class="firma-cargo">Docente</div>' +
+'      <div class="firma-nombre">'+esc(data.docente||'—')+'</div>' +
+'    </div>' +
+'  </div>' +
+'  <div class="firma-box">' +
+'    <div class="sello-area"><div class="sello">Sello<br>Oficial</div></div>' +
+'    <div class="firma-line">' +
+'      <div class="firma-cargo">Director/a</div>' +
+'      <div class="firma-nombre">Instituto Nacional</div>' +
+'      <div class="firma-inst">de Mercedes Umaña</div>' +
+'    </div>' +
+'  </div>' +
 '</div>' +
-'<div class="footer">Instituto Nacional de Mercedes Umaña — '+esc(fechaF)+' | Generado: '+new Date().toLocaleString('es-SV')+'</div>' +
+
+'</div>' + /* /body */
+
+/* Footer */
+'<div class="footer">' +
+'  <div class="footer-left">Instituto Nacional de Mercedes Umaña<br>MINEDUCYT — Código 11-2530, Depto. de Usulután, El Salvador</div>' +
+'  <div class="footer-right">Fecha: '+fechaCorta+'<br>Generado: '+new Date().toLocaleString('es-SV')+'</div>' +
+'</div>' +
+'<div class="bottom-bar"></div>' +
+'</div>' + /* /page */
 '</body></html>';
         }
 
