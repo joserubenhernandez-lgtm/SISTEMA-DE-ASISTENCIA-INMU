@@ -417,7 +417,7 @@
 
         .student-row {
             display: grid;
-            grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px 90px;
+            grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px 80px;
             gap: 10px;
             padding: 12px 15px;
             border-bottom: 1px solid var(--gray-100);
@@ -1071,7 +1071,6 @@
             .filters { grid-template-columns: 1fr 1fr; gap: 12px; }
             .btn-nav { font-size: 11px; padding: 8px 10px; max-width: 200px; }
             .student-row { grid-template-columns: 36px 2fr 1fr 1fr; font-size: 13px; }
-            .student-row > div:nth-child(7), .student-row > div[id^="asist-status"] { display: none; } /* oculta asistencia en tablet */
             .student-row > span:last-child { display: none; } /* oculta teléfono en tablet */
         }
 
@@ -2716,7 +2715,7 @@
         }, false);
 
         
-        function guardarHorarioConfig() {
+                function guardarHorarioConfig() {
             const inicio = (document.getElementById('config-hora-inicio')||{}).value || '06:30';
             const fin    = (document.getElementById('config-hora-fin')||{}).value || '08:00';
             try { localStorage.setItem('horario_asistencia', JSON.stringify({ inicio, fin })); } catch(e){}
@@ -3292,12 +3291,12 @@
             let html = `<div class="student-row student-header">
           <div class="checkbox-wrapper">✓</div>
           <div>Nombre del Estudiante</div>
-          <div>Sexo</div><div>NIE</div><div>Teléfono</div><div>Permiso</div><div style="text-align:center;">Asistencia</div>
+          <div>Sexo</div><div>NIE</div><div>Teléfono</div><div>Permiso</div><div style="text-align:center;">Portal</div>
       </div>`;
 
             alumnosVisibles.forEach((alumno, i) => {
                 const indexReal = inicio + i;
-                const nieStr = String(alumno.nie || '');
+                const nieStr    = String(alumno.nie || '');
                 html += `<div class="student-row" id="row-${indexReal}"
               onclick="toggleFila(event, ${indexReal})"
               ondblclick="iniciarPermisoPorDobleClick(${indexReal}); event.stopPropagation();">
@@ -3307,7 +3306,7 @@
               <div style="font-size: 13px;">${alumno.nie}</div>
               <div style="font-size: 13px;">${alumno.telefono || 'N/A'}</div>
               <button class="permiso-btn" onclick="mostrarModalPermiso(${indexReal}); event.stopPropagation();">Permiso</button>
-              <div id="asist-status-${nieStr}" style="text-align:center;font-size:11px;font-weight:700;padding:4px 0;" title="Sin sincronizar">—</div>
+              <div id="asist-portal-${nieStr}" style="text-align:center;font-size:11px;font-weight:600;color:var(--gray-600);" title="Presiona Sincronizar Asistencia">—</div>
           </div>`;
             });
             contenedor.innerHTML = html;
@@ -3564,13 +3563,39 @@
         }
 
         // ════════════════════════════════════════════════════
-        // SINCRONIZAR ASISTENCIA DE ALUMNOS (index2.html)
-        // Consulta asistencia_diaria_grado y pinta verde/rojo
+        // SINCRONIZAR ASISTENCIA PORTAL (index2) → columna Portal
+        // Consulta asistencia_diaria_grado en el GAS y pinta
+        // verde/rojo cada fila según si el alumno marcó hoy
         // ════════════════════════════════════════════════════
+        // ─── Helper: petición GET al GAS con JSONP primario y fetch como fallback ───
+        function gasGet(url, timeoutMs) {
+            timeoutMs = timeoutMs || 15000;
+            // Intento 1: JSONP puro (sin CORS)
+            const jsonp = new Promise((resolve, reject) => {
+                const cb = '__gas_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                const s  = document.createElement('script');
+                let done = false;
+                const cleanup = () => { if (!done) { done = true; delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); } };
+                const timer = setTimeout(() => { cleanup(); reject(new Error('jsonp_timeout')); }, timeoutMs);
+                window[cb] = function(data) { clearTimeout(timer); cleanup(); resolve(data); };
+                s.onerror = function() { clearTimeout(timer); cleanup(); reject(new Error('jsonp_error')); };
+                s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+                document.head.appendChild(s);
+            });
+            // Intento 2: fetch directo (funciona si el navegador/red lo permite)
+            const direct = fetch(url, { redirect: 'follow', cache: 'no-cache' })
+                .then(r => { if (!r.ok) throw new Error('http_' + r.status); return r.json(); });
+            // Intento 3: proxy CORS público como último recurso
+            const proxy = fetch('https://corsproxy.io/?' + encodeURIComponent(url), { cache: 'no-cache' })
+                .then(r => { if (!r.ok) throw new Error('proxy_' + r.status); return r.json(); });
+            // Gana el primero que responda correctamente
+            return Promise.any([jsonp, direct, proxy]);
+        }
+
         async function sincronizarAsistenciaAlumnos() {
-            const btn = document.getElementById('btn-sync-asist');
-            const grado   = document.getElementById('grado-select')?.value || '';
-            const seccion = document.getElementById('seccion-select')?.value || '';
+            const btn     = document.getElementById('btn-sync-asist');
+            const grado   = (document.getElementById('grado-select')?.value   || '').trim();
+            const seccion = (document.getElementById('seccion-select')?.value || '').trim();
 
             if (!grado || !seccion) {
                 mostrarNotificacion('Selecciona un grado y sección primero.', 'warning'); return;
@@ -3579,70 +3604,45 @@
                 mostrarNotificacion('No hay alumnos cargados.', 'warning'); return;
             }
 
-            if (btn) { btn.textContent = '⏳ Sincronizando...'; btn.style.opacity = '0.6'; }
+            if (btn) { btn.textContent = '⏳ Sincronizando...'; btn.style.opacity = '0.6'; btn.disabled = true; }
 
+            const url = `${SCRIPT_URL}?tipo=asistencia_diaria_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`;
+
+            let mapa = {};
             try {
-                const url = `${SCRIPT_URL}?tipo=asistencia_diaria_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`;
-                let mapa = {};
-
-                // Fetch con fallback JSONP
-                try {
-                    const r = await Promise.race([
-                        fetch(url, { redirect:'follow' }).then(r => r.json()),
-                        new Promise((res, rej) => {
-                            const cb = '__scb_' + Math.random().toString(36).slice(2);
-                            const s = document.createElement('script');
-                            const t = setTimeout(() => { delete window[cb]; s.remove(); rej(new Error('timeout')); }, 10000);
-                            window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); res(d); };
-                            s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); rej(new Error('error')); };
-                            s.src = url + '&callback=' + cb;
-                            document.head.appendChild(s);
-                        })
-                    ]);
-                    mapa = r || {};
-                } catch(e) {
-                    mostrarNotificacion('❌ No se pudo conectar al servidor.', 'warning');
-                    if (btn) { btn.innerHTML = '📡 Sincronizar Asistencia'; btn.style.opacity = '1'; }
-                    return;
-                }
-
-                // Pintar cada alumno en la columna Asistencia
-                alumnosFiltrados.forEach(alumno => {
-                    const nieStr = String(alumno.nie || '');
-                    const el = document.getElementById('asist-status-' + nieStr);
-                    if (!el) return;
-                    const registro = mapa[nieStr];
-                    if (registro) {
-                        const estado = registro.estado || 'presente';
-                        const hora   = registro.hora   || '';
-                        const esPermiso = estado === 'permiso';
-                        el.style.color      = esPermiso ? '#d97706' : '#16a34a';
-                        el.style.background = esPermiso ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
-                        el.style.borderRadius = '6px';
-                        el.style.padding    = '3px 6px';
-                        el.innerHTML = esPermiso
-                            ? `⚠️ Permiso${hora ? '<br><span style="font-weight:400;font-size:10px;">'+hora+'</span>' : ''}`
-                            : `✅ Marcó${hora ? '<br><span style="font-weight:400;font-size:10px;">'+hora+'</span>' : ''}`;
-                        el.title = `Estado: ${estado}${hora ? ' · ' + hora : ''}`;
-                    } else {
-                        el.style.color      = '#dc2626';
-                        el.style.background = 'rgba(239,68,68,0.1)';
-                        el.style.borderRadius = '6px';
-                        el.style.padding    = '3px 6px';
-                        el.innerHTML        = '🔴 Sin marcar';
-                        el.title            = 'No ha marcado asistencia hoy';
-                    }
-                });
-
-                const total    = alumnosFiltrados.length;
-                const marcados = Object.keys(mapa).length;
-                mostrarNotificacion(`📡 Sincronizado: ${marcados} de ${total} alumnos marcaron hoy.`, 'success', 4000);
-
-            } catch(e) {
-                mostrarNotificacion('❌ Error al sincronizar.', 'warning');
-            } finally {
-                if (btn) { btn.innerHTML = '📡 Sincronizar Asistencia'; btn.style.opacity = '1'; }
+                mapa = await gasGet(url, 15000) || {};
+            } catch(err) {
+                mostrarNotificacion('❌ No se pudo conectar al servidor. Verifica tu conexión o que el Script esté desplegado como "Cualquier persona".', 'warning', 5000);
+                if (btn) { btn.textContent = '📡 Sincronizar Asistencia'; btn.style.opacity = '1'; btn.disabled = false; }
+                return;
             }
+
+            // Pintar indicador por NIE en columna Portal
+            let marcados = 0;
+            alumnosFiltrados.forEach(alumno => {
+                const nieStr = String(alumno.nie || '').trim();
+                const el = document.getElementById('asist-portal-' + nieStr);
+                if (!el) return;
+                const reg = mapa[nieStr];
+                if (reg) {
+                    marcados++;
+                    const hora = reg.hora || '';
+                    const esP  = reg.estado === 'permiso';
+                    el.style.cssText = `text-align:center;font-size:11px;font-weight:700;padding:2px 5px;border-radius:6px;` +
+                        (esP ? 'color:#92400e;background:#fef3c7;' : 'color:#166534;background:#dcfce7;');
+                    el.innerHTML = esP
+                        ? `⚠️ Permiso${hora ? '<br><small style="font-weight:400">' + hora + '</small>' : ''}`
+                        : `✅ Marcó${hora ? '<br><small style="font-weight:400">' + hora + '</small>' : ''}`;
+                    el.title = `Estado: ${reg.estado}${hora ? ' · ' + hora : ''}`;
+                } else {
+                    el.style.cssText = 'text-align:center;font-size:11px;font-weight:700;padding:2px 5px;border-radius:6px;color:#991b1b;background:#fee2e2;';
+                    el.textContent = '🔴 No marcó';
+                    el.title       = 'No ha marcado asistencia hoy en el portal';
+                }
+            });
+
+            mostrarNotificacion(`📡 Sincronizado — ${marcados} de ${alumnosFiltrados.length} marcaron en portal hoy.`, 'success', 4000);
+            if (btn) { btn.textContent = '📡 Sincronizar Asistencia'; btn.style.opacity = '1'; btn.disabled = false; }
         }
 
         function mostrarModalPermiso(index) {
