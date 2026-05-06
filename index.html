@@ -1902,36 +1902,35 @@
                         </div>
 
                         <!-- Horario de asistencia -->
-                        <div style="background:white;padding:15px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gray-100);">
-                            <label style="color:var(--gray-900);font-size:14px;display:block;margin-bottom:8px;">⏰ Horario de marcado de asistencia</label>
-                            <p style="font-size:11px;color:var(--gray-600);margin-bottom:10px;">Fuera de este rango, el sistema marcará automáticamente como ausente.</p>
-                            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <div style="background:white;padding:18px;border-radius:10px;margin-bottom:12px;border:1.5px solid var(--gray-100);">
+                            <label style="color:var(--gray-900);font-size:14px;font-weight:700;display:block;margin-bottom:4px;">⏰ Horario de Marcado de Asistencia</label>
+                            <p style="font-size:11.5px;color:var(--gray-600);margin-bottom:14px;">Fuera de este rango, el sistema marcará automáticamente como ausente.</p>
+                            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
                                 <div>
-                                    <label style="font-size:11px;color:var(--gray-600);">Desde:</label>
+                                    <label style="font-size:10px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Desde:</label>
                                     <input type="time" id="config-hora-inicio" value="06:30"
-                                        style="padding:8px;border:1px solid var(--gray-100);border-radius:6px;font-size:13px;"
-                                        onchange="guardarHorarioConfig()">
+                                        style="padding:10px 12px;border:1.5px solid var(--gray-100);border-radius:8px;font-size:15px;font-weight:600;background:var(--gray-50);">
                                 </div>
                                 <div>
-                                    <label style="font-size:11px;color:var(--gray-600);">Hasta:</label>
+                                    <label style="font-size:10px;font-weight:700;color:var(--gray-600);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Hasta:</label>
                                     <input type="time" id="config-hora-fin" value="08:00"
-                                        style="padding:8px;border:1px solid var(--gray-100);border-radius:6px;font-size:13px;"
-                                        onchange="guardarHorarioConfig()">
+                                        style="padding:10px 12px;border:1.5px solid var(--gray-100);border-radius:8px;font-size:15px;font-weight:600;background:var(--gray-50);">
                                 </div>
                                 <button onclick="guardarHorarioConfig()"
-                                    style="padding:8px 14px;background:var(--blue-600);color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">Guardar</button>
+                                    style="padding:10px 20px;background:var(--blue-600);color:white;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;height:42px;">💾 Guardar</button>
                             </div>
-                            <p id="config-horario-status" style="font-size:11px;color:var(--green-600);margin-top:6px;"></p>
+                            <div id="config-horario-status" style="display:none;margin-top:10px;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:600;"></div>
                         </div>
 
                         <!-- Modo alumno -->
-                        <div style="background:white;padding:15px;border-radius:8px;margin-bottom:12px;border:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                                <label style="color:var(--gray-900);font-size:14px;">🎒 Acceso de Alumnos</label>
-                                <p style="font-size:12px;color:var(--gray-600);margin:0;">Permite que alumnos marquen asistencia desde <strong>index2.html</strong>. Si se desactiva, solo docentes pueden usar el sistema.</p>
+                        <div id="bloque-acceso-alumnos" style="background:white;padding:18px;border-radius:10px;margin-bottom:12px;border:1.5px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                            <div style="flex:1;">
+                                <label style="color:var(--gray-900);font-size:14px;font-weight:700;display:block;margin-bottom:3px;">🎒 Acceso de Alumnos</label>
+                                <p style="font-size:12px;color:var(--gray-600);margin:0 0 6px;">Permite que alumnos marquen asistencia desde <strong>index2.html</strong>. Si se desactiva, solo docentes pueden usar el sistema.</p>
+                                <div id="acceso-estado-texto" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:inline-block;"></div>
                             </div>
                             <button id="btn-toggle-alumno" onclick="toggleModoAlumno()"
-                                style="padding:10px 15px;border-radius:8px;background:var(--green-600);color:white;font-weight:bold;border:none;cursor:pointer;white-space:nowrap;margin-left:10px;">
+                                style="padding:12px 18px;border-radius:10px;background:var(--green-600);color:white;font-weight:800;border:none;cursor:pointer;white-space:nowrap;font-size:14px;min-width:120px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
                                 ✅ Activo
                             </button>
                         </div>
@@ -2727,18 +2726,27 @@
                 : (function(){ try { navigator.app.exitApp(); } catch(_){ history.back(); } })();
         }, false);
 
-        
         function guardarHorarioConfig() {
             const inicio = (document.getElementById('config-hora-inicio')||{}).value || '06:30';
             const fin    = (document.getElementById('config-hora-fin')||{}).value || '08:00';
+            // Guardar en localStorage (clave compartida con index2.html)
             try { localStorage.setItem('horario_asistencia', JSON.stringify({ inicio, fin })); } catch(e){}
-            // Enviar a la nube también
+            // Enviar a la nube
             try {
                 fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
                     body: JSON.stringify({ tipo_post:'configurar_horario', inicio: inicio, fin: fin }) });
             } catch(e){}
+            // Feedback visual mejorado
             const s = document.getElementById('config-horario-status');
-            if (s) { s.textContent = '✅ Guardado: ' + inicio + ' – ' + fin; }
+            if (s) {
+                s.style.display = 'block';
+                s.style.background = '#dcfce7';
+                s.style.color = '#166534';
+                s.style.border = '1px solid #86efac';
+                s.innerHTML = '✅ Guardado correctamente: <strong>' + inicio + ' – ' + fin + '</strong><br><span style="font-weight:400;font-size:11px;opacity:.8;">Los alumnos verán este horario en el portal.</span>';
+                clearTimeout(s._tid);
+                s._tid = setTimeout(() => { s.style.display = 'none'; }, 5000);
+            }
         }
 
         function cargarHorarioConfig() {
@@ -2748,6 +2756,15 @@
                     document.getElementById('config-hora-inicio').value = h.inicio;
                 if (h.fin && document.getElementById('config-hora-fin'))
                     document.getElementById('config-hora-fin').value = h.fin;
+                // Mostrar el horario guardado
+                const s = document.getElementById('config-horario-status');
+                if (s && h.inicio && h.fin) {
+                    s.style.display = 'block';
+                    s.style.background = '#eff6ff';
+                    s.style.color = '#1d4ed8';
+                    s.style.border = '1px solid #bfdbfe';
+                    s.innerHTML = '📋 Horario actual: <strong>' + h.inicio + ' – ' + h.fin + '</strong>';
+                }
             } catch(e){}
         }
 
@@ -2755,21 +2772,38 @@
             const activo = localStorage.getItem('alumno_acceso') !== 'false';
             const nuevoEstado = !activo;
             localStorage.setItem('alumno_acceso', nuevoEstado ? 'true' : 'false');
+            // Enviar al servidor
+            try {
+                fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
+                    body: JSON.stringify({ tipo_post:'toggle_modo_alumno', activo: nuevoEstado }) });
+            } catch(e){}
             const btn = document.getElementById('btn-toggle-alumno');
             if (btn) {
                 btn.textContent = nuevoEstado ? '✅ Activo' : '🚫 Desactivado';
-                btn.style.background = nuevoEstado ? 'var(--green-600)' : 'var(--red-600)';
-            }
-            mostrarNotificacion(nuevoEstado ? '✅ Acceso de alumnos activado.' : '🚫 Acceso de alumnos desactivado.', 'success');
+            _actualizarBtnAlumno(nuevoEstado);
+            mostrarNotificacion(nuevoEstado ? '✅ Acceso de alumnos activado — el portal index2.html está disponible.' : '🚫 Acceso de alumnos desactivado — el portal index2.html está bloqueado.', nuevoEstado ? 'success' : 'error', 4000);
         }
 
         function iniciarConfigUI() {
             cargarHorarioConfig();
-            const activo = localStorage.getItem('alumno_acceso') !== 'false';
-            const btn = document.getElementById('btn-toggle-alumno');
+            _actualizarBtnAlumno(localStorage.getItem('alumno_acceso') !== 'false');
+        }
+
+        function _actualizarBtnAlumno(activo) {
+            const btn  = document.getElementById('btn-toggle-alumno');
+            const txt  = document.getElementById('acceso-estado-texto');
+            const bloque = document.getElementById('bloque-acceso-alumnos');
             if (btn) {
-                btn.textContent = activo ? '✅ Activo' : '🚫 Desactivado';
-                btn.style.background = activo ? 'var(--green-600)' : 'var(--red-600)';
+                btn.textContent  = activo ? '✅ Activo' : '🚫 Desactivado';
+                btn.style.background = activo ? '#16a34a' : '#dc2626';
+            }
+            if (txt) {
+                txt.textContent = activo ? '🟢 El portal de alumnos está ACTIVO' : '🔴 El portal de alumnos está DESACTIVADO';
+                txt.style.background = activo ? '#dcfce7' : '#fee2e2';
+                txt.style.color      = activo ? '#166534' : '#991b1b';
+            }
+            if (bloque) {
+                bloque.style.borderColor = activo ? '#86efac' : '#fca5a5';
             }
         }
 
@@ -18846,39 +18880,58 @@
         // Con iframe + srcdoc el browser renderiza el documento completo correctamente.
         async function _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado) {
             return new Promise(async (resolve, reject) => {
-                // Crear iframe invisible
+                // Crear iframe oculto con dimensiones exactas de carta
                 const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
-                iframe.setAttribute('sandbox', 'allow-same-origin');
+                iframe.style.cssText = [
+                    'position:fixed', 'left:-9999px', 'top:0',
+                    'width:816px',   // 8.5 pulgadas × 96 dpi
+                    'height:1056px', // 11 pulgadas × 96 dpi
+                    'border:none', 'visibility:hidden', 'background:white'
+                ].join(';');
                 document.body.appendChild(iframe);
 
-                // Escribir el documento completo en el iframe
                 const iDoc = iframe.contentDocument || iframe.contentWindow.document;
                 iDoc.open();
                 iDoc.write(htmlDoc);
                 iDoc.close();
 
-                // Esperar a que cargue completamente (imágenes, fuentes)
+                // Esperar carga completa + fuentes + imágenes
                 await new Promise(res => {
-                    if (iframe.contentDocument.readyState === 'complete') { res(); return; }
-                    iframe.addEventListener('load', res, { once: true });
-                    setTimeout(res, 1500); // fallback por si no dispara load
+                    const done = () => res();
+                    if (iDoc.readyState === 'complete') { setTimeout(done, 800); return; }
+                    iframe.addEventListener('load', () => setTimeout(done, 800), { once: true });
+                    setTimeout(done, 2500);
                 });
-                await new Promise(res => setTimeout(res, 300)); // pausa extra para render
+
+                // Forzar que el body del iframe sea blanco y sin overflow
+                try {
+                    iDoc.body.style.cssText += ';background:#fff !important;overflow:hidden;';
+                    // Ocultar todos los botones de imprimir/noprint dentro del PDF
+                    iDoc.querySelectorAll('.noprint,[class*="noprint"]').forEach(e => e.style.display='none');
+                } catch(_) {}
 
                 const opt = {
-                    margin: [8, 8, 8, 8],
+                    margin:   [0, 0, 0, 0],
                     filename: nombreArchivo,
-                    image: { type: 'jpeg', quality: 0.97 },
+                    image:    { type: 'jpeg', quality: 0.98 },
                     html2canvas: {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        logging: false,
-                        scrollX: 0, scrollY: 0
+                        scale:       2.5,          // Alta resolución
+                        useCORS:     true,
+                        allowTaint:  true,
+                        logging:     false,
+                        scrollX:     0,
+                        scrollY:     0,
+                        windowWidth: 816,
+                        backgroundColor: '#ffffff',
+                        imageTimeout: 10000,
                     },
-                    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-                    pagebreak: { mode: ['css', 'legacy'] }
+                    jsPDF: {
+                        unit:        'mm',
+                        format:      'letter',
+                        orientation: 'portrait',
+                        compress:    true,
+                    },
+                    pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.no-break'] }
                 };
 
                 try {
@@ -18987,89 +19040,87 @@
 
             return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+esc(data.tipo)+' — INMU</title>' +
 '<style>' +
-'@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");' +
 '*{box-sizing:border-box;margin:0;padding:0;}' +
-'body{font-family:Inter,Arial,sans-serif;background:#f1f5f9;color:#1e293b;font-size:13px;padding:24px;}' +
-'.page{background:#fff;max-width:780px;margin:0 auto;border-radius:0;box-shadow:0 4px 32px rgba(0,0,0,0.13);overflow:hidden;}' +
+'body{font-family:Arial,Helvetica,sans-serif;background:#ffffff;color:#1e293b;font-size:13px;padding:20px;}' +
+'.page{background:#fff;max-width:760px;margin:0 auto;overflow:hidden;}' +
 
 /* Banda superior de color */
-'.top-bar{height:6px;background:linear-gradient(90deg,'+accentColor+','+accentColor+'99,#e2e8f0);}' +
+'.top-bar{height:7px;background:'+accentColor+';}' +
 
 /* Header */
-'.hdr{display:flex;align-items:center;justify-content:space-between;padding:22px 30px 18px;border-bottom:1px solid #e2e8f0;gap:16px;background:#fff;}' +
-'.hdr-logo{height:62px;width:62px;object-fit:contain;flex-shrink:0;}' +
+'.hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 28px 16px;border-bottom:2px solid '+accentColor+';gap:16px;background:#fff;}' +
+'.hdr-logo{height:60px;width:60px;object-fit:contain;flex-shrink:0;}' +
 '.hdr-center{text-align:center;flex:1;}' +
-'.hdr-inst{font-size:14.5px;color:'+accentColor+';font-weight:800;text-transform:uppercase;letter-spacing:.6px;line-height:1.3;}' +
-'.hdr-sub{font-size:10.5px;color:#64748b;margin-top:4px;font-weight:500;}' +
-'.hdr-code{font-size:9.5px;color:#94a3b8;margin-top:2px;letter-spacing:.4px;}' +
+'.hdr-inst{font-size:14px;color:'+accentColor+';font-weight:900;text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}' +
+'.hdr-sub{font-size:10px;color:#64748b;margin-top:4px;font-weight:700;}' +
+'.hdr-code{font-size:9px;color:#94a3b8;margin-top:2px;letter-spacing:.3px;}' +
 
 /* Banda de tipo de documento */
-'.doc-type-bar{background:'+accentColor+';padding:10px 30px;display:flex;align-items:center;justify-content:space-between;}' +
-'.doc-type-label{color:#fff;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}' +
-'.doc-num{color:rgba(255,255,255,0.75);font-size:10px;font-family:monospace;letter-spacing:.5px;}' +
+'.doc-type-bar{background:'+accentColor+';padding:10px 28px;display:flex;align-items:center;justify-content:space-between;}' +
+'.doc-type-label{color:#ffffff;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}' +
+'.doc-num{color:#ffffff;opacity:.8;font-size:10px;font-family:monospace;letter-spacing:.5px;}' +
 
 /* Contenido interior */
-'.body{padding:24px 30px 28px;}' +
+'.body{padding:20px 28px 24px;}' +
 
 /* Grilla de metadatos */
-'.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:22px;background:#f8fafc;}' +
-'.meta-cell{padding:10px 14px;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;}' +
+'.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #cbd5e1;overflow:hidden;margin-bottom:20px;background:#f8fafc;}' +
+'.meta-cell{padding:10px 14px;border-right:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;}' +
 '.meta-cell:nth-child(2n){border-right:none;}' +
 '.meta-cell.full{grid-column:1/-1;border-right:none;}' +
 '.meta-cell:last-child,.meta-cell:nth-last-child(2):not(.full){border-bottom:none;}' +
 '.meta-cell:last-child{border-bottom:none;}' +
 '.meta-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}' +
-'.meta-val{font-size:13px;font-weight:600;color:#1e293b;}' +
-'.meta-val.highlight{color:'+accentColor+';font-weight:700;}' +
+'.meta-val{font-size:13px;font-weight:700;color:#1e293b;}' +
+'.meta-val.highlight{color:'+accentColor+';font-weight:900;}' +
 
 /* Secciones */
-'.sec-header{display:flex;align-items:center;gap:8px;font-weight:700;color:'+accentColor+';font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid '+accentColor+'30;}' +
-'.sec-icon{font-size:14px;}' +
+'.sec-header{font-weight:900;color:'+accentColor+';font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid '+accentColor+';}' +
 
 /* Caja de contenido */
-'.content-box{background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid '+accentColor+';border-radius:0 8px 8px 0;padding:14px 16px;line-height:1.9;white-space:pre-wrap;font-size:13px;color:#334155;margin-bottom:20px;min-height:80px;}' +
+'.content-box{background:#f8fafc;border:1px solid #cbd5e1;border-left:5px solid '+accentColor+';padding:14px 16px;line-height:1.8;white-space:pre-wrap;font-size:13px;color:#334155;margin-bottom:18px;min-height:70px;}' +
 
 /* Tabla de alumnos */
-'.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;}' +
-'.tbl thead tr{background:'+accentColor+';color:#fff;}' +
-'.tbl th{padding:9px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:left;}' +
-'.tbl td{padding:8px 12px;border-bottom:1px solid #f1f5f9;}' +
-'.row-even{background:#f8fafc;}.row-odd{background:#fff;}' +
+'.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px;border:1px solid #cbd5e1;}' +
+'.tbl thead tr{background:'+accentColor+';}' +
+'.tbl th{padding:9px 12px;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;color:#ffffff;}' +
+'.tbl td{padding:8px 12px;border-bottom:1px solid #e2e8f0;color:#1e293b;}' +
+'.row-even{background:#f8fafc;}.row-odd{background:#ffffff;}' +
 '.tbl tbody tr:last-child td{border-bottom:none;}' +
 
 /* Firma */
-'.firmas-wrap{display:flex;gap:40px;justify-content:center;margin-top:40px;padding-top:0;}' +
+'.firmas-wrap{display:flex;gap:40px;justify-content:center;margin-top:44px;}' +
 '.firma-box{text-align:center;flex:1;max-width:220px;}' +
-'.firma-space{height:44px;}' +
-'.firma-line{border-top:1.5px solid '+accentColor+';padding-top:8px;}' +
-'.firma-cargo{font-size:9.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}' +
+'.firma-space{height:48px;}' +
+'.firma-line{border-top:2px solid '+accentColor+';padding-top:8px;}' +
+'.firma-cargo{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}' +
 '.firma-nombre{font-size:12px;font-weight:700;color:#1e293b;line-height:1.4;}' +
 '.firma-inst{font-size:10px;color:#64748b;margin-top:1px;}' +
 
 /* Sello visual */
 '.sello-area{display:flex;align-items:center;justify-content:center;margin-top:4px;}' +
-'.sello{width:64px;height:64px;border-radius:50%;border:2px dashed '+accentColor+'55;display:flex;align-items:center;justify-content:center;color:'+accentColor+'44;font-size:9px;text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.3;}' +
+'.sello{width:64px;height:64px;border-radius:50%;border:2px dashed #94a3b8;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:8.5px;text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.3;}' +
 
 /* Footer */
-'.footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 30px;display:flex;justify-content:space-between;align-items:center;}' +
-'.footer-left{font-size:9px;color:#94a3b8;line-height:1.6;}' +
-'.footer-right{font-size:9px;color:#94a3b8;text-align:right;line-height:1.6;}' +
-'.bottom-bar{height:4px;background:linear-gradient(90deg,'+accentColor+'44,'+accentColor+','+accentColor+'44);}' +
-'@media print{body{background:#fff;padding:0;}.page{box-shadow:none;}.noprint{display:none!important;}}' +
+'.footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:10px 28px;display:flex;justify-content:space-between;align-items:center;margin-top:20px;}' +
+'.footer-left{font-size:8.5px;color:#94a3b8;line-height:1.6;}' +
+'.footer-right{font-size:8.5px;color:#94a3b8;text-align:right;line-height:1.6;}' +
+'.bottom-bar{height:5px;background:'+accentColor+';}' +
+'@media print{body{background:#fff;padding:0;}.noprint{display:none!important;}}' +
 '</style></head><body>' +
 
 '<div class="page">' +
 '<div class="top-bar"></div>' +
 
-/* Header con logos */
+/* Header con logos - usar URLs absolutas de GitHub Pages */
 '<div class="hdr">' +
-'  <img src="'+logo3+'" class="hdr-logo" alt="INMU" onerror="this.style.display=\'none\'">' +
+'  <img src="https://sitioweb001.github.io/logo3.jpg" class="hdr-logo" alt="INMU" onerror="this.style.display=\'none\'">' +
 '  <div class="hdr-center">' +
 '    <div class="hdr-inst">Instituto Nacional de Mercedes Umaña</div>' +
 '    <div class="hdr-sub">Dirección Nacional de Educación — El Salvador</div>' +
 '    <div class="hdr-code">MINEDUCYT &nbsp;|&nbsp; Código: 11-2530 &nbsp;|&nbsp; Depto. de Usulután</div>' +
 '  </div>' +
-'  <img src="'+logo2+'" class="hdr-logo" alt="MINED" onerror="this.style.display=\'none\'">' +
+'  <img src="https://sitioweb001.github.io/logo2.svg" class="hdr-logo" alt="MINED" onerror="this.style.display=\'none\'">' +
 '</div>' +
 
 /* Banda tipo de documento */
