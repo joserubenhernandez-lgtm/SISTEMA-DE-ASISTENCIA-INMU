@@ -1413,6 +1413,9 @@
                         <button id="btn-sync-asist" onclick="sincronizarAsistenciaAlumnos()"
                             style="background:none; border:none; color:#7c3aed; cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px;">📡
                             Sincronizar Asistencia</button>
+                        <button id="btn-sync-marcar" onclick="sincronizarYMarcarPortal()"
+                            style="background:none; border:none; color:#059669; cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px;">✅
+                            Marcar desde Portal</button>
                         <!-- CONTROLES DE LISTADO DE ALUMNOS -->
                         <div id="controles-lista-alumnos" style="margin-top:10px; display:none; gap:8px; flex-wrap:wrap; align-items:center;">
                             <button id="btn-toggle-lista" class="btn-action" onclick="toggleLista()">
@@ -3592,7 +3595,74 @@
             return Promise.any([jsonp, direct, proxy]);
         }
 
-        async function sincronizarAsistenciaAlumnos() {
+        // ── Sincronizar Portal Y marcar automáticamente en la lista ──────────────
+        async function sincronizarYMarcarPortal() {
+            const btn     = document.getElementById('btn-sync-marcar');
+            const grado   = (document.getElementById('grado-select')?.value   || '').trim();
+            const seccion = (document.getElementById('seccion-select')?.value || '').trim();
+
+            if (!grado || !seccion) { mostrarNotificacion('Selecciona un grado y sección primero.', 'warning'); return; }
+            if (!alumnosFiltrados || !alumnosFiltrados.length) { mostrarNotificacion('No hay alumnos cargados.', 'warning'); return; }
+
+            if (btn) { btn.textContent = '⏳ Cargando...'; btn.style.opacity = '0.6'; btn.disabled = true; }
+
+            const url  = `${SCRIPT_URL}?tipo=asistencia_diaria_grado&grado=${encodeURIComponent(grado)}&seccion=${encodeURIComponent(seccion)}`;
+            let mapa   = {};
+            try {
+                mapa = await gasGet(url, 15000) || {};
+            } catch(err) {
+                mostrarNotificacion('❌ No se pudo conectar al servidor.', 'warning', 4000);
+                if (btn) { btn.textContent = '✅ Marcar desde Portal'; btn.style.opacity = '1'; btn.disabled = false; }
+                return;
+            }
+
+            // Guardar mapa para el PDF
+            window._mapaPortalActual = mapa;
+
+            let marcados = 0, yaEstaban = 0;
+            alumnosFiltrados.forEach((alumno, index) => {
+                const nieStr = String(alumno.nie || '').trim();
+                const portalDiv = document.getElementById(`asist-portal-${nieStr}`);
+                const info = mapa[nieStr];
+
+                if (info) {
+                    const hora = info.hora || '';
+                    // Actualizar columna Portal
+                    if (portalDiv) {
+                        portalDiv.innerHTML = `<span style="color:#16a34a;">✅ Marcó</span><br><span style="color:#6b7280;font-size:10px;">${hora}</span>`;
+                    }
+                    // Auto-marcar checkbox si no está ya marcado
+                    const chk = document.getElementById(`chk-${index}`);
+                    if (chk && !chk.checked && (!chk.dataset.estado || chk.dataset.estado === 'ausente')) {
+                        chk.checked = true;
+                        chk.dataset.estado = 'presente';
+                        // Actualizar fila visualmente
+                        const row = chk.closest('tr');
+                        if (row) { row.classList.remove('ausente'); row.classList.add('presente'); }
+                        marcados++;
+                    } else {
+                        yaEstaban++;
+                    }
+                } else {
+                    if (portalDiv && portalDiv.innerHTML.includes('✅')) {
+                        // ya tenía la marca, no borrar
+                    } else if (portalDiv) {
+                        portalDiv.innerHTML = `<span style="color:#ef4444;">● No marcó</span>`;
+                    }
+                }
+            });
+
+            const total = Object.keys(mapa).length;
+            if (total === 0) {
+                mostrarNotificacion('📡 Sin registros en portal hoy.', 'info', 3000);
+            } else {
+                mostrarNotificacion(`✅ ${marcados} alumno(s) marcado(s) desde portal. ${yaEstaban} ya estaban.`, 'success', 4000);
+            }
+
+            if (btn) { btn.textContent = '✅ Marcar desde Portal'; btn.style.opacity = '1'; btn.disabled = false; }
+        }
+
+                async function sincronizarAsistenciaAlumnos() {
             const btn     = document.getElementById('btn-sync-asist');
             const grado   = (document.getElementById('grado-select')?.value   || '').trim();
             const seccion = (document.getElementById('seccion-select')?.value || '').trim();
@@ -4366,7 +4436,8 @@
 
             const pdfHtml = generarHTMLParaPDF({
                 grado, seccion, docente, fechaStr, secLimpia,
-                presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados, estudiantesPeligro, personalObservaciones, esDiRefuerzo
+                presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados, estudiantesPeligro, personalObservaciones, esDiRefuerzo,
+                mapaPortal: window._mapaPortalActual || {}
             });
 
             const containerHTML = document.getElementById('pdf-content');
@@ -4423,7 +4494,7 @@
             return { nombreArchivo: `${nombreBase}.pdf`, nombreBase };
         }
 
-        function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [], personalObservaciones = [], esDiRefuerzo = false }) {
+        function generarHTMLParaPDF({ grado, seccion, docente, fechaStr, secLimpia, presentes, ausentes, permisos, masc, fem, obsGeneral, reprobados = [], estudiantesPeligro = [], personalObservaciones = [], esDiRefuerzo = false, mapaPortal = {} }) {
             const tituloInstitucional = esDiRefuerzo ? 'DIRECCION DE INTEGRACIÓN' : 'Ministerio de Educación, Ciencia y Tecnología';
             const subtituloInstitucional = esDiRefuerzo ? 'DI REFUERZO' : 'Instituto Nacional de Mercedes Umaña';
             const logoInicioPdf = esDiRefuerzo ? 'LOGODI.jpg' : 'logo3.jpg';
@@ -4471,10 +4542,11 @@
       </table>
       <h4 style="color: var(--red-600); border-bottom: 2px solid var(--red-600); padding-bottom: 5px; margin-bottom: 10px; font-size: 15px;">ESTUDIANTES AUSENTES</h4>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; background-color: rgba(255,255,255,0.75); page-break-inside: auto; break-inside: auto;">
-        <colgroup><col style="width: 8%;"><col style="width: 45%;"><col style="width: 10%;"><col style="width: 17%;"><col style="width: 20%;"></colgroup>
+        <colgroup><col style="width:6%;"><col style="width:38%;"><col style="width:8%;"><col style="width:14%;"><col style="width:16%;"><col style="width:18%;"></colgroup>
+        <tr style="background:#fef2f2;"><th style="border:1px solid #ddd;padding:5px;"></th><th style="border:1px solid #ddd;padding:5px;text-align:left;">Nombre</th><th style="border:1px solid #ddd;padding:5px;">Sexo</th><th style="border:1px solid #ddd;padding:5px;">NIE</th><th style="border:1px solid #ddd;padding:5px;">Teléfono</th><th style="border:1px solid #ddd;padding:5px;">Portal</th></tr>
         ${ausentes.length > 0
-                    ? ausentes.map(a => `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: var(--red-600); font-weight: bold;">✗</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td></tr>`).join('')
-                    : `<tr><td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
+                    ? ausentes.map(a => { const p = (mapaPortal||{})[String(a.nie||'').trim()]; const portalTxt = p ? `<span style="color:#16a34a;font-weight:bold;">✅ Marcó${p.hora?' '+p.hora:''}</span>` : '<span style="color:#ef4444;">● No marcó</span>'; return `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #ddd; padding: 6px; text-align: center; color: var(--red-600); font-weight: bold;">✗</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nombre}</td><td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${a.sexo}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.nie}</td><td style="border: 1px solid #ddd; padding: 6px;">${a.telefono || 'N/A'}</td><td style="border: 1px solid #ddd; padding: 6px; font-size:11px;">${portalTxt}</td></tr>`; }).join('')
+                    : `<tr><td colspan="6" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Ninguno</td></tr>`}
       </table>
       ${permisos.length > 0 ? `
       <h4 style="color: #F39C12; border-bottom: 2px solid #F39C12; padding-bottom: 5px; margin-bottom: 10px; font-size: 15px;">ESTUDIANTES CON PERMISO</h4>
@@ -18935,9 +19007,18 @@
             const btn = document.querySelector('[onclick="generarPDFInforme()"]');
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
             try {
-                await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado);
+                // Abrir en ventana nueva y disparar print (mismo método que "Ver" — mejor calidad)
+                const ventana = window.open('', '_blank');
+                if (ventana) {
+                    ventana.document.write(htmlDoc);
+                    ventana.document.close();
+                    setTimeout(() => ventana.print(), 800);
+                } else {
+                    // Popup bloqueado: fallback a descarga con html2pdf
+                    await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado);
+                }
                 guardarInformeEnNube(informe);
-                mostrarNotificacion('✅ Informe PDF generado correctamente.', 'success');
+                mostrarNotificacion('✅ Se abrió el diálogo de impresión. Elige "Guardar como PDF".', 'success', 5000);
                 setTimeout(cargarHistorialInformes, 1500);
             } catch(e) {
                 alert('Error al generar PDF: ' + (e.message||e));
@@ -19264,11 +19345,18 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
             const htmlDoc = _generarHTMLInformeCompleto(d);
             const nombreArchivo = (d.tipo||'Informe').replace(/[^a-zA-Z0-9]+/g,'_') +
                 '_' + (d.fecha||'').replace(/-/g,'') + '.pdf';
-            try {
-                await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, d.grado||'');
-                mostrarNotificacion('✅ PDF descargado correctamente.', 'success');
-            } catch(e) {
-                alert('Error: ' + (e.message||e));
+            // Mismo método que "Ver": ventana + print dialog (mejor calidad que html2pdf)
+            const ventana = window.open('', '_blank');
+            if (ventana) {
+                ventana.document.write(htmlDoc);
+                ventana.document.close();
+                setTimeout(() => ventana.print(), 800);
+                mostrarNotificacion('✅ Se abrió el diálogo de impresión. Elige "Guardar como PDF".', 'success', 4000);
+            } else {
+                try {
+                    await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, d.grado||'');
+                    mostrarNotificacion('✅ PDF descargado.', 'success');
+                } catch(e) { alert('Error: ' + (e.message||e)); }
             }
         }
 
