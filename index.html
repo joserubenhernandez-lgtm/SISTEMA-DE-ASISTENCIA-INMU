@@ -587,6 +587,17 @@
             margin: 20px 0;
         }
 
+        .web-logo,
+        .hdr-logo {
+            filter: none;
+            transition: filter 0.2s ease;
+        }
+
+        body.dark .web-logo,
+        body.dark .hdr-logo {
+            filter: brightness(0) invert(1) !important;
+        }
+
         .web-logo {
             width: 250px;
             height: auto;
