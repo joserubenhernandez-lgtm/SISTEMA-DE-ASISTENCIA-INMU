@@ -1350,21 +1350,32 @@
             <h1>Sistema de Control de Asistencia</h1>
             <p>Instituto Nacional de Mercedes Umaña</p>
         </div>
-        <div class="btn-group-nav">
-            <button class="btn-nav" style="background:#F39C12; color:white; font-weight:bold;"
-                onclick="mostrarNotificaciones()">🔔 Notificaciones</button>
-            <button class="btn-nav" style="background:#0E73D4; color:white; font-weight:bold;"
-                onclick="cambiarVista('informes')">📄 Informes</button>
-            <button id="btn-install-pwa" class="btn-nav" style="background:#0C447C; display:none;"
-                onclick="mostrarInstallPrompt()">📥 Instalar app</button>
-            <span id="install-pwa-helper"
-                style="display:none; align-self:center; font-size:12px; color:#F8F9FA; margin-left:10px; max-width:400px;"></span>
-            <button class="btn-nav" style="background:#1D9E75; color:white; font-weight:bold;"
-                onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
-            <button class="btn-nav" style="background:#8E44AD; color:white; font-weight:bold;"
-                onclick="mostrarResumenDelDia()">📊 Ver resumen del día</button>
-        </div>
-    </div>
+ <div class="btn-group-nav">
+
+    <button class="btn-nav" style="background:#F39C12; color:white; font-weight:bold;"
+        onclick="mostrarNotificaciones()">🔔 Notificaciones</button>
+
+    <button class="btn-nav" style="background:#0E73D4; color:white; font-weight:bold;"
+        onclick="cambiarVista('informes')">📄 Informes</button>
+
+    <!-- BOTÓN COPIAR ENLACE (NUEVO) -->
+    <button class="btn-nav" style="background:#FFFFFF; color:#000000; font-weight:bold;"
+        onclick="copiarPortal()">📋 Copiar enlace del portal</button>
+
+    <button id="btn-install-pwa" class="btn-nav" style="background:#0C447C; display:none;"
+        onclick="mostrarInstallPrompt()">📥 Instalar app</button>
+
+    <span id="install-pwa-helper"
+        style="display:none; align-self:center; font-size:12px; color:#F8F9FA; margin-left:10px; max-width:400px;">
+    </span>
+
+    <button class="btn-nav" style="background:#1D9E75; color:white; font-weight:bold;"
+        onclick="cambiarVista('docente')">✍️ Pasar Lista</button>
+
+    <button class="btn-nav" style="background:#8E44AD; color:white; font-weight:bold;"
+        onclick="mostrarResumenDelDia()">📊 Ver resumen del día</button>
+
+</div>
 
     <div class="container" id="container-principal" style="display: none;">
 
@@ -18381,6 +18392,7 @@
             else { alert('Active las ventanas emergentes para imprimir.'); }
         }
 
+
         // ── ESCÁNER QR ────────────────────────────────────────────────────────────
         // Selecciona la cámara trasera principal (mayor resolución, no gran angular)
         async function obtenerIdCamaraPrincipal() {
@@ -19972,6 +19984,16 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
 
     <!-- ══ BOTÓN MODO OSCURO FLOTANTE ══ -->
     <button id="btn-dark-mode" onclick="toggleDarkMode()" title="Cambiar tema claro/oscuro" aria-label="Modo oscuro">🌙</button>
+
+<script>
+function copiarPortal() {
+    navigator.clipboard.writeText(
+        "https://sitioweb001.github.io/Instituto-Nacional-de-Mercedes-Uma-a-Portal-del-Estudiante/"
+    );
+    alert("✅ Enlace copiado al portapapeles");
+}
+</script>
+
 
 </body>
 
