@@ -1416,7 +1416,12 @@
                         <button id="btn-sync-marcar" onclick="sincronizarYMarcarPortal()"
                             style="background:none; border:none; color:#059669; cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px;">✅
                             Marcar desde Portal</button>
-                        <!-- CONTROLES DE LISTADO DE ALUMNOS -->
+                        <!-- Botón siempre visible para contraer/expandir lista -->
+                        <button id="btn-toggle-lista-main" onclick="toggleListaMain()"
+                            style="background:none; border:none; color:#0C447C; cursor:pointer; font-size:12px; font-weight:bold; margin-left: 10px; border:1px solid #b6d7ff; border-radius:6px; padding:4px 10px;">
+                            📋 Contraer lista
+                        </button>
+                        <!-- CONTROLES DE LISTADO DE ALUMNOS (paginación – solo Dirección/DI) -->
                         <div id="controles-lista-alumnos" style="margin-top:10px; display:none; gap:8px; flex-wrap:wrap; align-items:center;">
                             <button id="btn-toggle-lista" class="btn-action" onclick="toggleLista()">
                                 📋 Contraer lista
@@ -2274,6 +2279,12 @@
         }
 
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKnxasl94QOwaLx2QZMDNnfNG8NTtnWg1agE9shf9cyeYeP1PsgtUjbu4X94lXRSIM/exec";
+        // Detectar si se ejecuta como APK en Android (WebView nativo o Cordova)
+        const isAndroidAPK = /Android/.test(navigator.userAgent) && (
+            typeof AndroidStorage !== 'undefined' ||
+            typeof window.cordova !== 'undefined' ||
+            (window.location.protocol !== 'https:' && window.location.protocol !== 'http:')
+        );
         const PASS_LOGIN = "89";
         const PASS_ADMIN = "747-8";
 
@@ -3303,7 +3314,7 @@
                 html += `<div class="student-row" id="row-${indexReal}"
               onclick="toggleFila(event, ${indexReal})"
               ondblclick="iniciarPermisoPorDobleClick(${indexReal}); event.stopPropagation();">
-              <div class="checkbox-wrapper"><input type="checkbox" id="chk-${indexReal}" value="${indexReal}" checked></div>
+              <div class="checkbox-wrapper"><input type="checkbox" id="chk-${indexReal}" value="${indexReal}" checked onclick="actualizarEstadoCheckbox(${indexReal}, true)"></div>
               <div id="nombre-alumno-${indexReal}" style="font-weight: 500; font-size:13px; cursor:pointer;" title="Triple clic para ver detalle; ${alumno.nie}; ${alumno.sexo}; ${alumno.telefono || 'N/A'}" onclick="handleNombreAlumnoClick(event, ${indexReal})">${alumno.nombre}</div>
               <div><span class="badge ${alumno.sexo.toLowerCase()}">${alumno.sexo}</span></div>
               <div style="font-size: 13px;">${alumno.nie}</div>
@@ -3465,14 +3476,16 @@
             if (targetTag === 'input' || targetTag === 'button') return;
 
             document.getElementById(`chk-${index}`).checked = !document.getElementById(`chk-${index}`).checked;
-            actualizarEstadoCheckbox(index);
+            actualizarEstadoCheckbox(index, true); // marcado manualmente
         }
 
-        function actualizarEstadoCheckbox(index) {
+        function actualizarEstadoCheckbox(index, esManual) {
             const chk = document.getElementById(`chk-${index}`);
             if (chk.dataset.estado !== 'permiso') {
                 chk.dataset.estado = chk.checked ? 'presente' : 'ausente';
             }
+            // Registrar si fue marcado manualmente por el docente
+            if (esManual) chk.dataset.manual = 'true';
             const row = document.getElementById(`row-${index}`);
             if (row) {
                 if (chk.dataset.estado === 'permiso') {
@@ -3619,44 +3632,54 @@
             // Guardar mapa para el PDF
             window._mapaPortalActual = mapa;
 
-            let marcados = 0, yaEstaban = 0;
+            // Paso 1: Desmarcar a los que NO marcaron desde el portal,
+            //         EXCEPTO los que el docente marcó manualmente (data-manual="true")
+            // Paso 2: Marcar a los que SÍ marcaron desde el portal (sin desmarcar a los manuales)
+            let marcadosPortal = 0, marcadosManual = 0, desmarcados = 0;
+
             alumnosFiltrados.forEach((alumno, index) => {
-                const nieStr = String(alumno.nie || '').trim();
+                const nieStr   = String(alumno.nie || '').trim();
                 const portalDiv = document.getElementById(`asist-portal-${nieStr}`);
-                const info = mapa[nieStr];
+                const chk      = document.getElementById(`chk-${index}`);
+                const row      = chk ? chk.closest('tr') : null;
+                const info     = mapa[nieStr];
+                const esManual = chk && chk.dataset.manual === 'true';
 
                 if (info) {
+                    // Marcó desde portal → actualizar columna portal + marcar checkbox
                     const hora = info.hora || '';
-                    // Actualizar columna Portal
                     if (portalDiv) {
                         portalDiv.innerHTML = `<span style="color:#16a34a;">✅ Marcó</span><br><span style="color:#6b7280;font-size:10px;">${hora}</span>`;
                     }
-                    // Auto-marcar checkbox si no está ya marcado
-                    const chk = document.getElementById(`chk-${index}`);
-                    if (chk && !chk.checked && (!chk.dataset.estado || chk.dataset.estado === 'ausente')) {
+                    if (chk && !chk.checked) {
                         chk.checked = true;
                         chk.dataset.estado = 'presente';
-                        // Actualizar fila visualmente
-                        const row = chk.closest('tr');
                         if (row) { row.classList.remove('ausente'); row.classList.add('presente'); }
-                        marcados++;
+                        marcadosPortal++;
                     } else {
-                        yaEstaban++;
+                        marcadosManual++; // ya estaba marcado (manual o portal previo)
                     }
                 } else {
-                    if (portalDiv && portalDiv.innerHTML.includes('✅')) {
-                        // ya tenía la marca, no borrar
-                    } else if (portalDiv) {
+                    // NO marcó desde portal
+                    if (portalDiv) {
                         portalDiv.innerHTML = `<span style="color:#ef4444;">● No marcó</span>`;
                     }
+                    // Si no es manual, desmarcar
+                    if (chk && chk.checked && !esManual) {
+                        chk.checked = false;
+                        chk.dataset.estado = 'ausente';
+                        if (row) { row.classList.remove('presente'); row.classList.add('ausente'); }
+                        desmarcados++;
+                    }
+                    // Si es manual → conservar tal cual
                 }
             });
 
             const total = Object.keys(mapa).length;
             if (total === 0) {
-                mostrarNotificacion('📡 Sin registros en portal hoy.', 'info', 3000);
+                mostrarNotificacion('📡 Sin registros en portal hoy. Solo quedan marcas manuales.', 'info', 4000);
             } else {
-                mostrarNotificacion(`✅ ${marcados} alumno(s) marcado(s) desde portal. ${yaEstaban} ya estaban.`, 'success', 4000);
+                mostrarNotificacion(`✅ Portal: ${marcadosPortal} nuevo(s) marcado(s), ${marcadosManual} ya estaban. Desmarcados sin portal: ${desmarcados}.`, 'success', 5000);
             }
 
             if (btn) { btn.textContent = '✅ Marcar desde Portal'; btn.style.opacity = '1'; btn.disabled = false; }
@@ -19007,18 +19030,32 @@
             const btn = document.querySelector('[onclick="generarPDFInforme()"]');
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
             try {
-                // Abrir en ventana nueva y disparar print (mismo método que "Ver" — mejor calidad)
-                const ventana = window.open('', '_blank');
-                if (ventana) {
-                    ventana.document.write(htmlDoc);
-                    ventana.document.close();
-                    setTimeout(() => ventana.print(), 800);
+                if (isAndroidAPK) {
+                    // En APK: descargar como archivo HTML en lugar de abrir ventana (window.open bloquea la app)
+                    const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = nombreArchivo.replace(/\.pdf$/, '.html');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                    mostrarNotificacion('✅ Informe descargado a tu dispositivo.', 'success', 5000);
                 } else {
-                    // Popup bloqueado: fallback a descarga con html2pdf
-                    await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado);
+                    // En web: abrir ventana nueva y disparar print (mejor calidad)
+                    const ventana = window.open('', '_blank');
+                    if (ventana) {
+                        ventana.document.write(htmlDoc);
+                        ventana.document.close();
+                        setTimeout(() => ventana.print(), 800);
+                    } else {
+                        // Popup bloqueado: fallback a descarga con html2pdf
+                        await _generarPDFDesdeHTMLDoc(htmlDoc, nombreArchivo, grado);
+                    }
+                    mostrarNotificacion('✅ Se abrió el diálogo de impresión. Elige "Guardar como PDF".', 'success', 5000);
                 }
                 guardarInformeEnNube(informe);
-                mostrarNotificacion('✅ Se abrió el diálogo de impresión. Elige "Guardar como PDF".', 'success', 5000);
                 setTimeout(cargarHistorialInformes, 1500);
             } catch(e) {
                 alert('Error al generar PDF: ' + (e.message||e));
@@ -19620,6 +19657,25 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
             if (listaContraida) {
                 lista.style.maxHeight = '350px';
                 lista.style.overflowY = 'auto';
+                if (btn) btn.innerHTML = '📋 Expandir lista';
+            } else {
+                lista.style.maxHeight = '';
+                lista.style.overflowY = '';
+                if (btn) btn.innerHTML = '📋 Contraer lista';
+            }
+        }
+
+        // Botón principal de contraer/expandir — siempre visible
+        let listaMainContraida = false;
+        function toggleListaMain() {
+            const lista = document.getElementById('tabla-alumnos');
+            const btn = document.getElementById('btn-toggle-lista-main');
+            listaMainContraida = !listaMainContraida;
+            if (!lista) return;
+            if (listaMainContraida) {
+                lista.style.maxHeight = '300px';
+                lista.style.overflowY = 'auto';
+                lista.style.transition = 'max-height 0.3s ease';
                 if (btn) btn.innerHTML = '📋 Expandir lista';
             } else {
                 lista.style.maxHeight = '';
