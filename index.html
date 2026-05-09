@@ -20116,6 +20116,13 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
     localStorage.setItem('inmu_doc_hash', cur);
     if (!stored || stored < BASE) localStorage.setItem('inmu_doc_ver', BASE.toString());
     if (ve) ve.textContent = 'v' + display.toFixed(2);
+    if (ve) {
+    ve.textContent = 'v1.92';   // Forzar versión fija
+    ve.style.color = '#ffffff';
+}
+if (vl) {
+    vl.style.color = '#ffffff';
+}
 })();
 </script>
 </body>
