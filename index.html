@@ -1385,6 +1385,8 @@
                 onclick="cambiarVista('informes')">📄 Informes</button>
             <button class="btn-nav" id="btn-copiar-portal" style="background:#4A5568; color:white; font-weight:bold;"
                 onclick="copiarEnlacePortal()">📋 Copiar enlace del portal</button>
+            <button type="button" class="btn-nav" style="background:#2C5282; color:white; font-weight:bold;"
+                onclick="inmuElegirCarpetaDescargas()" title="PDF, TXT y Excel se guardarán aquí en la app de escritorio">📂 Carpeta de descargas</button>
             <button id="btn-install-pwa" class="btn-nav" style="background:#0C447C; display:none;"
                 onclick="mostrarInstallPrompt()">📥 Instalar app</button>
             <span id="install-pwa-helper"
@@ -1424,6 +1426,13 @@
                             <option value="A">"A"</option>
                             <option value="B">"B"</option>
                             <option value="Única">Única</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Materia</label>
+                        <select id="tipo-materia-notas" onchange="onTipoMateriaNotasChange()">
+                            <option value="0-10">Materia de 0-10</option>
+                            <option value="0-5">Materia de 0-5</option>
                         </select>
                     </div>
                 </div>
@@ -2663,13 +2672,54 @@
         }
 
         // =========================================================================
-        // SELECCIONAR CARPETA PARA GUARDAR PDF
+        // SELECCIONAR CARPETA PARA GUARDAR PDF/XLSX (Android y app escritorio .exe)
         // =========================================================================
-        function seleccionarCarpetaPDF() {
+        function _setTextoCarpetaDescarga(texto) {
+            const el = document.getElementById('carpeta-seleccionada');
+            if (el) el.innerText = texto || 'Carpeta: Descargas (por defecto)';
+        }
+
+        function _esAppEscritorioExe() {
+            return typeof pywebview !== 'undefined'
+                && pywebview.api
+                && typeof pywebview.api.browse_download_folder === 'function';
+        }
+
+        async function inicializarEstadoCarpetaDesktop() {
+            if (!_esAppEscritorioExe()) return;
+            const btn = document.getElementById('btn-seleccionar-carpeta-pdf');
+            if (btn) btn.innerHTML = '📁 Examinar';
+            try {
+                const actual = await pywebview.api.get_download_folder();
+                if (actual) _setTextoCarpetaDescarga('📁 ' + actual);
+                else _setTextoCarpetaDescarga('Carpeta: Descargas (por defecto)');
+            } catch (e) {
+                _setTextoCarpetaDescarga('Carpeta: Descargas (por defecto)');
+            }
+        }
+
+        async function seleccionarCarpetaPDF() {
+            if (_esAppEscritorioExe()) {
+                try {
+                    const seleccion = await pywebview.api.browse_download_folder();
+                    if (seleccion) {
+                        _setTextoCarpetaDescarga('📁 ' + seleccion);
+                    } else {
+                        _setTextoCarpetaDescarga('Carpeta: Descargas (por defecto)');
+                    }
+                    return;
+                } catch (e) {
+                    _setTextoCarpetaDescarga('Carpeta: Descargas (por defecto)');
+                    alert('No se pudo abrir el explorador de carpetas.');
+                    return;
+                }
+            }
+
             if (typeof AndroidStorage !== 'undefined') {
                 AndroidStorage.abrirSelectorCarpeta();
             } else {
-                alert('Esta función solo está disponible en la app Android.');
+                _setTextoCarpetaDescarga('Carpeta: Descargas (por defecto)');
+                alert('En navegador web se usa la carpeta de descargas del navegador.');
             }
         }
 
@@ -2683,6 +2733,8 @@
                 }
             } catch (e) { }
         }
+
+        setTimeout(inicializarEstadoCarpetaDesktop, 1200);
 
         // ── PROTECCIÓN CONTRA SALIDA ACCIDENTAL ─────────────────────────────────
         function _hayDatosPendientes() {
@@ -3118,6 +3170,26 @@
             if (sistemaEnMantenimiento) return;
             if (window.usuarioAdmin) return document.getElementById('modal-alumno').classList.add('open');
             if (prompt("Contraseña:") === PASS_ADMIN) document.getElementById('modal-alumno').classList.add('open'); else alert("Incorrecta.");
+        }
+
+        async function inmuElegirCarpetaDescargas() {
+            try {
+                if (typeof pywebview !== 'undefined' && pywebview.api &&
+                    typeof pywebview.api.browse_download_folder === 'function') {
+                    var p = await pywebview.api.browse_download_folder();
+                    if (p && typeof mostrarNotificacion === 'function') {
+                        mostrarNotificacion('PDF, Excel (.xlsx) y exportaciones TXT se guardarán en: ' + p, 'success');
+                    } else if (p) {
+                        alert('Carpeta de descargas:\n\n' + p);
+                    } else if (typeof mostrarNotificacion === 'function') {
+                        mostrarNotificacion('No se seleccionó carpeta.', 'warning');
+                    }
+                } else {
+                    alert('Para elegir la carpeta donde se guardan PDF y Excel (.xlsx), use la aplicación INMU de escritorio (Windows).\nEn el navegador web el sistema usa la descarga normal del navegador.');
+                }
+            } catch (e) {
+                alert((e && e.message) ? e.message : String(e));
+            }
         }
 
         function cambiarVista(vista) {
@@ -3858,10 +3930,70 @@
         let notasPeriodoActual = 1;
         let notasData = {};          // { nie: { p1:{a1,a2,a3,prom}, p2:{...}, ... } }
         let notasCambiadas = false;  // flag para el parpadeo
+        let notasTipoActual = '0-10';
+
+        function getTipoMateriaNotas() {
+            const sel = document.getElementById('tipo-materia-notas');
+            return sel && sel.value === '0-5' ? '0-5' : '0-10';
+        }
+
+        function getEscalaNotasMax() {
+            return getTipoMateriaNotas() === '0-5' ? 5 : 10;
+        }
+
+        function getUmbralesNotas() {
+            return getEscalaNotasMax() === 5
+                ? { aprobado: 3.0, riesgo: 2.5 }
+                : { aprobado: 6.0, riesgo: 5.0 };
+        }
+
+        function getNotasStorageKey(grado, seccion, tipoMateria) {
+            return 'notas_' + (tipoMateria || getTipoMateriaNotas()) + '_' + grado + '_' + seccion;
+        }
+
+        function getEstadoNotaHtml(prom) {
+            const umbrales = getUmbralesNotas();
+            if (prom === '' || prom === null || prom === undefined || isNaN(Number(prom))) {
+                return {
+                    style: 'background:#ECFDF5;font-weight:bold;color:#065F46;',
+                    html: '<span style="font-size:11px;color:#6B7280;">—</span>'
+                };
+            }
+            const v = Number(prom);
+            if (v >= umbrales.aprobado) {
+                return {
+                    style: 'background:#DCFCE7;font-weight:bold;color:#15803D;',
+                    html: '<span style="font-size:11px;font-weight:bold;background:#16A34A;color:white;padding:2px 6px;border-radius:10px;">✓ Aprobado</span>'
+                };
+            }
+            if (v >= umbrales.riesgo) {
+                return {
+                    style: 'background:#FEF9C3;font-weight:bold;color:#854D0E;',
+                    html: '<span style="font-size:11px;font-weight:bold;background:#CA8A04;color:white;padding:2px 6px;border-radius:10px;">⚠ Riesgo</span>'
+                };
+            }
+            return {
+                style: 'background:#FEE2E2;font-weight:bold;color:#991B1B;',
+                html: '<span style="font-size:11px;font-weight:bold;background:#DC2626;color:white;padding:2px 6px;border-radius:10px;">✗ Reprobado</span>'
+            };
+        }
+
+        function onTipoMateriaNotasChange() {
+            const grado = document.getElementById('grado-select')?.value || '';
+            const seccion = document.getElementById('seccion-select')?.value || '';
+            if (notasCambiadas) guardarCambiosNotas();
+            notasData = {};
+            if (grado && seccion) cargarNotasGuardadas(grado, seccion);
+            if (document.getElementById('modal-notas-periodo')?.style.display === 'block') {
+                abrirPanelNotas();
+            }
+        }
 
         function abrirPanelNotas() {
             const grado   = document.getElementById('grado-select')?.value || '';
             const seccion = document.getElementById('seccion-select')?.value || '';
+            const escalaMax = getEscalaNotasMax();
+            const tipoMateria = getTipoMateriaNotas();
             if (!grado || !seccion) {
                 alert('⚠ Selecciona un Grado y Sección primero.');
                 return;
@@ -3886,7 +4018,7 @@
 
             // Info del encabezado
             document.getElementById('notas-modal-info').textContent =
-                `Grado: ${grado}  |  Sección: ${seccion}  |  Alumnos: ${alumnosFiltrados.length}`;
+                `Grado: ${grado}  |  Sección: ${seccion}  |  Materia ${tipoMateria}  |  Nota máxima: ${escalaMax}  |  Alumnos: ${alumnosFiltrados.length}`;
 
             notasPeriodoActual = 1;
             notasCambiadas = false;
@@ -3930,6 +4062,7 @@
         function renderTablaNotas() {
             const p = 'p' + notasPeriodoActual;
             const periodoLabel = ['', 'Primer', 'Segundo', 'Tercer', 'Cuarto'][notasPeriodoActual];
+            const escalaMax = getEscalaNotasMax();
 
             // THEAD
             const thead = document.getElementById('thead-notas');
@@ -3939,9 +4072,9 @@
                     <th style="width:90px;">NIE</th>
                     <th style="min-width:200px;text-align:left;padding-left:10px;">${periodoLabel} Periodo — Nombre</th>
                     <th style="width:60px;">Sx</th>
-                    <th style="width:70px;">Act 1<br><small style="font-weight:normal;opacity:.8;">×0.35</small></th>
-                    <th style="width:70px;">Act 2<br><small style="font-weight:normal;opacity:.8;">×0.35</small></th>
-                    <th style="width:70px;border-right:2px solid rgba(255,255,255,0.5) !important;">Act 3<br><small style="font-weight:normal;opacity:.8;">×0.30</small></th>
+                    <th style="width:70px;">Act 1<br><small style="font-weight:normal;opacity:.8;">max ${escalaMax} ×0.35</small></th>
+                    <th style="width:70px;">Act 2<br><small style="font-weight:normal;opacity:.8;">max ${escalaMax} ×0.35</small></th>
+                    <th style="width:70px;border-right:2px solid rgba(255,255,255,0.5) !important;">Act 3<br><small style="font-weight:normal;opacity:.8;">max ${escalaMax} ×0.30</small></th>
                     <th style="width:70px;background:#065F46;">Promedio</th>
                     <th style="width:80px;background:#1A3A6E;">Estado</th>
                 </tr>`;
@@ -3955,47 +4088,34 @@
                 const tr  = document.createElement('tr');
                 const promVal = nd.prom !== '' ? Number(nd.prom) : null;
                 const promTxt = promVal !== null ? promVal.toFixed(2) : '—';
-                let promStyle = 'background:#ECFDF5;font-weight:bold;color:#065F46;'; // ≥6 verde
-                let estadoHtml = '<span style="font-size:11px;color:#6B7280;">—</span>';
-                if (promVal !== null) {
-                    if (promVal >= 6.0) {
-                        promStyle = 'background:#DCFCE7;font-weight:bold;color:#15803D;';
-                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#16A34A;color:white;padding:2px 6px;border-radius:10px;">✓ Aprobado</span>';
-                    } else if (promVal >= 5.0) {
-                        promStyle = 'background:#FEF9C3;font-weight:bold;color:#854D0E;';
-                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#CA8A04;color:white;padding:2px 6px;border-radius:10px;">⚠ Riesgo</span>';
-                    } else {
-                        promStyle = 'background:#FEE2E2;font-weight:bold;color:#991B1B;';
-                        estadoHtml = '<span style="font-size:11px;font-weight:bold;background:#DC2626;color:white;padding:2px 6px;border-radius:10px;">✗ Reprobado</span>';
-                    }
-                }
+                const estadoNota = getEstadoNotaHtml(promVal);
                 tr.innerHTML = `
                     <td>${idx + 1}</td>
                     <td>${nie}</td>
-                    <td class="col-nombre" title="Doble clic: poner 6.0 en todas las actividades"
+                    <td class="col-nombre" title="Doble clic: poner nota de aprobación en todas las actividades"
                         ondblclick="notaSetAprobado('${nie}','${p}')"
                         style="cursor:pointer;" >${alumno.nombre || ''}</td>
                     <td>${alumno.sexo || ''}</td>
-                    <td><input class="nota-input" type="number" min="0" max="10" step="0.1"
+                    <td><input class="nota-input" type="number" min="0" max="${escalaMax}" step="0.1"
                         id="nota-${nie}-a1" value="${nd.a1}"
                         data-nie="${nie}" data-per="${p}" data-act="a1"
                         oninput="onNotaChange('${nie}','${p}','a1',this.value)"
                         onchange="onNotaChange('${nie}','${p}','a1',this.value)"
                         onkeydown="notaInputKeydown(event,this)"></td>
-                    <td><input class="nota-input" type="number" min="0" max="10" step="0.1"
+                    <td><input class="nota-input" type="number" min="0" max="${escalaMax}" step="0.1"
                         id="nota-${nie}-a2" value="${nd.a2}"
                         data-nie="${nie}" data-per="${p}" data-act="a2"
                         oninput="onNotaChange('${nie}','${p}','a2',this.value)"
                         onchange="onNotaChange('${nie}','${p}','a2',this.value)"
                         onkeydown="notaInputKeydown(event,this)"></td>
-                    <td class="sep-col-right"><input class="nota-input" type="number" min="0" max="10" step="0.1"
+                    <td class="sep-col-right"><input class="nota-input" type="number" min="0" max="${escalaMax}" step="0.1"
                         id="nota-${nie}-a3" value="${nd.a3}"
                         data-nie="${nie}" data-per="${p}" data-act="a3"
                         oninput="onNotaChange('${nie}','${p}','a3',this.value)"
                         onchange="onNotaChange('${nie}','${p}','a3',this.value)"
                         onkeydown="notaInputKeydown(event,this)"></td>
-                    <td class="col-promedio" id="prom-${nie}-${p}" style="${promStyle}">${promTxt}</td>
-                    <td id="estado-${nie}-${p}">${estadoHtml}</td>`;
+                    <td class="col-promedio" id="prom-${nie}-${p}" style="${estadoNota.style}">${promTxt}</td>
+                    <td id="estado-${nie}-${p}">${estadoNota.html}</td>`;
                 tbody.appendChild(tr);
             });
             // Update resumen bar
@@ -4005,12 +4125,13 @@
         function _actualizarResumenNotas() {
             if (!alumnosFiltrados) return;
             const p = 'p' + notasPeriodoActual;
+            const umbrales = getUmbralesNotas();
             let total = alumnosFiltrados.length, aprobados = 0, reprobados = 0, sumaProm = 0, conProm = 0;
             alumnosFiltrados.forEach(al => {
                 const nd = notasData[String(al.nie)]?.[p];
                 if (nd && nd.prom !== '') {
                     const v = Number(nd.prom);
-                    if (v >= 6.0) aprobados++; else reprobados++;
+                    if (v >= umbrales.aprobado) aprobados++; else reprobados++;
                     sumaProm += v; conProm++;
                 }
             });
@@ -4027,7 +4148,8 @@
 
         function onNotaChange(nie, periodo, actividad, valor) {
             if (!notasData[nie]) return;
-            const v = valor === '' ? '' : Math.min(10, Math.max(0, parseFloat(valor) || 0));
+            const escalaMax = getEscalaNotasMax();
+            const v = valor === '' ? '' : Math.min(escalaMax, Math.max(0, parseFloat(valor) || 0));
             notasData[nie][periodo][actividad] = v;
 
             // Recalcular promedio ponderado: a1×0.35 + a2×0.35 + a3×0.30
@@ -4044,19 +4166,9 @@
             const estadoEl = document.getElementById(`estado-${nie}-${periodo}`);
             if (promEl) {
                 promEl.textContent = prom !== '' ? prom.toFixed(2) : '—';
-                if (prom === '') {
-                    promEl.style.cssText = 'background:#ECFDF5;font-weight:bold;color:#065F46;';
-                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;color:#6B7280;">—</span>';
-                } else if (prom >= 6.0) {
-                    promEl.style.cssText = 'background:#DCFCE7;font-weight:bold;color:#15803D;';
-                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#16A34A;color:white;padding:2px 6px;border-radius:10px;">✓ Aprobado</span>';
-                } else if (prom >= 5.0) {
-                    promEl.style.cssText = 'background:#FEF9C3;font-weight:bold;color:#854D0E;';
-                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#CA8A04;color:white;padding:2px 6px;border-radius:10px;">⚠ Riesgo</span>';
-                } else {
-                    promEl.style.cssText = 'background:#FEE2E2;font-weight:bold;color:#991B1B;';
-                    if (estadoEl) estadoEl.innerHTML = '<span style="font-size:11px;font-weight:bold;background:#DC2626;color:white;padding:2px 6px;border-radius:10px;">✗ Reprobado</span>';
-                }
+                const estadoNota = getEstadoNotaHtml(prom);
+                promEl.style.cssText = estadoNota.style;
+                if (estadoEl) estadoEl.innerHTML = estadoNota.html;
             }
 
             // Marcar input como cambiado
@@ -4070,11 +4182,12 @@
             _actualizarResumenNotas();
         }
 
-        // Doble clic en nombre → pone 6.0 en todas las actividades del periodo
+        // Doble clic en nombre: pone la nota de aprobación según la escala actual.
         function notaSetAprobado(nie, periodo) {
+            var aprobado = getUmbralesNotas().aprobado.toFixed(1);
             ['a1','a2','a3'].forEach(function(act){
                 var el = document.getElementById('nota-' + nie + '-' + act);
-                if (el) { el.value = '6.0'; onNotaChange(nie, periodo, act, '6.0'); }
+                if (el) { el.value = aprobado; onNotaChange(nie, periodo, act, aprobado); }
             });
         }
 
@@ -4091,9 +4204,10 @@
 
             if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
                 e.preventDefault();
+                var maxNota = getEscalaNotasMax();
                 var cur = parseFloat(el.value) || 0;
                 var next = e.key === 'ArrowUp'
-                    ? Math.min(10, Math.round((cur + 0.5) * 10) / 10)
+                    ? Math.min(maxNota, Math.round((cur + 0.5) * 10) / 10)
                     : Math.max(0,  Math.round((cur - 0.5) * 10) / 10);
                 el.value = next;
                 onNotaChange(nie, per, act, String(next));
@@ -4139,18 +4253,47 @@
         function guardarCambiosNotas() {
             const grado   = document.getElementById('grado-select')?.value || '';
             const seccion = document.getElementById('seccion-select')?.value || '';
-            const key     = 'notas_' + grado + '_' + seccion;
+            const key     = getNotasStorageKey(grado, seccion, notasTipoActual);
             // Show saving state
             setEstadoGuardado('guardando');
             try {
                 localStorage.setItem(key, JSON.stringify(notasData));
             } catch(e) { console.warn('localStorage no disponible:', e); }
+            sincronizarNotasGrupoAppsScript(grado, seccion, notasTipoActual);
             notasCambiadas = false;
             actualizarBtnGuardar(false);
             setTimeout(() => setEstadoGuardado('guardado'), 600);
             if (typeof mostrarNotificacion === 'function') {
                 mostrarNotificacion('✓ Notas guardadas localmente', 'success');
             }
+        }
+
+        function sincronizarNotasGrupoAppsScript(grado, seccion, tipoMateria) {
+            if (!grado || !seccion || typeof SCRIPT_URL === 'undefined' || !Array.isArray(alumnosFiltrados)) return;
+            const payload = {
+                tipo_post: 'guardar_notas_grupo',
+                grado,
+                seccion,
+                escala: tipoMateria,
+                notas: alumnosFiltrados.map(alumno => {
+                    const nd = notasData[String(alumno.nie)] || {};
+                    const p1 = nd.p1 || {}; const p2 = nd.p2 || {};
+                    const p3 = nd.p3 || {}; const p4 = nd.p4 || {};
+                    return {
+                        nombre: alumno.nombre || '',
+                        nie: alumno.nie || '',
+                        p1_cuaderno: p1.a1, p1_integradora: p1.a2, p1_examen: p1.a3,
+                        p2_cuaderno: p2.a1, p2_integradora: p2.a2, p2_examen: p2.a3,
+                        p3_cuaderno: p3.a1, p3_integradora: p3.a2, p3_examen: p3.a3,
+                        p4_cuaderno: p4.a1, p4_integradora: p4.a2, p4_examen: p4.a3
+                    };
+                })
+            };
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            }).catch(err => console.warn('No se pudo sincronizar notas con Apps Script:', err));
         }
 
         function setEstadoGuardado(estado) {
@@ -4167,9 +4310,14 @@
 
         // Cargar notas guardadas cuando se cambia grado/sección
         function cargarNotasGuardadas(grado, seccion) {
-            const key = 'notas_' + grado + '_' + seccion;
+            notasTipoActual = getTipoMateriaNotas();
+            const key = getNotasStorageKey(grado, seccion, notasTipoActual);
+            notasData = {};
             try {
-                const saved = localStorage.getItem(key);
+                let saved = localStorage.getItem(key);
+                if (!saved && notasTipoActual === '0-10') {
+                    saved = localStorage.getItem('notas_' + grado + '_' + seccion);
+                }
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     // Fusionar: preservar datos de alumnos actuales
@@ -4197,6 +4345,10 @@
             const seccion = (document.getElementById('seccion-select')?.value || '').replace(/"/g,'');
             const docente = document.getElementById('docente-nombre')?.value?.trim() || '';
             const anio    = new Date().getFullYear();
+            const tipoMateria = getTipoMateriaNotas();
+            const escalaMax = getEscalaNotasMax();
+            const umbralesNotas = getUmbralesNotas();
+            const btn = document.getElementById('btn-exportar-notas');
 
             if (!grado || !seccion) {
                 alert('⚠ Selecciona un Grado y Sección antes de exportar.');
@@ -4216,9 +4368,8 @@
                 try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
             }
 
-            const btn = document.getElementById('btn-exportar-notas');
             btn.disabled = true;
-            btn.innerHTML = '⏳ Generando Excel...';
+            btn.innerHTML = '⏳ Generando Excel ' + tipoMateria + '...';
 
             try {
                 // Buscar plantilla base para este grado
@@ -4241,6 +4392,7 @@
                 ws['Q5'] = { v: materia, t:'s' };
                 // X5 = profesor
                 ws['X5'] = { v: `Profesor: ${docente}`, t:'s' };
+                ws['AK5'] = { v: `Escala ${tipoMateria}`, t:'s' };
 
                 // ── Escribir alumnos a partir de fila 10 con sus notas ──
                 const alumnos = alumnosFiltrados || [];
@@ -4283,15 +4435,15 @@
                     ws[col+r] = { v: String(val || ''), t: 's', s: { border: bordeDelgado } };
                 };
 
-                // Helper promedio coloreado (entero) con borde
+                // Helper promedio coloreado con borde
                 const setProm = (col, val, r) => {
                     if (val === '' || val === null || val === undefined) { aplicarBorde(col+r); return; }
-                    const n = Math.round(parseFloat(val) || 0);
+                    const n = Math.min(escalaMax, Math.round((parseFloat(val) || 0) * 100) / 100);
                     let bgColor = COLOR_VERDE;
-                    if (n < 50) bgColor = COLOR_ROJO;
-                    else if (n < 60) bgColor = COLOR_AMARILLO;
+                    if (n < umbralesNotas.riesgo) bgColor = COLOR_ROJO;
+                    else if (n < umbralesNotas.aprobado) bgColor = COLOR_AMARILLO;
                     ws[col+r] = {
-                        v: n, t: 'n', z: '0',
+                        v: n, t: 'n', z: '0.00',
                         s: {
                             border: bordeDelgado,
                             fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
@@ -4337,12 +4489,12 @@
                     setN('AD', p4.a3, r); setN('AE', p4.a3 !== '' ? (parseFloat(p4.a3)||0)*0.30 : '', r);
                     setProm('AF', p4.prom, r);
 
-                    // Promedios institucional y final (coloreados, enteros)
+                    // Promedios institucional y final (sobre la escala seleccionada)
                     const proms = [p1.prom, p2.prom, p3.prom, p4.prom]
                         .filter(p => p !== '' && p !== null && p !== undefined)
                         .map(p => parseFloat(p) || 0);
                     if (proms.length) {
-                        const promInst = proms.reduce((a,b)=>a+b,0) / 4;
+                        const promInst = Math.min(escalaMax, proms.reduce((a,b)=>a+b,0) / 4);
                         setProm('AG', promInst, r);
                         setProm('AH', promInst, r);
                         setProm('AJ', promInst, r);
@@ -4358,7 +4510,7 @@
                 // ── Descargar el archivo ──
                 const secLimpia    = seccion.replace(/[^a-zA-Z0-9]/g,'_');
                 const gradoLimpio  = grado.replace(/[°\s"]/g,'_').replace(/__+/g,'_').replace(/^_|_$/g,'');
-                const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}.xlsx`;
+                const nombreArch   = `${gradoLimpio}_${secLimpia}_${anio}_${materia.replace(/\s/g,'_')}_${tipoMateria}.xlsx`;
 
                 // ── Ancho de columnas (wch = caracteres — SheetJS xlsx lo respeta) ──
                 ws['!cols'] = [];
@@ -20116,13 +20268,6 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
     localStorage.setItem('inmu_doc_hash', cur);
     if (!stored || stored < BASE) localStorage.setItem('inmu_doc_ver', BASE.toString());
     if (ve) ve.textContent = 'v' + display.toFixed(2);
-    if (ve) {
-    ve.textContent = 'v1.92';   // Forzar versión fija
-    ve.style.color = '#ffffff';
-}
-if (vl) {
-    vl.style.color = '#ffffff';
-}
 })();
 </script>
 </body>
