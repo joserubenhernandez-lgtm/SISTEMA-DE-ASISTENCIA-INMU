@@ -389,6 +389,19 @@
             margin-bottom: 20px;
         }
 
+        .notas-materia-filter {
+            grid-column: 1 / -1;
+            max-width: 320px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .notas-materia-filter label {
+            text-align: center;
+            color: var(--blue-800);
+        }
+
         label {
             font-weight: bold;
             font-size: 12px;
@@ -412,7 +425,9 @@
             margin-top: 10px;
             border: 1px solid var(--gray-100);
             border-radius: 8px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .student-row {
@@ -424,6 +439,7 @@
             align-items: center;
             cursor: pointer;
             transition: background 0.2s;
+            min-width: 760px;
         }
 
         .student-row:hover {
@@ -1059,15 +1075,17 @@
 
             /* Filtros apilados */
             .filters { grid-template-columns: 1fr; gap: 8px; }
+            .notas-materia-filter { max-width: 100%; }
 
-            /* Tabla de alumnos más compacta */
+            /* Tabla de alumnos desplazable horizontalmente */
+            .student-list { overflow-x: auto; overflow-y: hidden; }
             .student-row {
-                grid-template-columns: 32px 1fr 28px;
-                gap: 4px;
-                padding: 8px 8px;
+                grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px 80px;
+                gap: 8px;
+                padding: 10px 12px;
                 font-size: 12px;
+                min-width: 760px;
             }
-            .student-row > span:nth-child(n+4) { display: none; } /* oculta NIE/tel en móvil */
 
             /* Botones de acción */
             .btn-action { padding: 8px 10px; font-size: 12px; }
@@ -1076,6 +1094,7 @@
             /* Modal */
             .modal { padding: 16px; border-radius: 12px; }
             .modal h2 { font-size: 16px; }
+            #btn-dark-mode { width: 42px; height: 42px; right: 10px; bottom: 10px; font-size: 19px; z-index: 8000; }
 
             /* QR zona fija */
             #qr-zona-fija { padding: 4px 0 2px; gap: 2px; }
@@ -1097,9 +1116,10 @@
             .header-logo { width: 56px; height: 56px; }
             .header h1 { font-size: 15px; }
             .filters { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .notas-materia-filter { grid-column: 1 / -1; }
             .btn-nav { font-size: 11px; padding: 8px 10px; max-width: 200px; }
-            .student-row { grid-template-columns: 36px 2fr 1fr 1fr; font-size: 13px; }
-            .student-row > span:last-child { display: none; } /* oculta teléfono en tablet */
+            .student-list { overflow-x: auto; overflow-y: hidden; }
+            .student-row { grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px 80px; font-size: 13px; min-width: 760px; }
         }
 
         /* ── ESCRITORIO (>900px, solo en web-view) ── */
@@ -1428,7 +1448,7 @@
                             <option value="Única">Única</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="notas-materia-filter">
                         <label>Materia</label>
                         <select id="tipo-materia-notas" onchange="onTipoMateriaNotasChange()">
                             <option value="0-10">Materia de 0-10</option>
@@ -1495,6 +1515,8 @@
             <div class="panel">
                 <label>Nombre del Docente Responsable:</label>
                 <input type="text" id="docente-nombre" placeholder="Ej. Lic." style="margin-bottom: 15px;">
+                <label>Materia / Asignatura:</label>
+                <input type="text" id="docente-materia" placeholder="Materia asignada al docente" style="margin-bottom: 15px;">
 
                 <div
                     style="background: var(--gray-50); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--gray-100);">
@@ -2045,6 +2067,13 @@
                     <option value="A">"A"</option>
                     <option value="B">"B"</option>
                     <option value="Única">Única</option>
+                </select>
+
+                <label style="text-align:center;color:var(--blue-800);font-size:12px;margin:4px 0 6px;">Materia</label>
+                <select id="new-docente-tipo-materia" style="width:100%; padding:10px; margin-bottom:10px;text-align:center;">
+                    <option value="">-- Tipo de Materia --</option>
+                    <option value="0-10">Materia de 0-10</option>
+                    <option value="0-5">Materia de 0-5</option>
                 </select>
 
                 <input type="text" id="new-docente-materia" placeholder="-- Materia / Asignatura a cargo (ej: Lenguaje y Literatura) --"
@@ -3026,6 +3055,8 @@
             }
             if (userStr === "invitado") {
                 document.getElementById("docente-nombre").value = "";
+                const materiaInput = document.getElementById("docente-materia");
+                if (materiaInput) materiaInput.value = "";
                 window.usuarioAdmin = false;
                 desbloquearInterfazMain("invitado");
                 return;
@@ -3033,17 +3064,30 @@
 
             const docenteEncontrado = baseDatosDocentes.find(d => d.nombre.toLowerCase().includes(userStr));
             if (docenteEncontrado) {
-                document.getElementById("docente-nombre").value = docenteEncontrado.nombre;
-                window.usuarioAdmin = docenteEncontrado.admin === true || docenteEncontrado.admin === 'true';
-                if (docenteEncontrado.grado && docenteEncontrado.seccion) {
-                    document.getElementById("grado-select").value = docenteEncontrado.grado;
-                    document.getElementById("seccion-select").value = docenteEncontrado.seccion;
-                    cargarAlumnos();
-                }
+                aplicarDatosDocenteSeleccionado(docenteEncontrado);
                 desbloquearInterfazMain(docenteEncontrado.nombre);
             } else {
                 alert("❌ Usuario no encontrado. Intente con un nombre válido, o escriba 'invitado'.");
             }
+        }
+
+        function aplicarDatosDocenteSeleccionado(docente) {
+            if (!docente) return;
+            document.getElementById("docente-nombre").value = docente.nombre || '';
+            window.usuarioAdmin = docente.admin === true || docente.admin === 'true';
+            if (docente.materia) {
+                const materiaInput = document.getElementById('docente-materia');
+                if (materiaInput) materiaInput.value = docente.materia;
+                try { localStorage.setItem('materia_' + docente.nombre, docente.materia); } catch(e) {}
+            }
+            const tipoMateria = docente.tipo_materia || docente.escala || docente.escala_notas || '';
+            if (tipoMateria) {
+                const tipoSel = document.getElementById('tipo-materia-notas');
+                if (tipoSel) tipoSel.value = tipoMateria === '0-5' || tipoMateria === 5 || tipoMateria === '5' ? '0-5' : '0-10';
+            }
+            if (docente.grado) document.getElementById("grado-select").value = docente.grado;
+            if (docente.seccion) document.getElementById("seccion-select").value = docente.seccion;
+            if (docente.grado && docente.seccion) cargarAlumnos();
         }
 
         function verificarVueltaAlLogin() {
@@ -3061,16 +3105,12 @@
             if (!sel) return alert("Por favor, seleccione una opción.");
 
             if (sel !== "Invitado") {
-                document.getElementById("docente-nombre").value = sel;
                 const docenteEncontrado = baseDatosDocentes.find(d => d.nombre === sel);
-                window.usuarioAdmin = docenteEncontrado ? (docenteEncontrado.admin === true || docenteEncontrado.admin === 'true') : false;
-                if (docenteEncontrado && docenteEncontrado.grado && docenteEncontrado.seccion) {
-                    document.getElementById("grado-select").value = docenteEncontrado.grado;
-                    document.getElementById("seccion-select").value = docenteEncontrado.seccion;
-                    cargarAlumnos();
-                }
+                aplicarDatosDocenteSeleccionado(docenteEncontrado || { nombre: sel });
             } else {
                 document.getElementById("docente-nombre").value = "";
+                const materiaInput = document.getElementById("docente-materia");
+                if (materiaInput) materiaInput.value = "";
                 window.usuarioAdmin = false;
             }
 
@@ -3111,20 +3151,24 @@
             const nom = document.getElementById('new-docente-nombre').value.trim();
             const gra = document.getElementById('new-docente-grado').value;
             const sec = document.getElementById('new-docente-seccion').value;
+            const tipoMateria = document.getElementById('new-docente-tipo-materia').value;
             const mat = (document.getElementById('new-docente-materia') || {}).value?.trim() || '';
             const isAdmin = document.getElementById('new-docente-admin').checked;
 
-            if (!nom || !gra || !sec) return alert("Por favor complete todos los datos del docente.");
+            if (!nom || !gra || !sec || !tipoMateria) return alert("Por favor complete todos los datos del docente.");
             if (!mat) return alert("Por favor ingrese la materia/asignatura a cargo del docente.");
             btn.disabled = true; btn.innerText = "Guardando...";
 
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
                     tipo_post: "nuevo_docente", nombre: nom, grado: gra, seccion: sec,
-                    materia: mat, admin: isAdmin
+                    materia: mat, tipo_materia: tipoMateria, escala: tipoMateria, admin: isAdmin
                 }) });
                 // Guardar materia en localStorage para uso local
-                try { localStorage.setItem('materia_' + nom, mat); } catch(e){}
+                try {
+                    localStorage.setItem('materia_' + nom, mat);
+                    localStorage.setItem('tipo_materia_' + nom, tipoMateria);
+                } catch(e){}
                 alert("Docente registrado exitosamente.");
                 cerrarModal('modal-docente'); setTimeout(() => { location.reload(); }, 1000);
             } catch (e) { alert("Error al guardar."); }
@@ -3436,7 +3480,7 @@
                 html += `<div class="student-row" id="row-${indexReal}"
               onclick="toggleFila(event, ${indexReal})"
               ondblclick="iniciarPermisoPorDobleClick(${indexReal}); event.stopPropagation();">
-              <div class="checkbox-wrapper"><input type="checkbox" id="chk-${indexReal}" value="${indexReal}" checked></div>
+              <div class="checkbox-wrapper"><input type="checkbox" id="chk-${indexReal}" value="${indexReal}" checked onchange="actualizarEstadoCheckbox(${indexReal})"></div>
               <div id="nombre-alumno-${indexReal}" style="font-weight: 500; font-size:13px; cursor:pointer;" title="Triple clic para ver detalle; ${alumno.nie}; ${alumno.sexo}; ${alumno.telefono || 'N/A'}" onclick="handleNombreAlumnoClick(event, ${indexReal})">${alumno.nombre}</div>
               <div><span class="badge ${alumno.sexo.toLowerCase()}">${alumno.sexo}</span></div>
               <div style="font-size: 13px;">${alumno.nie}</div>
@@ -4361,11 +4405,19 @@
 
             // Materia: usar la almacenada o default sin prompt
             let materia = '';
-            try { materia = localStorage.getItem('materia_' + docente) || ''; } catch(e){}
+            try {
+                materia = (document.getElementById('docente-materia')?.value || '').trim()
+                    || localStorage.getItem('materia_' + docente)
+                    || '';
+            } catch(e){}
             if (!materia) {
                 materia = (prompt('📚 ¿Cuál es la materia/asignatura de ' + docente + '?') || '').trim();
                 if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)'; return; }
-                try { localStorage.setItem('materia_' + docente, materia); } catch(e){}
+                try {
+                    localStorage.setItem('materia_' + docente, materia);
+                    const materiaInput = document.getElementById('docente-materia');
+                    if (materiaInput) materiaInput.value = materia;
+                } catch(e){}
             }
 
             btn.disabled = true;
@@ -5683,6 +5735,8 @@
                 document.getElementById("login-username").value = "";
                 document.getElementById("login-password").value = "";
                 document.getElementById("docente-nombre").value = "";
+                const materiaInput = document.getElementById("docente-materia");
+                if (materiaInput) materiaInput.value = "";
                 document.getElementById("login-robot-check").checked = false;
                 document.getElementById("grado-select").value = "";
                 document.getElementById("seccion-select").value = "";
@@ -6007,6 +6061,10 @@
 
         function handleNombreAlumnoClick(event, index) {
             event.stopPropagation();
+            if (event.detail === 1) {
+                toggleFila(event, index);
+                return;
+            }
             if (event.detail === 3) {
                 mostrarDetalleAlumnoTripleClick(index);
             }
@@ -20223,8 +20281,8 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
     </div>
 
  <!-- version centrada-->
-                <span id="footer-version">v8.045.34.0</span>
-                <span id="footer-version-label" style="font-size:10px;opacity:.6;">(actualizado)</span>
+                <span id="footer-version" style="color:#fff;font-weight:700;">v8.045.34.0</span>
+                <span id="footer-version-label" style="font-size:10px;opacity:1;color:#fff;">(actualizado)</span>
 
     <!-- Copyright -->
     <div style="
@@ -20263,7 +20321,7 @@ body{font-family:Arial,sans-serif;padding:24px 32px;color:#1e293b;font-size:12.5
         var bump = diff > 5000 ? 0.10 : diff > 500 ? 0.01 : 0.001;
         display = Math.round((stored + bump) * 1000) / 1000;
         localStorage.setItem('inmu_doc_ver', display.toString());
-        if (vl) { vl.textContent = '(actualizado)'; vl.style.color = '#4ade80'; }
+        if (vl) { vl.textContent = '(actualizado)'; vl.style.color = '#fff'; }
     } else if (stored > BASE) { display = stored; }
     localStorage.setItem('inmu_doc_hash', cur);
     if (!stored || stored < BASE) localStorage.setItem('inmu_doc_ver', BASE.toString());
