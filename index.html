@@ -1515,8 +1515,11 @@
             <div class="panel">
                 <label>Nombre del Docente Responsable:</label>
                 <input type="text" id="docente-nombre" placeholder="Ej. Lic." style="margin-bottom: 15px;">
-                <label>Materia / Asignatura:</label>
-                <input type="text" id="docente-materia" placeholder="Materia asignada al docente" style="margin-bottom: 15px;">
+                <label>Seleccione la Materia:</label>
+                <select id="docente-materia" onchange="onMateriaDocenteActivaChange()" style="margin-bottom: 8px;">
+                    <option value="">-- Seleccione la materia --</option>
+                </select>
+                <div id="docente-materia-info" style="margin-bottom: 15px; font-size: 12px; color: var(--gray-600);">Seleccione un docente para cargar sus materias asignadas.</div>
 
                 <div
                     style="background: var(--gray-50); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--gray-100);">
@@ -1575,6 +1578,8 @@
             <div style="margin-top: 20px; display:flex; flex-direction:column; align-items:center; gap:10px;">
                 <button class="btn-nav" style="background:#5F5E5A; max-width: 260px; width:100%;"
                     onclick="pedirPasswordDocente()">👨‍🏫 Añadir Docente</button>
+                <button class="btn-nav" style="background:#0C447C; max-width: 260px; width:100%;"
+                    onclick="pedirPasswordAsignarMateria()">ASIGNAR MATERIA</button>
                 <button class="btn-nav" style="background:#BA7517; max-width: 260px; width:100%;"
                     onclick="pedirPasswordNuevo()">➕ Nuevo Alumno</button>
                 <button class="btn-nav" style="background:var(--green-600); max-width: 260px; width:100%;"
@@ -2069,15 +2074,31 @@
                     <option value="Única">Única</option>
                 </select>
 
-                <label style="text-align:center;color:var(--blue-800);font-size:12px;margin:4px 0 6px;">Materia</label>
-                <select id="new-docente-tipo-materia" style="width:100%; padding:10px; margin-bottom:10px;text-align:center;">
+                <label style="text-align:center;color:var(--blue-800);font-size:12px;margin:4px 0 6px;">Seleccione la Materia</label>
+                <select id="new-docente-categoria" onchange="actualizarFormularioAsignacion('new-docente')" style="width:100%; padding:10px; margin-bottom:10px;text-align:center;">
                     <option value="">-- Tipo de Materia --</option>
-                    <option value="0-10">Materia de 0-10</option>
-                    <option value="0-5">Materia de 0-5</option>
+                    <option value="basica">Materias básicas (0-10)</option>
+                    <option value="modulo">Módulos (0-5)</option>
                 </select>
 
-                <input type="text" id="new-docente-materia" placeholder="-- Materia / Asignatura a cargo (ej: Lenguaje y Literatura) --"
-                    style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box;">
+                <select id="new-docente-materia" onchange="actualizarFormularioAsignacion('new-docente')" style="width:100%; padding:10px; margin-bottom:10px;">
+                    <option value="">-- Seleccione la materia --</option>
+                </select>
+
+                <select id="new-docente-especialidad" style="width:100%; padding:10px; margin-bottom:10px; display:none;">
+                    <option value="">-- Seleccione la especialidad --</option>
+                </select>
+
+                <div id="new-docente-escala-info" style="margin-bottom:10px; font-size:12px; color:var(--gray-600);">Escala de notas: pendiente de selección.</div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <button type="button" onclick="agregarAsignacionNuevoDocente()" style="flex:1; padding:10px; background:#185FA5; color:white; border:none; border-radius:6px;">Agregar materia</button>
+                    <button type="button" onclick="limpiarFormularioAsignacion('new-docente')" style="flex:1; padding:10px;">Limpiar</button>
+                </div>
+
+                <div id="new-docente-materias-lista" style="max-height:160px; overflow-y:auto; margin-bottom:15px; border:1px solid #dbeafe; border-radius:8px; padding:10px; background:#f8fbff;">
+                    <div style="font-size:12px; color:var(--gray-600); text-align:center;">No hay materias agregadas.</div>
+                </div>
 
                 <label style="display:flex; align-items:center; gap:10px; margin-bottom:15px; font-size:14px;">
                     <input type="checkbox" id="new-docente-admin" style="transform: scale(1.1); margin:0;">
@@ -2088,6 +2109,102 @@
                     <button onclick="cerrarModal('modal-docente')" style="flex:1; padding:10px;">Cancelar</button>
                     <button onclick="guardarNuevoDocente()" id="btn-save-doc"
                         style="flex:1; padding:10px; background:#5F5E5A; color:white; border:none; border-radius:6px;">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="modal-asignar-materia">
+            <div class="modal" style="max-width:720px; width:min(92vw,720px);">
+                <h3 style="color: var(--blue-800); margin-bottom: 15px;">Asignar Materia</h3>
+
+                <select id="asignar-docente-select" onchange="cargarPanelAsignacionDocente()" style="width:100%; padding:10px; margin-bottom:10px;">
+                    <option value="">-- Seleccione un docente --</option>
+                </select>
+
+                <div id="asignar-docente-info" style="margin-bottom:12px; padding:12px; border-radius:8px; background:#f8fbff; border:1px solid #dbeafe; font-size:13px; color:#1e3a5f;">
+                    Seleccione un docente previamente registrado para ver sus materias asignadas.
+                </div>
+
+                <div id="asignar-docente-lista" style="max-height:190px; overflow-y:auto; margin-bottom:12px; border:1px solid #e5e7eb; border-radius:8px; padding:10px; background:#fff;">
+                    <div style="font-size:12px; color:var(--gray-600); text-align:center;">Sin datos para mostrar.</div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <button type="button" onclick="activarEdicionAsignacionesDocente()" style="flex:1; padding:10px; background:#0C447C; color:white; border:none; border-radius:6px;">Editar</button>
+                    <button type="button" onclick="guardarAsignacionesDocente()" id="btn-save-asignaciones-docente" style="flex:1; padding:10px; background:#1D9E75; color:white; border:none; border-radius:6px;">Guardar cambios</button>
+                </div>
+
+                <div id="asignacion-docente-editor" style="display:none; border:1px solid #dbeafe; border-radius:10px; padding:12px; margin-bottom:12px; background:#f8fbff;">
+                    <div style="font-weight:bold; color:#0C447C; margin-bottom:10px;">Agregar o eliminar materias del docente</div>
+
+                    <select id="edit-docente-grado" style="width:100%; padding:10px; margin-bottom:10px;">
+                        <option value="">-- Grado Asignado --</option>
+                        <option value="1° General">1° General</option>
+                        <option value="1° Adm. Contable">1° Adm. Contable</option>
+                        <option value="1° S. Eléctricos">1° S. Eléctricos</option>
+                        <option value="2° General">2° General</option>
+                        <option value="2° Adm. Contable">2° Adm. Contable</option>
+                        <option value="2° Sist. Eléctricos">2° Sist. Eléctricos</option>
+                        <option value="3° Adm. Contable">3° Adm. Contable</option>
+                        <option value="3° Sist. Eléctricos">3° Sist. Eléctricos</option>
+                        <option value="Dirección">Dirección</option>
+                        <option value="DI REFUERZO">DI REFUERZO</option>
+                    </select>
+
+                    <select id="edit-docente-seccion" style="width:100%; padding:10px; margin-bottom:10px;">
+                        <option value="">-- Sección Asignada --</option>
+                        <option value="A">"A"</option>
+                        <option value="B">"B"</option>
+                        <option value="Única">Única</option>
+                    </select>
+
+                    <select id="edit-docente-categoria" onchange="actualizarFormularioAsignacion('edit-docente')" style="width:100%; padding:10px; margin-bottom:10px;">
+                        <option value="">-- Tipo de Materia --</option>
+                        <option value="basica">Materias básicas (0-10)</option>
+                        <option value="modulo">Módulos (0-5)</option>
+                    </select>
+
+                    <select id="edit-docente-materia" onchange="actualizarFormularioAsignacion('edit-docente')" style="width:100%; padding:10px; margin-bottom:10px;">
+                        <option value="">-- Seleccione la materia --</option>
+                    </select>
+
+                    <select id="edit-docente-especialidad" style="width:100%; padding:10px; margin-bottom:10px; display:none;">
+                        <option value="">-- Seleccione la especialidad --</option>
+                    </select>
+
+                    <div id="edit-docente-escala-info" style="margin-bottom:10px; font-size:12px; color:var(--gray-600);">Escala de notas: pendiente de selección.</div>
+
+                    <label style="display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:13px; text-transform:none;">
+                        <input type="checkbox" id="edit-docente-orientado" style="transform: scale(1.1); margin:0;">
+                        <span>Marcar como grado orientado</span>
+                    </label>
+
+                    <div style="display:flex; gap:10px;">
+                        <button type="button" onclick="agregarAsignacionEdicionDocente()" style="flex:1; padding:10px; background:#185FA5; color:white; border:none; border-radius:6px;">Agregar materia</button>
+                        <button type="button" onclick="limpiarFormularioAsignacion('edit-docente')" style="flex:1; padding:10px;">Limpiar</button>
+                    </div>
+                </div>
+
+                <div style="border:1px solid #fde68a; border-radius:10px; padding:12px; background:#fffdf5; margin-bottom:12px;">
+                    <div style="font-weight:bold; color:#8a5a00; margin-bottom:10px;">Catálogo de materias y módulos</div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                        <select id="catalogo-categoria" onchange="actualizarFormularioCatalogo()" style="flex:1; min-width:180px; padding:10px;">
+                            <option value="basica">Materia básica (0-10)</option>
+                            <option value="modulo">Módulo (0-5)</option>
+                        </select>
+                        <input type="text" id="catalogo-nombre" placeholder="Nombre de la materia o módulo" style="flex:2; min-width:220px; padding:10px;">
+                    </div>
+                    <input type="text" id="catalogo-especialidades" placeholder="Especialidades para módulo, separadas por coma" style="width:100%; padding:10px; margin-bottom:10px; display:none;">
+                    <div id="catalogo-escala-info" style="margin-bottom:10px; font-size:12px; color:var(--gray-600);">Escala de notas: 0-10</div>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button type="button" onclick="agregarMateriaCatalogo()" style="flex:1; padding:10px; background:#B9770E; color:white; border:none; border-radius:6px;">Agregar al catálogo</button>
+                        <button type="button" onclick="guardarCatalogoMaterias()" id="btn-save-catalogo" style="flex:1; padding:10px; background:#7c3aed; color:white; border:none; border-radius:6px;">Guardar catálogo</button>
+                    </div>
+                    <div id="catalogo-materias-lista" style="max-height:150px; overflow-y:auto; border:1px solid #fef3c7; border-radius:8px; padding:10px; background:#fff;"></div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="cerrarModal('modal-asignar-materia')" style="flex:1; padding:10px;">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -2387,11 +2504,16 @@
                     } else if (data && typeof data === 'object') {
                         baseDatosAlumnos = Array.isArray(data.alumnos) ? data.alumnos : (Array.isArray(data.alumnos || data.students) ? data.alumnos || data.students : []);
                         baseDatosDocentes = Array.isArray(data.docentes) ? data.docentes : (Array.isArray(data.teachers) ? data.teachers : []);
+                        catalogoMaterias = Array.isArray(data.catalogo_materias) ? data.catalogo_materias : getCatalogoMateriasFallback();
                     }
 
                     if (!baseDatosDocentes || baseDatosDocentes.length === 0) {
                         baseDatosDocentes = [{ nombre: 'Invitado' }];
                     }
+                    if (!Array.isArray(catalogoMaterias) || catalogoMaterias.length === 0) {
+                        catalogoMaterias = getCatalogoMateriasFallback();
+                    }
+                    inicializarMateriasUI();
 
                     const cont = document.getElementById('tabla-alumnos');
                     if (cont) cont.innerHTML = '<div style="padding: 20px; text-align:center; color:var(--green-600);">Datos locales cargados. Seleccione grado y sección.</div>';
@@ -2423,6 +2545,7 @@
 
         function marcarModoOffline() {
             modoOffline = true;
+            catalogoMaterias = getCatalogoMateriasFallback();
             baseDatosDocentes = [
                 { nombre: 'Invitado' },
                 { nombre: 'Prof. Ana López', grado: '1', seccion: 'A' },
@@ -2459,6 +2582,7 @@
                 });
                 selDoc.innerHTML = options;
             }
+            inicializarMateriasUI();
         }
 
         function detectarTamanioDispositivo() {
@@ -2511,6 +2635,9 @@
         let docentesStatus = {}; // Estados de docentes: online/offline
         let carpetaPDFUri = null;
         let baseDatosDocentes = [];
+        let catalogoMaterias = [];
+        let asignacionesNuevoDocente = [];
+        let asignacionesDocenteEdicion = [];
         let alumnosFiltrados = [];
         let estadoSeleccion = true;
         let sistemaEnMantenimiento = true;
@@ -3039,6 +3166,532 @@
             }, 300);
         }
 
+        function normalizarEscalaMateriaCliente(valor) {
+            return valor === '0-5' || valor === 5 || valor === '5' ? '0-5' : '0-10';
+        }
+
+        function getEspecialidadesFallback() {
+            return ['1° Adm. Contable', '1° S. Eléctricos', '2° Adm. Contable', '2° Sist. Eléctricos', '3° Adm. Contable', '3° Sist. Eléctricos'];
+        }
+
+        function getCatalogoMateriasFallback() {
+            const especialidades = getEspecialidadesFallback();
+            return [
+                { nombre: 'Lenguaje y Literatura', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Matemática', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Estudios Sociales y Cívica', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Ciencia, Salud y Medio Ambiente', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Inglés', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Informática', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Educación Física', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Moral, Urbanidad y Cívica', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Seminario', categoria: 'basica', escala: '0-10', requiere_especialidad: false, especialidades: [] },
+                { nombre: 'Módulo 1', categoria: 'modulo', escala: '0-5', requiere_especialidad: true, especialidades },
+                { nombre: 'Módulo 2', categoria: 'modulo', escala: '0-5', requiere_especialidad: true, especialidades },
+                { nombre: 'Módulo 3', categoria: 'modulo', escala: '0-5', requiere_especialidad: true, especialidades }
+            ];
+        }
+
+        function escHtmlMateria(valor) {
+            return String(valor || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function getDocentePorNombre(nombre) {
+            return (baseDatosDocentes || []).find(d => (d.nombre || '') === (nombre || '')) || null;
+        }
+
+        function normalizarAsignacionCliente(asignacion, fallback = {}) {
+            const escala = normalizarEscalaMateriaCliente(asignacion?.escala || asignacion?.tipo_materia || asignacion?.escala_notas || fallback.escala || '0-10');
+            const tipo = (asignacion?.tipo_materia || asignacion?.categoria || fallback.tipo_materia || (escala === '0-5' ? 'modulo' : 'basica')) === 'modulo' ? 'modulo' : 'basica';
+            return {
+                grado: asignacion?.grado || fallback.grado || '',
+                seccion: asignacion?.seccion || fallback.seccion || '',
+                tipo_materia: tipo,
+                materia: asignacion?.materia || asignacion?.nombre || '',
+                escala,
+                especialidad: asignacion?.especialidad || '',
+                es_orientado: !!(asignacion?.es_orientado || asignacion?.orientado || asignacion?.esOrientado || fallback.es_orientado)
+            };
+        }
+
+        function getAsignacionesDocente(nombreDocente) {
+            const docente = typeof nombreDocente === 'string' ? getDocentePorNombre(nombreDocente) : nombreDocente;
+            if (!docente) return [];
+            let materias = Array.isArray(docente.materias_asignadas) ? docente.materias_asignadas.slice() : [];
+            if (!materias.length && docente.materia) {
+                materias = [{
+                    grado: docente.grado_orientado || docente.grado || '',
+                    seccion: docente.seccion_orientada || docente.seccion || '',
+                    tipo_materia: normalizarEscalaMateriaCliente(docente.tipo_materia || docente.escala) === '0-5' ? 'modulo' : 'basica',
+                    materia: docente.materia || '',
+                    escala: normalizarEscalaMateriaCliente(docente.tipo_materia || docente.escala),
+                    especialidad: '',
+                    es_orientado: true
+                }];
+            }
+            return materias.map(item => normalizarAsignacionCliente(item, {
+                grado: docente.grado_orientado || docente.grado || '',
+                seccion: docente.seccion_orientada || docente.seccion || ''
+            })).sort((a, b) => (b.es_orientado ? 1 : 0) - (a.es_orientado ? 1 : 0));
+        }
+
+        function getClaveMateriaAsignacion(asignacion) {
+            return [
+                normalizarTexto(asignacion?.grado || ''),
+                normalizarTexto(asignacion?.seccion || ''),
+                normalizarTexto(asignacion?.tipo_materia || ''),
+                normalizarTexto(asignacion?.materia || ''),
+                normalizarTexto(asignacion?.especialidad || '')
+            ].join('|');
+        }
+
+        function getEtiquetaAsignacion(asignacion) {
+            const materia = asignacion?.materia || '';
+            const especialidad = asignacion?.especialidad ? ` - ${asignacion.especialidad}` : '';
+            return `${materia}${especialidad}`;
+        }
+
+        function getMateriaDocenteActiva() {
+            const select = document.getElementById('docente-materia');
+            const option = select?.selectedOptions?.[0];
+            if (option && option.value) {
+                return {
+                    clave: option.value,
+                    grado: option.dataset.grado || '',
+                    seccion: option.dataset.seccion || '',
+                    materia: option.dataset.materia || option.textContent || '',
+                    especialidad: option.dataset.especialidad || '',
+                    tipo_materia: option.dataset.tipoMateria || 'basica',
+                    escala: normalizarEscalaMateriaCliente(option.dataset.escala || '0-10')
+                };
+            }
+            const docente = getDocentePorNombre((document.getElementById('docente-nombre') || {}).value || '');
+            const primera = getAsignacionesDocente(docente);
+            if (!primera.length) return null;
+            const asg = primera[0];
+            return {
+                clave: getClaveMateriaAsignacion(asg),
+                grado: asg.grado || '',
+                seccion: asg.seccion || '',
+                materia: asg.materia || '',
+                especialidad: asg.especialidad || '',
+                tipo_materia: asg.tipo_materia || 'basica',
+                escala: normalizarEscalaMateriaCliente(asg.escala || '0-10')
+            };
+        }
+
+        function actualizarFormularioAsignacion(prefijo) {
+            const categoriaSel = document.getElementById(`${prefijo}-categoria`);
+            const materiaSel = document.getElementById(`${prefijo}-materia`);
+            const especialidadSel = document.getElementById(`${prefijo}-especialidad`);
+            const escalaInfo = document.getElementById(`${prefijo}-escala-info`);
+            if (!categoriaSel || !materiaSel || !especialidadSel || !escalaInfo) return;
+
+            const categoria = categoriaSel.value;
+            const catalogo = (Array.isArray(catalogoMaterias) && catalogoMaterias.length ? catalogoMaterias : getCatalogoMateriasFallback())
+                .filter(item => (item.categoria || 'basica') === categoria);
+
+            const valorActual = materiaSel.value;
+            let opciones = '<option value="">-- Seleccione la materia --</option>';
+            catalogo.forEach(item => {
+                opciones += `<option value="${escHtmlMateria(item.nombre)}">${escHtmlMateria(item.nombre)}</option>`;
+            });
+            materiaSel.innerHTML = opciones;
+            if (catalogo.some(item => item.nombre === valorActual)) materiaSel.value = valorActual;
+            if (!materiaSel.value && catalogo.length) materiaSel.value = catalogo[0].nombre;
+
+            const materiaActual = catalogo.find(item => item.nombre === materiaSel.value) || null;
+            const escala = normalizarEscalaMateriaCliente(materiaActual?.escala || (categoria === 'modulo' ? '0-5' : '0-10'));
+            escalaInfo.textContent = `Escala de notas: ${escala}`;
+
+            if (categoria === 'modulo') {
+                const especialidades = Array.isArray(materiaActual?.especialidades) && materiaActual.especialidades.length
+                    ? materiaActual.especialidades
+                    : getEspecialidadesFallback();
+                especialidadSel.style.display = 'block';
+                especialidadSel.innerHTML = '<option value="">-- Seleccione la especialidad --</option>' +
+                    especialidades.map(item => `<option value="${escHtmlMateria(item)}">${escHtmlMateria(item)}</option>`).join('');
+            } else {
+                especialidadSel.value = '';
+                especialidadSel.style.display = 'none';
+                especialidadSel.innerHTML = '<option value="">-- Seleccione la especialidad --</option>';
+            }
+        }
+
+        function limpiarFormularioAsignacion(prefijo) {
+            const categoriaSel = document.getElementById(`${prefijo}-categoria`);
+            const materiaSel = document.getElementById(`${prefijo}-materia`);
+            const especialidadSel = document.getElementById(`${prefijo}-especialidad`);
+            const orientadoChk = document.getElementById(`${prefijo}-orientado`);
+            if (categoriaSel) categoriaSel.value = '';
+            if (materiaSel) materiaSel.innerHTML = '<option value="">-- Seleccione la materia --</option>';
+            if (especialidadSel) {
+                especialidadSel.value = '';
+                especialidadSel.style.display = 'none';
+                especialidadSel.innerHTML = '<option value="">-- Seleccione la especialidad --</option>';
+            }
+            if (orientadoChk) orientadoChk.checked = false;
+            const escalaInfo = document.getElementById(`${prefijo}-escala-info`);
+            if (escalaInfo) escalaInfo.textContent = 'Escala de notas: pendiente de selección.';
+        }
+
+        function renderAsignacionesNuevoDocente() {
+            const cont = document.getElementById('new-docente-materias-lista');
+            if (!cont) return;
+            if (!asignacionesNuevoDocente.length) {
+                cont.innerHTML = '<div style="font-size:12px; color:var(--gray-600); text-align:center;">No hay materias agregadas.</div>';
+                return;
+            }
+            cont.innerHTML = asignacionesNuevoDocente.map((asg, idx) => `
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:${idx === asignacionesNuevoDocente.length - 1 ? 'none' : '1px solid #dbeafe'};">
+                    <div style="font-size:12px; color:#1e3a5f;">
+                        <strong>${asg.es_orientado ? 'Grado orientado' : 'Materia asignada'}</strong><br>
+                        ${escHtmlMateria(getEtiquetaAsignacion(asg))}<br>
+                        <span style="color:#64748b;">${escHtmlMateria(asg.grado)} ${escHtmlMateria(asg.seccion)} · ${escHtmlMateria(asg.escala)}</span>
+                    </div>
+                    <button type="button" onclick="quitarAsignacionNuevoDocente(${idx})" style="padding:6px 10px; border:none; border-radius:6px; background:#ef4444; color:white; cursor:pointer;">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function agregarAsignacionNuevoDocente() {
+            const grado = document.getElementById('new-docente-grado').value;
+            const seccion = document.getElementById('new-docente-seccion').value;
+            const categoria = document.getElementById('new-docente-categoria').value;
+            const materia = document.getElementById('new-docente-materia').value;
+            const especialidad = (document.getElementById('new-docente-especialidad') || {}).value || '';
+            if (!grado || !seccion || !categoria || !materia) return alert('Complete grado, sección y materia antes de agregar.');
+            if (categoria === 'modulo' && !especialidad) return alert('Seleccione la especialidad del módulo.');
+
+            const asignacion = normalizarAsignacionCliente({
+                grado,
+                seccion,
+                tipo_materia: categoria,
+                materia,
+                escala: categoria === 'modulo' ? '0-5' : '0-10',
+                especialidad,
+                es_orientado: asignacionesNuevoDocente.length === 0
+            });
+            const clave = getClaveMateriaAsignacion(asignacion);
+            if (asignacionesNuevoDocente.some(item => getClaveMateriaAsignacion(item) === clave)) {
+                return alert('Esa materia ya fue agregada para este docente.');
+            }
+            asignacionesNuevoDocente.push(asignacion);
+            renderAsignacionesNuevoDocente();
+            limpiarFormularioAsignacion('new-docente');
+        }
+
+        function quitarAsignacionNuevoDocente(index) {
+            asignacionesNuevoDocente.splice(index, 1);
+            if (asignacionesNuevoDocente[0]) asignacionesNuevoDocente[0].es_orientado = true;
+            renderAsignacionesNuevoDocente();
+        }
+
+        function cargarSelectDocentesAsignacion() {
+            const select = document.getElementById('asignar-docente-select');
+            if (!select) return;
+            const actual = select.value;
+            let html = '<option value="">-- Seleccione un docente --</option>';
+            (baseDatosDocentes || []).forEach(doc => {
+                if (!doc?.nombre) return;
+                html += `<option value="${escHtmlMateria(doc.nombre)}">${escHtmlMateria(doc.nombre)}</option>`;
+            });
+            select.innerHTML = html;
+            if ([...select.options].some(opt => opt.value === actual)) select.value = actual;
+        }
+
+        function renderAsignacionesDocenteEdicion() {
+            const cont = document.getElementById('asignar-docente-lista');
+            if (!cont) return;
+            if (!asignacionesDocenteEdicion.length) {
+                cont.innerHTML = '<div style="font-size:12px; color:var(--gray-600); text-align:center;">Este docente no tiene materias asignadas.</div>';
+                return;
+            }
+            cont.innerHTML = asignacionesDocenteEdicion.map((asg, idx) => `
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:${idx === asignacionesDocenteEdicion.length - 1 ? 'none' : '1px solid #e5e7eb'};">
+                    <div style="font-size:12px; color:#1e3a5f;">
+                        <strong>${asg.es_orientado ? 'Grado orientado' : 'Grado asignado'}</strong><br>
+                        ${escHtmlMateria(getEtiquetaAsignacion(asg))}<br>
+                        <span style="color:#64748b;">${escHtmlMateria(asg.grado)} ${escHtmlMateria(asg.seccion)} · ${escHtmlMateria(asg.escala)} · ${escHtmlMateria(asg.tipo_materia === 'modulo' ? 'Módulo' : 'Básica')}</span>
+                    </div>
+                    <button type="button" onclick="eliminarAsignacionDocenteEdicion(${idx})" style="padding:6px 10px; border:none; border-radius:6px; background:#ef4444; color:white; cursor:pointer;">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function cargarPanelAsignacionDocente() {
+            const nombre = (document.getElementById('asignar-docente-select') || {}).value || '';
+            const info = document.getElementById('asignar-docente-info');
+            document.getElementById('asignacion-docente-editor').style.display = 'none';
+            asignacionesDocenteEdicion = getAsignacionesDocente(nombre);
+            renderAsignacionesDocenteEdicion();
+            if (!nombre) {
+                if (info) info.textContent = 'Seleccione un docente previamente registrado para ver sus materias asignadas.';
+                return;
+            }
+            const docente = getDocentePorNombre(nombre) || {};
+            const orientado = asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0] || {};
+            if (info) {
+                info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientado.grado || docente.grado_orientado || docente.grado || 'Sin definir')} ${escHtmlMateria(orientado.seccion || docente.seccion_orientada || docente.seccion || '')}`;
+            }
+        }
+
+        function activarEdicionAsignacionesDocente() {
+            const nombre = (document.getElementById('asignar-docente-select') || {}).value || '';
+            if (!nombre) return alert('Seleccione un docente primero.');
+            const orientado = asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0] || {};
+            document.getElementById('asignacion-docente-editor').style.display = 'block';
+            document.getElementById('edit-docente-grado').value = orientado.grado || '';
+            document.getElementById('edit-docente-seccion').value = orientado.seccion || '';
+            limpiarFormularioAsignacion('edit-docente');
+            actualizarFormularioAsignacion('edit-docente');
+        }
+
+        function agregarAsignacionEdicionDocente() {
+            const grado = document.getElementById('edit-docente-grado').value;
+            const seccion = document.getElementById('edit-docente-seccion').value;
+            const categoria = document.getElementById('edit-docente-categoria').value;
+            const materia = document.getElementById('edit-docente-materia').value;
+            const especialidad = (document.getElementById('edit-docente-especialidad') || {}).value || '';
+            const orientado = document.getElementById('edit-docente-orientado').checked;
+            if (!grado || !seccion || !categoria || !materia) return alert('Complete grado, sección y materia antes de agregar.');
+            if (categoria === 'modulo' && !especialidad) return alert('Seleccione la especialidad del módulo.');
+
+            const asignacion = normalizarAsignacionCliente({
+                grado,
+                seccion,
+                tipo_materia: categoria,
+                materia,
+                escala: categoria === 'modulo' ? '0-5' : '0-10',
+                especialidad,
+                es_orientado: orientado || !asignacionesDocenteEdicion.length
+            });
+            const clave = getClaveMateriaAsignacion(asignacion);
+            if (asignacionesDocenteEdicion.some(item => getClaveMateriaAsignacion(item) === clave)) {
+                return alert('Esa materia ya está asignada a este docente.');
+            }
+            if (asignacion.es_orientado) asignacionesDocenteEdicion.forEach(item => item.es_orientado = false);
+            asignacionesDocenteEdicion.push(asignacion);
+            renderAsignacionesDocenteEdicion();
+            const nombre = (document.getElementById('asignar-docente-select') || {}).value || '';
+            const info = document.getElementById('asignar-docente-info');
+            const orientadoActual = asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0] || {};
+            if (info && nombre) {
+                info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientadoActual.grado || 'Sin definir')} ${escHtmlMateria(orientadoActual.seccion || '')}`;
+            }
+            limpiarFormularioAsignacion('edit-docente');
+        }
+
+        function eliminarAsignacionDocenteEdicion(index) {
+            asignacionesDocenteEdicion.splice(index, 1);
+            if (asignacionesDocenteEdicion[0] && !asignacionesDocenteEdicion.some(item => item.es_orientado)) {
+                asignacionesDocenteEdicion[0].es_orientado = true;
+            }
+            renderAsignacionesDocenteEdicion();
+            const nombre = (document.getElementById('asignar-docente-select') || {}).value || '';
+            const info = document.getElementById('asignar-docente-info');
+            const orientado = asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0] || {};
+            if (info && nombre) {
+                info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientado.grado || 'Sin definir')} ${escHtmlMateria(orientado.seccion || '')}`;
+            }
+        }
+
+        async function guardarAsignacionesDocente() {
+            if (sistemaEnMantenimiento) return;
+            const nombre = (document.getElementById('asignar-docente-select') || {}).value || '';
+            if (!nombre) return alert('Seleccione un docente.');
+            if (!asignacionesDocenteEdicion.length) return alert('Agregue al menos una materia.');
+            if (!asignacionesDocenteEdicion.some(item => item.es_orientado)) asignacionesDocenteEdicion[0].es_orientado = true;
+            const orientado = asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0];
+            const btn = document.getElementById('btn-save-asignaciones-docente');
+            btn.disabled = true;
+            btn.innerText = 'Guardando...';
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        tipo_post: 'guardar_asignaciones_docente',
+                        nombre,
+                        grado_orientado: orientado.grado || '',
+                        seccion_orientada: orientado.seccion || '',
+                        admin: getDocentePorNombre(nombre)?.admin || false,
+                        materias_asignadas: asignacionesDocenteEdicion
+                    })
+                });
+                const idx = baseDatosDocentes.findIndex(doc => (doc.nombre || '') === nombre);
+                const actual = idx >= 0 ? (baseDatosDocentes[idx] || {}) : { nombre };
+                const actualizado = {
+                    ...actual,
+                    nombre,
+                    grado: orientado.grado || '',
+                    seccion: orientado.seccion || '',
+                    grado_orientado: orientado.grado || '',
+                    seccion_orientada: orientado.seccion || '',
+                    materia: orientado.materia || '',
+                    tipo_materia: orientado.escala || '0-10',
+                    escala: orientado.escala || '0-10',
+                    materias_asignadas: asignacionesDocenteEdicion.map(item => ({ ...item }))
+                };
+                if (idx >= 0) baseDatosDocentes[idx] = actualizado; else baseDatosDocentes.push(actualizado);
+                cargarSelectDocentesAsignacion();
+                actualizarSelectMateriaDocente(nombre);
+                alert('Materias del docente guardadas correctamente.');
+                cargarPanelAsignacionDocente();
+            } catch (e) {
+                alert('No se pudieron guardar las materias del docente.');
+            }
+            btn.disabled = false;
+            btn.innerText = 'Guardar cambios';
+        }
+
+        function actualizarFormularioCatalogo() {
+            const categoria = (document.getElementById('catalogo-categoria') || {}).value || 'basica';
+            const inputEspecialidades = document.getElementById('catalogo-especialidades');
+            const info = document.getElementById('catalogo-escala-info');
+            if (categoria === 'modulo') {
+                inputEspecialidades.style.display = 'block';
+                inputEspecialidades.placeholder = 'Especialidades para módulo, separadas por coma';
+                info.textContent = 'Escala de notas: 0-5';
+            } else {
+                inputEspecialidades.value = '';
+                inputEspecialidades.style.display = 'none';
+                info.textContent = 'Escala de notas: 0-10';
+            }
+        }
+
+        function renderCatalogoMaterias() {
+            const cont = document.getElementById('catalogo-materias-lista');
+            if (!cont) return;
+            const data = Array.isArray(catalogoMaterias) && catalogoMaterias.length ? catalogoMaterias : getCatalogoMateriasFallback();
+            cont.innerHTML = data.map((item, idx) => `
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:${idx === data.length - 1 ? 'none' : '1px solid #fef3c7'};">
+                    <div style="font-size:12px; color:#7c4a00;">
+                        <strong>${escHtmlMateria(item.nombre || '')}</strong><br>
+                        ${escHtmlMateria(item.categoria === 'modulo' ? 'Módulo' : 'Materia básica')} · ${escHtmlMateria(normalizarEscalaMateriaCliente(item.escala || '0-10'))}
+                        ${item.categoria === 'modulo' && Array.isArray(item.especialidades) && item.especialidades.length ? `<br><span style="color:#8a6b22;">${escHtmlMateria(item.especialidades.join(', '))}</span>` : ''}
+                    </div>
+                    <button type="button" onclick="eliminarMateriaCatalogo(${idx})" style="padding:6px 10px; border:none; border-radius:6px; background:#ef4444; color:white; cursor:pointer;">Eliminar</button>
+                </div>
+            `).join('') || '<div style="font-size:12px; color:var(--gray-600); text-align:center;">No hay materias en el catálogo.</div>';
+        }
+
+        function agregarMateriaCatalogo() {
+            const categoria = (document.getElementById('catalogo-categoria') || {}).value || 'basica';
+            const nombre = ((document.getElementById('catalogo-nombre') || {}).value || '').trim();
+            const especialidadesTxt = ((document.getElementById('catalogo-especialidades') || {}).value || '').trim();
+            if (!nombre) return alert('Escriba el nombre de la materia o módulo.');
+            if ((catalogoMaterias || []).some(item => normalizarTexto(item.nombre) === normalizarTexto(nombre) && normalizarTexto(item.categoria) === normalizarTexto(categoria))) {
+                return alert('Esa materia ya existe en el catálogo.');
+            }
+            catalogoMaterias.push({
+                nombre,
+                categoria,
+                escala: categoria === 'modulo' ? '0-5' : '0-10',
+                requiere_especialidad: categoria === 'modulo',
+                especialidades: categoria === 'modulo'
+                    ? especialidadesTxt.split(',').map(item => item.trim()).filter(Boolean)
+                    : []
+            });
+            renderCatalogoMaterias();
+            inicializarMateriasUI();
+            document.getElementById('catalogo-nombre').value = '';
+            document.getElementById('catalogo-especialidades').value = '';
+        }
+
+        function eliminarMateriaCatalogo(index) {
+            catalogoMaterias.splice(index, 1);
+            renderCatalogoMaterias();
+            inicializarMateriasUI();
+        }
+
+        async function guardarCatalogoMaterias() {
+            const btn = document.getElementById('btn-save-catalogo');
+            btn.disabled = true;
+            btn.innerText = 'Guardando...';
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ tipo_post: 'guardar_catalogo_materias', catalogo: catalogoMaterias })
+                });
+                alert('Catálogo de materias guardado correctamente.');
+            } catch (e) {
+                alert('No se pudo guardar el catálogo.');
+            }
+            btn.disabled = false;
+            btn.innerText = 'Guardar catálogo';
+        }
+
+        function inicializarMateriasUI() {
+            if (!Array.isArray(catalogoMaterias) || !catalogoMaterias.length) {
+                catalogoMaterias = getCatalogoMateriasFallback();
+            }
+            cargarSelectDocentesAsignacion();
+            actualizarFormularioAsignacion('new-docente');
+            actualizarFormularioAsignacion('edit-docente');
+            actualizarFormularioCatalogo();
+            renderCatalogoMaterias();
+            actualizarSelectMateriaDocente();
+            renderAsignacionesNuevoDocente();
+        }
+
+        function actualizarSelectMateriaDocente(nombreDocente = null) {
+            const select = document.getElementById('docente-materia');
+            const info = document.getElementById('docente-materia-info');
+            const nombre = nombreDocente || (document.getElementById('docente-nombre') || {}).value || '';
+            if (!select) return;
+            const gradoActual = (document.getElementById('grado-select') || {}).value || '';
+            const seccionActual = (document.getElementById('seccion-select') || {}).value || '';
+            const anterior = select.value;
+            const asignaciones = getAsignacionesDocente(nombre);
+            if (!nombre || !asignaciones.length) {
+                select.innerHTML = '<option value="">-- Seleccione la materia --</option>';
+                if (info) info.textContent = nombre ? 'Este docente aún no tiene materias asignadas.' : 'Seleccione un docente para cargar sus materias asignadas.';
+                return;
+            }
+
+            const ordenadas = asignaciones.slice().sort((a, b) => {
+                const aMatch = a.grado === gradoActual && a.seccion === seccionActual ? 1 : 0;
+                const bMatch = b.grado === gradoActual && b.seccion === seccionActual ? 1 : 0;
+                if (bMatch !== aMatch) return bMatch - aMatch;
+                return (b.es_orientado ? 1 : 0) - (a.es_orientado ? 1 : 0);
+            });
+
+            select.innerHTML = ordenadas.map(asg => {
+                const clave = getClaveMateriaAsignacion(asg);
+                const texto = `${getEtiquetaAsignacion(asg)} · ${asg.grado} ${asg.seccion} · ${asg.escala}`;
+                return `<option value="${escHtmlMateria(clave)}" data-grado="${escHtmlMateria(asg.grado)}" data-seccion="${escHtmlMateria(asg.seccion)}" data-materia="${escHtmlMateria(asg.materia)}" data-especialidad="${escHtmlMateria(asg.especialidad || '')}" data-tipo-materia="${escHtmlMateria(asg.tipo_materia)}" data-escala="${escHtmlMateria(asg.escala)}">${escHtmlMateria(texto)}</option>`;
+            }).join('');
+
+            const preferida = ordenadas.find(asg => getClaveMateriaAsignacion(asg) === anterior) || ordenadas[0];
+            select.value = getClaveMateriaAsignacion(preferida);
+            onMateriaDocenteActivaChange();
+        }
+
+        function onMateriaDocenteActivaChange() {
+            const materiaActiva = getMateriaDocenteActiva();
+            const info = document.getElementById('docente-materia-info');
+            const tipoSel = document.getElementById('tipo-materia-notas');
+            if (!materiaActiva) {
+                if (info) info.textContent = 'Seleccione un docente para cargar sus materias asignadas.';
+                return;
+            }
+            if (tipoSel) tipoSel.value = materiaActiva.escala;
+            if (info) {
+                info.textContent = `Grado: ${materiaActiva.grado} ${materiaActiva.seccion} | Escala: ${materiaActiva.escala}${materiaActiva.especialidad ? ` | Especialidad: ${materiaActiva.especialidad}` : ''}`;
+            }
+            try {
+                const docente = (document.getElementById('docente-nombre') || {}).value || '';
+                localStorage.setItem('materia_' + docente, materiaActiva.materia || '');
+                localStorage.setItem('tipo_materia_' + docente, materiaActiva.escala || '0-10');
+            } catch (e) {}
+            const grado = (document.getElementById('grado-select') || {}).value || '';
+            const seccion = (document.getElementById('seccion-select') || {}).value || '';
+            if (grado && seccion) cargarNotasGuardadas(grado, seccion);
+            if (document.getElementById('modal-notas-periodo')?.style.display === 'block') renderTablaNotas();
+        }
+
         function ejecutarLogin() {
             const userStr = document.getElementById("login-username").value.trim().toLowerCase();
             const passStr = document.getElementById("login-password").value;
@@ -3056,13 +3709,15 @@
             if (userStr === "invitado") {
                 document.getElementById("docente-nombre").value = "";
                 const materiaInput = document.getElementById("docente-materia");
-                if (materiaInput) materiaInput.value = "";
+                if (materiaInput) materiaInput.innerHTML = '<option value="">-- Seleccione la materia --</option>';
+                const materiaInfo = document.getElementById('docente-materia-info');
+                if (materiaInfo) materiaInfo.textContent = 'Modo invitado sin materias asignadas.';
                 window.usuarioAdmin = false;
                 desbloquearInterfazMain("invitado");
                 return;
             }
 
-            const docenteEncontrado = baseDatosDocentes.find(d => d.nombre.toLowerCase().includes(userStr));
+            const docenteEncontrado = baseDatosDocentes.find(d => (d.nombre || '').toLowerCase().includes(userStr));
             if (docenteEncontrado) {
                 aplicarDatosDocenteSeleccionado(docenteEncontrado);
                 desbloquearInterfazMain(docenteEncontrado.nombre);
@@ -3075,19 +3730,10 @@
             if (!docente) return;
             document.getElementById("docente-nombre").value = docente.nombre || '';
             window.usuarioAdmin = docente.admin === true || docente.admin === 'true';
-            if (docente.materia) {
-                const materiaInput = document.getElementById('docente-materia');
-                if (materiaInput) materiaInput.value = docente.materia;
-                try { localStorage.setItem('materia_' + docente.nombre, docente.materia); } catch(e) {}
-            }
-            const tipoMateria = docente.tipo_materia || docente.escala || docente.escala_notas || '';
-            if (tipoMateria) {
-                const tipoSel = document.getElementById('tipo-materia-notas');
-                if (tipoSel) tipoSel.value = tipoMateria === '0-5' || tipoMateria === 5 || tipoMateria === '5' ? '0-5' : '0-10';
-            }
-            if (docente.grado) document.getElementById("grado-select").value = docente.grado;
-            if (docente.seccion) document.getElementById("seccion-select").value = docente.seccion;
-            if (docente.grado && docente.seccion) cargarAlumnos();
+            if (docente.grado_orientado || docente.grado) document.getElementById("grado-select").value = docente.grado_orientado || docente.grado;
+            if (docente.seccion_orientada || docente.seccion) document.getElementById("seccion-select").value = docente.seccion_orientada || docente.seccion;
+            actualizarSelectMateriaDocente(docente.nombre);
+            if ((docente.grado_orientado || docente.grado) && (docente.seccion_orientada || docente.seccion)) cargarAlumnos();
         }
 
         function verificarVueltaAlLogin() {
@@ -3110,7 +3756,9 @@
             } else {
                 document.getElementById("docente-nombre").value = "";
                 const materiaInput = document.getElementById("docente-materia");
-                if (materiaInput) materiaInput.value = "";
+                if (materiaInput) materiaInput.innerHTML = '<option value="">-- Seleccione la materia --</option>';
+                const materiaInfo = document.getElementById('docente-materia-info');
+                if (materiaInfo) materiaInfo.textContent = 'Modo invitado sin materias asignadas.';
                 window.usuarioAdmin = false;
             }
 
@@ -3141,7 +3789,19 @@
         function pedirPasswordDocente() {
             if (sistemaEnMantenimiento) return;
             if (prompt("Ingrese contraseña de Administrador:") === PASS_ADMIN) {
+                asignacionesNuevoDocente = [];
+                renderAsignacionesNuevoDocente();
+                actualizarFormularioAsignacion('new-docente');
                 document.getElementById('modal-docente').classList.add('open');
+            } else { alert("Contraseña incorrecta."); }
+        }
+
+        function pedirPasswordAsignarMateria() {
+            if (sistemaEnMantenimiento) return;
+            if (prompt("Ingrese contraseña de Administrador:") === PASS_ADMIN) {
+                cargarSelectDocentesAsignacion();
+                renderCatalogoMaterias();
+                document.getElementById('modal-asignar-materia').classList.add('open');
             } else { alert("Contraseña incorrecta."); }
         }
 
@@ -3151,26 +3811,59 @@
             const nom = document.getElementById('new-docente-nombre').value.trim();
             const gra = document.getElementById('new-docente-grado').value;
             const sec = document.getElementById('new-docente-seccion').value;
-            const tipoMateria = document.getElementById('new-docente-tipo-materia').value;
-            const mat = (document.getElementById('new-docente-materia') || {}).value?.trim() || '';
             const isAdmin = document.getElementById('new-docente-admin').checked;
 
-            if (!nom || !gra || !sec || !tipoMateria) return alert("Por favor complete todos los datos del docente.");
-            if (!mat) return alert("Por favor ingrese la materia/asignatura a cargo del docente.");
+            if (!nom || !gra || !sec) return alert("Por favor complete todos los datos del docente.");
+            if (!asignacionesNuevoDocente.length) return alert("Agregue al menos una materia para el docente.");
+            asignacionesNuevoDocente = asignacionesNuevoDocente.map((item, idx) => ({
+                ...item,
+                grado: item.grado || gra,
+                seccion: item.seccion || sec,
+                es_orientado: idx === 0 ? true : !!item.es_orientado
+            }));
             btn.disabled = true; btn.innerText = "Guardando...";
 
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
-                    tipo_post: "nuevo_docente", nombre: nom, grado: gra, seccion: sec,
-                    materia: mat, tipo_materia: tipoMateria, escala: tipoMateria, admin: isAdmin
+                    tipo_post: "nuevo_docente",
+                    nombre: nom,
+                    grado_orientado: gra,
+                    seccion_orientada: sec,
+                    admin: isAdmin,
+                    materias_asignadas: asignacionesNuevoDocente
                 }) });
-                // Guardar materia en localStorage para uso local
+                const principal = asignacionesNuevoDocente[0];
+                baseDatosDocentes.push({
+                    nombre: nom,
+                    grado: gra,
+                    seccion: sec,
+                    grado_orientado: gra,
+                    seccion_orientada: sec,
+                    materia: principal?.materia || '',
+                    tipo_materia: principal?.escala || '0-10',
+                    escala: principal?.escala || '0-10',
+                    admin: isAdmin,
+                    materias_asignadas: asignacionesNuevoDocente.map(item => ({ ...item }))
+                });
+                const selDoc = document.getElementById('select-docente-inicio');
+                if (selDoc) {
+                    selDoc.innerHTML = `<option value="">-- Seleccionar --</option>` +
+                        baseDatosDocentes.map(d => `<option value="${escHtmlMateria(d.nombre)}">${escHtmlMateria(d.nombre)}</option>`).join('');
+                }
                 try {
-                    localStorage.setItem('materia_' + nom, mat);
-                    localStorage.setItem('tipo_materia_' + nom, tipoMateria);
+                    localStorage.setItem('materia_' + nom, principal?.materia || '');
+                    localStorage.setItem('tipo_materia_' + nom, principal?.escala || '0-10');
                 } catch(e){}
+                cargarSelectDocentesAsignacion();
+                asignacionesNuevoDocente = [];
+                renderAsignacionesNuevoDocente();
+                document.getElementById('new-docente-nombre').value = '';
+                document.getElementById('new-docente-grado').value = '';
+                document.getElementById('new-docente-seccion').value = '';
+                document.getElementById('new-docente-admin').checked = false;
+                limpiarFormularioAsignacion('new-docente');
                 alert("Docente registrado exitosamente.");
-                cerrarModal('modal-docente'); setTimeout(() => { location.reload(); }, 1000);
+                cerrarModal('modal-docente');
             } catch (e) { alert("Error al guardar."); }
             btn.disabled = false; btn.innerText = "Guardar";
         }
@@ -3280,17 +3973,26 @@
             selDoc.innerHTML = '<option value="">Descargando lista...</option>';
 
             try {
-                const [responseAlu, responseDoc] = await Promise.all([fetch(SCRIPT_URL + "?tipo=alumnos"), fetch(SCRIPT_URL + "?tipo=docentes")]);
-                if (!responseAlu.ok || !responseDoc.ok) throw new Error("Error");
+                const [responseAlu, responseDoc, responseCatalogo] = await Promise.all([
+                    fetch(SCRIPT_URL + "?tipo=alumnos"),
+                    fetch(SCRIPT_URL + "?tipo=docentes"),
+                    fetch(SCRIPT_URL + "?tipo=catalogo_materias")
+                ]);
+                if (!responseAlu.ok || !responseDoc.ok || !responseCatalogo.ok) throw new Error("Error");
 
                 baseDatosAlumnos = await responseAlu.json();
                 baseDatosAlumnos.sort((a, b) => a.nombre.localeCompare(b.nombre));
                 cargarAlumnos();
 
                 baseDatosDocentes = await responseDoc.json();
+                catalogoMaterias = await responseCatalogo.json();
+                if (!Array.isArray(catalogoMaterias) || catalogoMaterias.length === 0) {
+                    catalogoMaterias = getCatalogoMateriasFallback();
+                }
                 let htmlDoc = `<option value="">-- Seleccionar --</option>`;
                 baseDatosDocentes.forEach(d => { htmlDoc += `<option value="${d.nombre}">${d.nombre}</option>`; });
                 selDoc.innerHTML = htmlDoc;
+                inicializarMateriasUI();
 
             } catch (error) {
                 console.warn('Error inicializando datos:', error);
@@ -3440,6 +4142,7 @@
             const esDiRefuerzo = grado === "di refuerzo";
             const esUnica = seccion === "unica" || seccion === "única";
             modoDiRefuerzo = esDiRefuerzo && esUnica;
+            actualizarSelectMateriaDocente();
 
             if (modoDiRefuerzo) {
                 alumnosFiltrados = await obtenerAlumnosDiRefuerzo();
@@ -3977,8 +4680,20 @@
         let notasTipoActual = '0-10';
 
         function getTipoMateriaNotas() {
+            const materiaActiva = getMateriaDocenteActiva();
+            if (materiaActiva?.escala) return normalizarEscalaMateriaCliente(materiaActiva.escala);
             const sel = document.getElementById('tipo-materia-notas');
             return sel && sel.value === '0-5' ? '0-5' : '0-10';
+        }
+
+        function getClaveMateriaNotasActiva() {
+            const materiaActiva = getMateriaDocenteActiva();
+            return materiaActiva?.clave || 'sin_materia';
+        }
+
+        function getNombreMateriaNotasActiva() {
+            const materiaActiva = getMateriaDocenteActiva();
+            return materiaActiva ? getEtiquetaAsignacion(materiaActiva) : 'Sin materia';
         }
 
         function getEscalaNotasMax() {
@@ -3992,7 +4707,7 @@
         }
 
         function getNotasStorageKey(grado, seccion, tipoMateria) {
-            return 'notas_' + (tipoMateria || getTipoMateriaNotas()) + '_' + grado + '_' + seccion;
+            return 'notas_' + (tipoMateria || getTipoMateriaNotas()) + '_' + grado + '_' + seccion + '_' + getClaveMateriaNotasActiva();
         }
 
         function getEstadoNotaHtml(prom) {
@@ -4025,8 +4740,15 @@
         function onTipoMateriaNotasChange() {
             const grado = document.getElementById('grado-select')?.value || '';
             const seccion = document.getElementById('seccion-select')?.value || '';
+            const escalaSeleccionada = (document.getElementById('tipo-materia-notas') || {}).value || '0-10';
+            const materiaSel = document.getElementById('docente-materia');
+            if (materiaSel && materiaSel.options.length > 1) {
+                const match = Array.from(materiaSel.options).find(opt => (opt.dataset.escala || '0-10') === escalaSeleccionada);
+                if (match) materiaSel.value = match.value;
+            }
             if (notasCambiadas) guardarCambiosNotas();
             notasData = {};
+            onMateriaDocenteActivaChange();
             if (grado && seccion) cargarNotasGuardadas(grado, seccion);
             if (document.getElementById('modal-notas-periodo')?.style.display === 'block') {
                 abrirPanelNotas();
@@ -4038,8 +4760,13 @@
             const seccion = document.getElementById('seccion-select')?.value || '';
             const escalaMax = getEscalaNotasMax();
             const tipoMateria = getTipoMateriaNotas();
+            const nombreMateria = getNombreMateriaNotasActiva();
             if (!grado || !seccion) {
                 alert('⚠ Selecciona un Grado y Sección primero.');
+                return;
+            }
+            if (!getMateriaDocenteActiva()) {
+                alert('⚠ Selecciona una materia del docente antes de ingresar notas.');
                 return;
             }
             if (!alumnosFiltrados || alumnosFiltrados.length === 0) {
@@ -4062,7 +4789,7 @@
 
             // Info del encabezado
             document.getElementById('notas-modal-info').textContent =
-                `Grado: ${grado}  |  Sección: ${seccion}  |  Materia ${tipoMateria}  |  Nota máxima: ${escalaMax}  |  Alumnos: ${alumnosFiltrados.length}`;
+                `Grado: ${grado}  |  Sección: ${seccion}  |  ${nombreMateria}  |  Escala ${tipoMateria}  |  Nota máxima: ${escalaMax}  |  Alumnos: ${alumnosFiltrados.length}`;
 
             notasPeriodoActual = 1;
             notasCambiadas = false;
@@ -4314,11 +5041,16 @@
 
         function sincronizarNotasGrupoAppsScript(grado, seccion, tipoMateria) {
             if (!grado || !seccion || typeof SCRIPT_URL === 'undefined' || !Array.isArray(alumnosFiltrados)) return;
+            const materiaActiva = getMateriaDocenteActiva();
             const payload = {
                 tipo_post: 'guardar_notas_grupo',
                 grado,
                 seccion,
                 escala: tipoMateria,
+                asignatura: materiaActiva?.materia || '',
+                materia: materiaActiva?.materia || '',
+                especialidad: materiaActiva?.especialidad || '',
+                materia_clave: materiaActiva?.clave || '',
                 notas: alumnosFiltrados.map(alumno => {
                     const nd = notasData[String(alumno.nie)] || {};
                     const p1 = nd.p1 || {}; const p2 = nd.p2 || {};
@@ -4326,6 +5058,10 @@
                     return {
                         nombre: alumno.nombre || '',
                         nie: alumno.nie || '',
+                        asignatura: materiaActiva?.materia || '',
+                        materia: materiaActiva?.materia || '',
+                        especialidad: materiaActiva?.especialidad || '',
+                        materia_clave: materiaActiva?.clave || '',
                         p1_cuaderno: p1.a1, p1_integradora: p1.a2, p1_examen: p1.a3,
                         p2_cuaderno: p2.a1, p2_integradora: p2.a2, p2_examen: p2.a3,
                         p3_cuaderno: p3.a1, p3_integradora: p3.a2, p3_examen: p3.a3,
@@ -4403,21 +5139,11 @@
                 return;
             }
 
-            // Materia: usar la almacenada o default sin prompt
-            let materia = '';
-            try {
-                materia = (document.getElementById('docente-materia')?.value || '').trim()
-                    || localStorage.getItem('materia_' + docente)
-                    || '';
-            } catch(e){}
+            const materiaActiva = getMateriaDocenteActiva();
+            let materia = materiaActiva ? getEtiquetaAsignacion(materiaActiva) : '';
             if (!materia) {
-                materia = (prompt('📚 ¿Cuál es la materia/asignatura de ' + docente + '?') || '').trim();
-                if (!materia) { btn.disabled = false; btn.innerHTML = '📊 Exportar Notas a Excel (.xlsx)'; return; }
-                try {
-                    localStorage.setItem('materia_' + docente, materia);
-                    const materiaInput = document.getElementById('docente-materia');
-                    if (materiaInput) materiaInput.value = materia;
-                } catch(e){}
+                alert('⚠ Selecciona una materia del docente antes de exportar las notas.');
+                return;
             }
 
             btn.disabled = true;
@@ -5736,7 +6462,9 @@
                 document.getElementById("login-password").value = "";
                 document.getElementById("docente-nombre").value = "";
                 const materiaInput = document.getElementById("docente-materia");
-                if (materiaInput) materiaInput.value = "";
+                if (materiaInput) materiaInput.innerHTML = '<option value="">-- Seleccione la materia --</option>';
+                const materiaInfo = document.getElementById('docente-materia-info');
+                if (materiaInfo) materiaInfo.textContent = 'Seleccione un docente para cargar sus materias asignadas.';
                 document.getElementById("login-robot-check").checked = false;
                 document.getElementById("grado-select").value = "";
                 document.getElementById("seccion-select").value = "";
