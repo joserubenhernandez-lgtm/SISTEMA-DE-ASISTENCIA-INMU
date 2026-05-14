@@ -584,6 +584,9 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 10px;
         }
 
         .modal-overlay.open {
@@ -596,6 +599,17 @@
             border-radius: 12px;
             width: 90%;
             max-width: 400px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal #asignar-docente-lista,
+        .modal #catalogo-materias-lista,
+        .modal #new-docente-materias-lista,
+        .modal #lista-docentes-linea {
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
 
         .web-logo-container {
@@ -2125,6 +2139,25 @@
                     Seleccione un docente previamente registrado para ver sus materias asignadas.
                 </div>
 
+                <div id="asignar-docente-resumen" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:12px;">
+                    <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px; font-size:13px;">
+                        <div style="font-weight:700; color:#0c447c; margin-bottom:4px;">Grado</div>
+                        <div id="asignar-docente-grado">-</div>
+                    </div>
+                    <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px; font-size:13px;">
+                        <div style="font-weight:700; color:#0c447c; margin-bottom:4px;">Sección</div>
+                        <div id="asignar-docente-seccion">-</div>
+                    </div>
+                    <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px; font-size:13px;">
+                        <div style="font-weight:700; color:#0c447c; margin-bottom:4px;">Materia</div>
+                        <div id="asignar-docente-materia">-</div>
+                    </div>
+                    <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px; font-size:13px;">
+                        <div style="font-weight:700; color:#0c447c; margin-bottom:4px;">Escala</div>
+                        <div id="asignar-docente-escala">-</div>
+                    </div>
+                </div>
+
                 <div id="asignar-docente-lista" style="max-height:190px; overflow-y:auto; margin-bottom:12px; border:1px solid #e5e7eb; border-radius:8px; padding:10px; background:#fff;">
                     <div style="font-size:12px; color:var(--gray-600); text-align:center;">Sin datos para mostrar.</div>
                 </div>
@@ -3427,6 +3460,7 @@
             renderAsignacionesDocenteEdicion();
             if (!nombre) {
                 if (info) info.textContent = 'Seleccione un docente previamente registrado para ver sus materias asignadas.';
+                actualizarResumenAsignacionDocente();
                 return;
             }
             const docente = getDocentePorNombre(nombre) || {};
@@ -3434,6 +3468,22 @@
             if (info) {
                 info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientado.grado || docente.grado_orientado || docente.grado || 'Sin definir')} ${escHtmlMateria(orientado.seccion || docente.seccion_orientada || docente.seccion || '')}`;
             }
+            actualizarResumenAsignacionDocente(orientado);
+        }
+
+        function actualizarResumenAsignacionDocente(asignacion) {
+            asignacion = asignacion || asignacionesDocenteEdicion.find(item => item.es_orientado) || asignacionesDocenteEdicion[0] || {};
+            const grado = asignacion.grado || '-';
+            const seccion = asignacion.seccion || '-';
+            const materia = asignacion.materia || '-';
+            let escala = asignacion.escala || '-';
+            if (escala === '-' && asignacion.tipo_materia) {
+                escala = asignacion.tipo_materia === 'modulo' ? '0-5' : '0-10';
+            }
+            document.getElementById('asignar-docente-grado').textContent = grado;
+            document.getElementById('asignar-docente-seccion').textContent = seccion;
+            document.getElementById('asignar-docente-materia').textContent = materia;
+            document.getElementById('asignar-docente-escala').textContent = escala;
         }
 
         function activarEdicionAsignacionesDocente() {
@@ -3479,6 +3529,7 @@
             if (info && nombre) {
                 info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientadoActual.grado || 'Sin definir')} ${escHtmlMateria(orientadoActual.seccion || '')}`;
             }
+            actualizarResumenAsignacionDocente(orientadoActual);
             limpiarFormularioAsignacion('edit-docente');
         }
 
@@ -3494,6 +3545,7 @@
             if (info && nombre) {
                 info.innerHTML = `<strong>${escHtmlMateria(nombre)}</strong><br>Grado orientado: ${escHtmlMateria(orientado.grado || 'Sin definir')} ${escHtmlMateria(orientado.seccion || '')}`;
             }
+            actualizarResumenAsignacionDocente(orientado);
         }
 
         async function guardarAsignacionesDocente() {
